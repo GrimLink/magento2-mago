@@ -1,0 +1,249 @@
+<?php
+/**
+ * Copyright © Maggy Assistant
+ */
+
+/** @var \MaggyAssistant\Base\Block\Adminhtml\Dashboard $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+$accentColor = $block->getAccentColor() ?: '#E8710A';
+$hex = ltrim($accentColor, '#');
+$ar = hexdec(substr($hex, 0, 2));
+$ag = hexdec(substr($hex, 2, 2));
+$ab = hexdec(substr($hex, 4, 2));
+$accentRgb = "$ar,$ag,$ab";
+
+$stats = $block->getStats();
+$todayStats = $stats['today'];
+$userStats = $block->getUserStats();
+$skillStats = $block->getSkillStats();
+$dailyTrend = $block->getDailyTrend();
+$currentPeriod = $block->getPeriod();
+$dashboardUrl = $block->getUrl('maggy/statistics/index');
+?>
+
+<style>
+    .maggy-dashboard { width: 100%; }
+    .maggy-dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .maggy-dashboard-header h2 { margin: 0; font-size: 20px; color: #333; }
+    .maggy-period-selector { display: flex; gap: 8px; }
+    .maggy-period-btn {
+        padding: 6px 14px; border: 1px solid #ccc; background: #fff; border-radius: 4px;
+        cursor: pointer; font-size: 13px; color: #555; text-decoration: none;
+    }
+    .maggy-period-btn.active, .maggy-period-btn:hover {
+        background: <?= $accentColor ?>; color: #fff; border-color: <?= $accentColor ?>;
+    }
+    .maggy-stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .maggy-stat-card {
+        background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 20px;
+        text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .maggy-stat-card-value { font-size: 28px; font-weight: 700; color: <?= $accentColor ?>; margin-bottom: 4px; }
+    .maggy-stat-card-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .maggy-section { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .maggy-section h3 { margin: 0 0 16px; font-size: 16px; color: #333; }
+    .maggy-chart-area { position: relative; height: 160px; }
+    .maggy-chart-area svg { width: 100%; height: 100%; }
+    .maggy-chart-area-fill { fill: rgba(<?= $accentRgb ?>, 0.08); }
+    .maggy-chart-area-line { fill: none; stroke: <?= $accentColor ?>; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+    .maggy-chart-area-dot { fill: <?= $accentColor ?>; stroke: #fff; stroke-width: 2; cursor: pointer; transition: r 0.15s; }
+    .maggy-chart-area-tooltip {
+        display: none; position: absolute; background: #333; color: #fff; padding: 4px 8px;
+        border-radius: 3px; font-size: 11px; white-space: nowrap; z-index: 10;
+        transform: translate(-50%, -100%); margin-top: -8px; pointer-events: none;
+    }
+    .maggy-chart-area-tooltip.is-visible { display: block; }
+    .maggy-chart-area-grid { stroke: #f0f0f0; stroke-width: 1; }
+    .maggy-chart-area-axis { font-size: 10px; fill: #aaa; }
+    .maggy-chart-labels { display: flex; margin-top: 6px; }
+    .maggy-chart-labels span { flex: 1; text-align: center; font-size: 9px; color: #aaa; }
+    .maggy-table { width: 100%; border-collapse: collapse; }
+    .maggy-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e3e3e3; font-size: 13px; color: #666; font-weight: 600; }
+    .maggy-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333; }
+    .maggy-table tr:hover td { background: #f8f9fa; }
+    .maggy-table .maggy-right { text-align: right; }
+    .maggy-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .maggy-empty { text-align: center; color: #aaa; padding: 30px 0; font-size: 14px; }
+    @media (max-width: 900px) {
+        .maggy-stat-cards { grid-template-columns: repeat(2, 1fr); }
+        .maggy-grid-2 { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="maggy-dashboard">
+    <div class="maggy-dashboard-header">
+        <h2><?= $escaper->escapeHtml(__('Usage Dashboard')) ?></h2>
+        <div class="maggy-period-selector">
+            <a href="<?= $escaper->escapeUrl($dashboardUrl . '?period=today') ?>"
+               class="maggy-period-btn <?= $currentPeriod === 'today' ? 'active' : '' ?>">
+                <?= $escaper->escapeHtml(__('Today')) ?>
+            </a>
+            <a href="<?= $escaper->escapeUrl($dashboardUrl . '?period=7days') ?>"
+               class="maggy-period-btn <?= $currentPeriod === '7days' ? 'active' : '' ?>">
+                <?= $escaper->escapeHtml(__('7 Days')) ?>
+            </a>
+            <a href="<?= $escaper->escapeUrl($dashboardUrl . '?period=30days') ?>"
+               class="maggy-period-btn <?= $currentPeriod === '30days' ? 'active' : '' ?>">
+                <?= $escaper->escapeHtml(__('30 Days')) ?>
+            </a>
+            <a href="<?= $escaper->escapeUrl($dashboardUrl . '?period=all') ?>"
+               class="maggy-period-btn <?= $currentPeriod === 'all' ? 'active' : '' ?>">
+                <?= $escaper->escapeHtml(__('All Time')) ?>
+            </a>
+        </div>
+    </div>
+
+    <div class="maggy-stat-cards">
+        <div class="maggy-stat-card">
+            <div class="maggy-stat-card-value"><?= (int)$todayStats['total_requests'] ?></div>
+            <div class="maggy-stat-card-label"><?= $escaper->escapeHtml(__('Requests Today')) ?></div>
+        </div>
+        <div class="maggy-stat-card">
+            <div class="maggy-stat-card-value"><?= $escaper->escapeHtml($block->formatTokens($todayStats['total_tokens'])) ?></div>
+            <div class="maggy-stat-card-label"><?= $escaper->escapeHtml(__('Tokens Today')) ?></div>
+        </div>
+        <div class="maggy-stat-card">
+            <div class="maggy-stat-card-value"><?= $escaper->escapeHtml($block->formatCost($todayStats['estimated_cost'])) ?></div>
+            <div class="maggy-stat-card-label"><?= $escaper->escapeHtml(__('Est. Cost Today')) ?></div>
+        </div>
+        <div class="maggy-stat-card">
+            <div class="maggy-stat-card-value"><?= (int)$todayStats['unique_users'] ?></div>
+            <div class="maggy-stat-card-label"><?= $escaper->escapeHtml(__('Active Users Today')) ?></div>
+        </div>
+    </div>
+
+    <div class="maggy-section">
+        <h3><?= $escaper->escapeHtml(__('Daily Trend')) ?></h3>
+        <?php if (!empty($dailyTrend)): ?>
+            <?php
+            $trendCount = count($dailyTrend);
+            $maxRequests = max(array_column($dailyTrend, 'requests'));
+            $maxRequests = $maxRequests > 0 ? $maxRequests : 1;
+            $svgW = 800;
+            $svgH = 140;
+            $padL = 0;
+            $padR = 0;
+            $padT = 10;
+            $padB = 0;
+            $chartW = $svgW - $padL - $padR;
+            $chartH = $svgH - $padT - $padB;
+
+            $points = [];
+            foreach ($dailyTrend as $i => $day) {
+                $x = $trendCount > 1 ? $padL + ($i / ($trendCount - 1)) * $chartW : $padL + $chartW / 2;
+                $y = $padT + $chartH - (((int)$day['requests'] / $maxRequests) * $chartH);
+                $points[] = ['x' => round($x, 1), 'y' => round($y, 1), 'day' => $day];
+            }
+
+            // Build smooth cubic bezier spline
+            $n = count($points);
+            $linePath = 'M' . $points[0]['x'] . ',' . $points[0]['y'];
+            if ($n > 2) {
+                $tension = 0.3;
+                for ($i = 0; $i < $n - 1; $i++) {
+                    $p0 = $points[max(0, $i - 1)];
+                    $p1 = $points[$i];
+                    $p2 = $points[$i + 1];
+                    $p3 = $points[min($n - 1, $i + 2)];
+                    $cp1x = round($p1['x'] + ($p2['x'] - $p0['x']) * $tension, 1);
+                    $cp1y = round($p1['y'] + ($p2['y'] - $p0['y']) * $tension, 1);
+                    $cp2x = round($p2['x'] - ($p3['x'] - $p1['x']) * $tension, 1);
+                    $cp2y = round($p2['y'] - ($p3['y'] - $p1['y']) * $tension, 1);
+                    $linePath .= ' C' . $cp1x . ',' . $cp1y . ' ' . $cp2x . ',' . $cp2y . ' ' . $p2['x'] . ',' . $p2['y'];
+                }
+            } elseif ($n === 2) {
+                $linePath .= ' L' . $points[1]['x'] . ',' . $points[1]['y'];
+            }
+            $areaPath = $linePath . ' L' . end($points)['x'] . ',' . ($padT + $chartH) . ' L' . $points[0]['x'] . ',' . ($padT + $chartH) . ' Z';
+            ?>
+            <div class="maggy-chart-area">
+                <svg viewBox="0 0 <?= $svgW ?> <?= $svgH ?>" preserveAspectRatio="none">
+                    <?php for ($g = 0; $g <= 4; $g++): ?>
+                        <line class="maggy-chart-area-grid" x1="<?= $padL ?>" y1="<?= $padT + ($chartH / 4) * $g ?>" x2="<?= $svgW - $padR ?>" y2="<?= $padT + ($chartH / 4) * $g ?>" />
+                    <?php endfor; ?>
+                    <path class="maggy-chart-area-fill" d="<?= $areaPath ?>" />
+                    <path class="maggy-chart-area-line" d="<?= $linePath ?>" />
+                    <?php foreach ($points as $i => $p): ?>
+                        <circle class="maggy-chart-area-dot" cx="<?= $p['x'] ?>" cy="<?= $p['y'] ?>" r="3" data-tt="mm-tt-<?= $i ?>"
+                                onmouseenter="document.getElementById(this.dataset.tt).classList.add('is-visible');this.setAttribute('r','5')"
+                                onmouseleave="document.getElementById(this.dataset.tt).classList.remove('is-visible');this.setAttribute('r','3')" />
+                    <?php endforeach; ?>
+                </svg>
+                <?php foreach ($points as $i => $p): ?>
+                    <div class="maggy-chart-area-tooltip" style="left:<?= ($p['x'] / $svgW) * 100 ?>%;top:<?= ($p['y'] / $svgH) * 100 ?>%;" id="mm-tt-<?= $i ?>">
+                        <?= $escaper->escapeHtml($p['day']['date']) ?>: <?= (int)$p['day']['requests'] ?> req, <?= $escaper->escapeHtml($block->formatTokens((int)$p['day']['tokens'])) ?> tokens
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="maggy-chart-labels">
+                <?php foreach ($dailyTrend as $i => $day):
+                    $showLabel = ($trendCount <= 7) || ($i === 0 || $i === $trendCount - 1 || $i % 7 === 0);
+                ?>
+                    <span><?= $showLabel ? $escaper->escapeHtml(substr($day['date'] ?? '', 5)) : '' ?></span>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="maggy-empty"><?= $escaper->escapeHtml(__('No usage data yet.')) ?></div>
+        <?php endif; ?>
+    </div>
+
+    <div class="maggy-grid-2">
+        <div class="maggy-section">
+            <h3><?= $escaper->escapeHtml(__('Top Users')) ?></h3>
+            <?php if (!empty($userStats)): ?>
+                <table class="maggy-table">
+                    <thead>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('User')) ?></th>
+                        <th class="maggy-right"><?= $escaper->escapeHtml(__('Requests')) ?></th>
+                        <th class="maggy-right"><?= $escaper->escapeHtml(__('Tokens')) ?></th>
+                        <th class="maggy-right"><?= $escaper->escapeHtml(__('Est. Cost')) ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($userStats as $user): ?>
+                        <tr>
+                            <td>
+                                <?= $escaper->escapeHtml($user['username']) ?>
+                                <?php if (!empty(trim($user['name']))): ?>
+                                    <br><small style="color:#999"><?= $escaper->escapeHtml($user['name']) ?></small>
+                                <?php endif; ?>
+                            </td>
+                            <td class="maggy-right"><?= (int)$user['request_count'] ?></td>
+                            <td class="maggy-right"><?= $escaper->escapeHtml($block->formatTokens($user['total_tokens'])) ?></td>
+                            <td class="maggy-right"><?= $escaper->escapeHtml($block->formatCost($user['estimated_cost'])) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div class="maggy-empty"><?= $escaper->escapeHtml(__('No user data for this period.')) ?></div>
+            <?php endif; ?>
+        </div>
+
+        <div class="maggy-section">
+            <h3><?= $escaper->escapeHtml(__('Popular Skills')) ?></h3>
+            <?php if (!empty($skillStats)): ?>
+                <table class="maggy-table">
+                    <thead>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Skill')) ?></th>
+                        <th class="maggy-right"><?= $escaper->escapeHtml(__('Usage Count')) ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($skillStats as $skill): ?>
+                        <tr>
+                            <td><?= $escaper->escapeHtml($skill['name']) ?></td>
+                            <td class="maggy-right"><?= (int)$skill['usage_count'] ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div class="maggy-empty"><?= $escaper->escapeHtml(__('No skill usage data for this period.')) ?></div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,26 @@
+{
+    "name": "maggy-assistant/magento2-base",
+    "description": "AI-powered admin assistant for Magento 2 — chat with your store using Claude or OpenAI",
+    "type": "magento2-module",
+    "version": "1.0.0",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1",
+        "magento/framework": ">=103.0.0",
+        "magento/module-backend": "*",
+        "magento/module-sales": "*",
+        "magento/module-catalog": "*",
+        "magento/module-customer": "*",
+        "magento/module-cms": "*",
+        "magento/module-config": "*",
+        "magento/module-store": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "MaggyAssistant\\Base\\": ""
+        }
+    }
+}

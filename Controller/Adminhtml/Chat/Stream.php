@@ -1,0 +1,232 @@
+<?php
+/**
+ * Copyright © Maggy Assistant
+ */
+declare(strict_types=1);
+
+namespace MaggyAssistant\Base\Controller\Adminhtml\Chat;
+
+use Magento\Backend\App\Action;
+use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\App\CsrfAwareActionInterface;
+use Magento\Framework\App\Request\InvalidRequestException;
+use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\Response\Http as HttpResponse;
+use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Serialize\Serializer\Json;
+use MaggyAssistant\Base\Api\ChatServiceInterface;
+use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
+use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
+use MaggyAssistant\Base\Logger\DebugLogger;
+use MaggyAssistant\Base\Logger\ErrorLogger;
+
+class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
+{
+    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_read';
+
+    public function __construct(
+        Context $context,
+        private readonly ChatServiceInterface $chatService,
+        private readonly ConversationRepositoryInterface $conversationRepository,
+        private readonly ConfigRepository $configRepository,
+        private readonly Json $json,
+        private readonly ErrorLogger $errorLogger,
+        private readonly DebugLogger $debugLogger
+    ) {
+        parent::__construct($context);
+    }
+
+    public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
+    {
+        return null;
+    }
+
+    public function validateForCsrf(RequestInterface $request): ?bool
+    {
+        return true;
+    }
+
+    /**
+     * Skip admin secret key validation for AJAX streaming endpoint
+     */
+    public function _processUrlKeys(): bool
+    {
+        return true;
+    }
+
+    public function execute(): ResultInterface|HttpResponse
+    {
+        /** @var HttpResponse $response */
+        $response = $this->getResponse();
+        $response->setHeader('Content-Type', 'text/event-stream', true);
+        $response->setHeader('Cache-Control', 'no-cache', true);
+        $response->setHeader('Connection', 'keep-alive', true);
+        $response->setHeader('X-Accel-Buffering', 'no', true);
+        $response->sendHeaders();
+
+        // Disable all output buffering for SSE
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        try {
+            $rawBody = $this->getRequest()->getContent();
+            $this->debugLogger->addLog('Stream Request', ['raw_body' => $rawBody]);
+
+            $postData = $this->json->unserialize($rawBody);
+
+            $message = $postData['message'] ?? '';
+            $conversationId = !empty($postData['conversation_id']) ? (int)$postData['conversation_id'] : null;
+
+            if (!$message) {
+                $this->sendSse('error', ['error' => 'Message is required']);
+                $this->sendSse('done', []);
+                $this->terminateResponse();
+            }
+
+            $user = $this->_auth->getUser();
+            if (!$user) {
+                $this->debugLogger->addLog('Stream', 'No admin user in session');
+                $this->sendSse('error', ['error' => 'Admin user session not found']);
+                $this->sendSse('done', []);
+                $this->terminateResponse();
+            }
+
+            if (!$this->configRepository->isEnabled()) {
+                $this->sendSse('error', ['error' => 'The assistant is currently disabled. Enable it in Stores > Configuration > Maggy Assistant.']);
+                $this->sendSse('done', []);
+                $this->terminateResponse();
+            }
+
+            if (!$this->configRepository->getApiKey()) {
+                $provider = ucfirst($this->configRepository->getProvider());
+                $this->sendSse('error', ['error' => 'No API key configured. Add your ' . $provider . ' API key in Stores > Configuration > Maggy Assistant > API Settings.']);
+                $this->sendSse('done', []);
+                $this->terminateResponse();
+            }
+
+            $adminUserId = (int)$user->getId();
+            $adminName = $user->getFirstName() ?: $user->getUserName();
+
+            if (!$conversationId) {
+                $title = mb_substr($message, 0, 50);
+                $conversationId = $this->conversationRepository->create($adminUserId, $title);
+            }
+
+            $this->conversationRepository->addMessage($conversationId, 'user', $message);
+
+            $messages = $this->conversationRepository->getMessages($conversationId);
+            $formattedMessages = [];
+
+            // Collect all tool response IDs to validate tool_call chains
+            $toolResponseIds = [];
+            foreach ($messages as $msg) {
+                if (($msg['role'] ?? '') === 'tool' && !empty($msg['tool_call_id'])) {
+                    $toolResponseIds[$msg['tool_call_id']] = true;
+                }
+            }
+
+            foreach ($messages as $msg) {
+                $entry = ['role' => $msg['role'], 'content' => $msg['content'] ?? ''];
+                if (!empty($msg['tool_calls'])) {
+                    $tc = $msg['tool_calls'];
+                    if (is_string($tc)) {
+                        try {
+                            $tc = json_decode($tc, true, 512, JSON_THROW_ON_ERROR);
+                        } catch (\Throwable $e) {
+                            $tc = [];
+                        }
+                    }
+                    // Only include tool_calls if all responses exist (prevents API errors)
+                    $allResolved = true;
+                    foreach ($tc as $call) {
+                        if (!isset($toolResponseIds[$call['id'] ?? ''])) {
+                            $allResolved = false;
+                            break;
+                        }
+                    }
+                    if ($allResolved && !empty($tc)) {
+                        $entry['tool_calls'] = $tc;
+                    }
+                }
+                if (!empty($msg['tool_call_id'])) {
+                    $entry['tool_call_id'] = $msg['tool_call_id'];
+                }
+                $formattedMessages[] = $entry;
+            }
+
+            $this->sendSse('conversation', [
+                'conversation_id' => $conversationId,
+                'admin_user' => $adminName,
+            ]);
+
+            $this->debugLogger->addLog('Stream', [
+                'conversation_id' => $conversationId,
+                'message_count' => count($formattedMessages),
+                'admin_user' => $adminName,
+            ]);
+
+            $result = $this->chatService->processMessageStreaming(
+                $formattedMessages,
+                function (string $type, array $data) {
+                    $this->sendSse($type, $data);
+                },
+                $conversationId,
+                $adminUserId
+            );
+
+            $this->debugLogger->addLog('Stream Result', [
+                'content_length' => strlen($result['content'] ?? ''),
+                'tool_calls_count' => count($result['tool_calls'] ?? []),
+            ]);
+
+            $content = $result['content'] ?? '';
+            $pendingConfirmation = !empty($result['pending_confirmation']);
+
+            $messageId = $this->conversationRepository->addMessage(
+                $conversationId,
+                'assistant',
+                $content,
+                $result['tool_calls'] ?? null,
+                $pendingConfirmation
+            );
+
+            $this->sendSse('done', [
+                'message_id' => $messageId,
+                'conversation_id' => $conversationId,
+                'pending_confirmation' => $pendingConfirmation,
+            ], true);
+        } catch (\Throwable $e) {
+            $this->errorLogger->addLog('Stream Controller', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->sendSse('error', ['error' => $e->getMessage()]);
+            $this->sendSse('done', [], true);
+        }
+
+        $this->terminateResponse();
+    }
+
+    private function sendSse(string $event, array $data, bool $pad = false): void
+    {
+        // phpcs:ignore Magento2.Security.LanguageConstruct.DirectOutput
+        $payload = "event: {$event}\ndata: " . json_encode($data) . "\n\n";
+        if ($pad) {
+            // Add SSE comment padding to push data through network/proxy buffers (4KB)
+            $payload .= str_repeat(": \n", max(0, (int)ceil((4096 - strlen($payload)) / 3)));
+        }
+        echo $payload;
+        flush();
+    }
+
+    /**
+     * Terminate response to prevent Magento from sending its own HTML response.
+     * SSE requires direct output, Magento's response object would override our headers.
+     *
+     * @SuppressWarnings(PHPMD.ExitExpression)
+     */
+    private function terminateResponse(): never
+    {
+        // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
+        exit(0);
+    }
+}

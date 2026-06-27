@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+
+    <table name="maggy_conversation" resource="default" engine="innodb" comment="Admin Assistant Conversations">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="admin_user_id" unsigned="true" nullable="false" comment="Admin User ID"/>
+        <column xsi:type="varchar" name="title" nullable="false" length="255" default="New Chat" comment="Conversation Title"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="MAGGY_CONVERSATION_ADMIN_USER_ID" indexType="btree">
+            <column name="admin_user_id"/>
+        </index>
+    </table>
+
+    <table name="maggy_message" resource="default" engine="innodb" comment="Admin Assistant Messages">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="conversation_id" unsigned="true" nullable="false" comment="Conversation ID"/>
+        <column xsi:type="varchar" name="role" nullable="false" length="20" comment="Role: user, assistant, system, tool"/>
+        <column xsi:type="mediumtext" name="content" nullable="true" comment="Message Content"/>
+        <column xsi:type="mediumtext" name="tool_calls" nullable="true" comment="Tool Calls JSON"/>
+        <column xsi:type="varchar" name="tool_call_id" nullable="true" length="100" comment="Tool Call ID for tool role messages"/>
+        <column xsi:type="boolean" name="pending_confirmation" nullable="false" default="false" comment="Pending Confirmation"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="MAGGY_MSG_CONV_ID" table="maggy_message" column="conversation_id" referenceTable="maggy_conversation" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="MAGGY_MESSAGE_CONVERSATION_ID" indexType="btree">
+            <column name="conversation_id"/>
+        </index>
+        <index referenceId="MAGGY_MESSAGE_ROLE" indexType="btree">
+            <column name="role"/>
+        </index>
+    </table>
+
+    <table name="maggy_skill_permission" resource="default" engine="innodb" comment="Admin Assistant Skill Permissions">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="admin_user_id" unsigned="true" nullable="false" comment="Admin User ID"/>
+        <column xsi:type="varchar" name="skill_name" nullable="false" length="100" comment="Skill Name"/>
+        <column xsi:type="varchar" name="permission" nullable="false" length="20" default="read" comment="Permission: read, write, disabled"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="MAGGY_SKILL_PERM_USER_SKILL">
+            <column name="admin_user_id"/>
+            <column name="skill_name"/>
+        </constraint>
+        <index referenceId="MAGGY_SKILL_PERM_ADMIN_USER_ID" indexType="btree">
+            <column name="admin_user_id"/>
+        </index>
+    </table>
+
+    <table name="maggy_usage_log" resource="default" engine="innodb" comment="Admin Assistant Usage Log">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="admin_user_id" unsigned="true" nullable="false" comment="Admin User ID"/>
+        <column xsi:type="int" name="conversation_id" unsigned="true" nullable="true" comment="Conversation ID"/>
+        <column xsi:type="varchar" name="provider" nullable="false" length="20" comment="AI Provider"/>
+        <column xsi:type="varchar" name="model" nullable="false" length="100" comment="Model Name"/>
+        <column xsi:type="int" name="input_tokens" unsigned="true" nullable="false" default="0" comment="Input Tokens"/>
+        <column xsi:type="int" name="output_tokens" unsigned="true" nullable="false" default="0" comment="Output Tokens"/>
+        <column xsi:type="int" name="total_tokens" unsigned="true" nullable="false" default="0" comment="Total Tokens"/>
+        <column xsi:type="varchar" name="skill_names" nullable="true" length="255" comment="Comma-separated skill names"/>
+        <column xsi:type="mediumtext" name="request_payload" nullable="true" comment="API Request Payload JSON"/>
+        <column xsi:type="mediumtext" name="response_payload" nullable="true" comment="API Response Payload JSON"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="MAGGY_USAGE_LOG_ADMIN_USER_ID" indexType="btree">
+            <column name="admin_user_id"/>
+        </index>
+        <index referenceId="MAGGY_USAGE_LOG_CREATED_AT" indexType="btree">
+            <column name="created_at"/>
+        </index>
+        <index referenceId="MAGGY_USAGE_LOG_PROVIDER" indexType="btree">
+            <column name="provider"/>
+        </index>
+    </table>
+
+</schema>

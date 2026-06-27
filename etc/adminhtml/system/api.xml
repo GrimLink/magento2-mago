@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="api" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>API Settings</label>
+        <attribute type="expanded">1</attribute>
+        <field id="provider" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+            <label>AI Provider</label>
+            <source_model>MaggyAssistant\Base\Model\Config\Source\Provider</source_model>
+        </field>
+        <field id="claude_api_key" translate="label comment" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Claude API Key</label>
+            <comment>Your Anthropic API key</comment>
+            <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+            <depends>
+                <field id="maggy/api/provider">claude</field>
+            </depends>
+        </field>
+        <field id="claude_model" translate="label" type="select" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+            <label>Claude Model</label>
+            <source_model>MaggyAssistant\Base\Model\Config\Source\ClaudeModel</source_model>
+            <depends>
+                <field id="maggy/api/provider">claude</field>
+            </depends>
+        </field>
+        <field id="openai_api_key" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>OpenAI API Key</label>
+            <comment>Your OpenAI API key</comment>
+            <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+            <depends>
+                <field id="maggy/api/provider">openai</field>
+            </depends>
+        </field>
+        <field id="openai_model" translate="label" type="select" sortOrder="35" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+            <label>OpenAI Model</label>
+            <source_model>MaggyAssistant\Base\Model\Config\Source\OpenAiModel</source_model>
+            <depends>
+                <field id="maggy/api/provider">openai</field>
+            </depends>
+        </field>
+        <field id="max_tokens" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Max Tokens</label>
+            <comment>Maximum tokens per response (default: 4096)</comment>
+            <validate>validate-digits</validate>
+        </field>
+        <field id="temperature" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Temperature</label>
+            <comment>Controls randomness. 0 = deterministic, 1 = creative (default: 0.7)</comment>
+        </field>
+        <field id="streaming" translate="label comment" type="select" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Enable Streaming</label>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <comment>Stream AI responses in real-time via SSE</comment>
+        </field>
+        <field id="internal_url" translate="label comment" type="text" sortOrder="90" showInDefault="1" showInWebsite="0" showInStore="0">
+            <label>Internal API URL</label>
+            <comment><![CDATA[Leave empty to use store base URL. For Docker setups, enter the nginx container URL (e.g. https://nginx:443). Used for internal REST API calls.]]></comment>
+            <frontend_model>MaggyAssistant\Base\Block\Adminhtml\System\Config\DetectUrl</frontend_model>
+        </field>
+    </group>
+</include>

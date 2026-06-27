@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <maggy>
+            <general>
+                <enabled>0</enabled>
+            </general>
+            <api>
+                <provider>claude</provider>
+                <claude_model>claude-sonnet-4-20250514</claude_model>
+                <openai_model>gpt-4o</openai_model>
+                <max_tokens>4096</max_tokens>
+                <temperature>0.7</temperature>
+                <streaming>1</streaming>
+            </api>
+            <chat>
+                <system_prompt><![CDATA[]]></system_prompt>
+                <max_tool_iterations>10</max_tool_iterations>
+                <assistant_name>Maggy</assistant_name>
+                <accent_color>#E8710A</accent_color>
+                <text_color>#FFFFFF</text_color>
+            </chat>
+            <debug>
+                <debug>0</debug>
+            </debug>
+        </maggy>
+    </default>
+</config>

@@ -1,0 +1,64 @@
+<?php
+/**
+ * Copyright © Maggy Assistant
+ */
+
+/** @var \MaggyAssistant\Base\Block\Adminhtml\Skills $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+$skills = $block->getSkills();
+?>
+
+<style>
+    .maggy-skills { width: 100%; }
+    .maggy-skills h2 { margin: 0 0 20px; font-size: 20px; color: #333; }
+    .maggy-skills-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; overflow: hidden; }
+    .maggy-skills-table th { text-align: left; padding: 12px 16px; border-bottom: 2px solid #e3e3e3; font-size: 13px; color: #666; font-weight: 600; background: #f9f9f9; }
+    .maggy-skills-table td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333; vertical-align: top; }
+    .maggy-skills-table tr:hover td { background: #f8f9fa; }
+    .maggy-skill-name { font-weight: 600; }
+    .maggy-skill-desc { color: #666; font-size: 12px; margin-top: 2px; }
+    .maggy-skill-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+    .maggy-skill-badge--read { background: #e8f5e9; color: #2e7d32; }
+    .maggy-skill-badge--write { background: #fff3e0; color: #e65100; }
+    .maggy-skill-category { color: #999; font-size: 12px; }
+    .maggy-empty { text-align: center; color: #aaa; padding: 40px 0; font-size: 14px; }
+</style>
+
+<div class="maggy-skills">
+    <h2><?= $escaper->escapeHtml(__('Skills & Permissions')) ?></h2>
+
+    <?php if (!empty($skills)): ?>
+        <table class="maggy-skills-table">
+            <thead>
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Skill')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Category')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Type')) ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($skills as $skill): ?>
+                    <tr>
+                        <td>
+                            <div class="maggy-skill-name"><?= $escaper->escapeHtml($skill['name']) ?></div>
+                            <div class="maggy-skill-desc"><?= $escaper->escapeHtml($skill['description']) ?></div>
+                        </td>
+                        <td>
+                            <span class="maggy-skill-category"><?= $escaper->escapeHtml($skill['category']) ?></span>
+                        </td>
+                        <td>
+                            <?php if ($skill['is_read_only']): ?>
+                                <span class="maggy-skill-badge maggy-skill-badge--read"><?= $escaper->escapeHtml(__('Read')) ?></span>
+                            <?php else: ?>
+                                <span class="maggy-skill-badge maggy-skill-badge--write"><?= $escaper->escapeHtml(__('Write')) ?></span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <div class="maggy-empty"><?= $escaper->escapeHtml(__('No skills registered.')) ?></div>
+    <?php endif; ?>
+</div>

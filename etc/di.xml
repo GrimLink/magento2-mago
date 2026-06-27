@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/di.xsd">
+
+    <!-- Config Repository -->
+    <preference for="MaggyAssistant\Base\Api\Config\RepositoryInterface" type="MaggyAssistant\Base\Model\Config\Repository"/>
+
+    <!-- Chat Service -->
+    <preference for="MaggyAssistant\Base\Api\ChatServiceInterface" type="MaggyAssistant\Base\Service\Ai\ChatService"/>
+
+    <!-- Conversation Repository -->
+    <preference for="MaggyAssistant\Base\Api\ConversationRepositoryInterface" type="MaggyAssistant\Base\Model\Conversation\Repository"/>
+
+    <!-- WebApi -->
+    <preference for="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" type="MaggyAssistant\Base\Model\WebApi\ChatManagement"/>
+
+    <!-- AI Provider Factory: inject providers map -->
+    <type name="MaggyAssistant\Base\Model\Ai\ProviderFactory">
+        <arguments>
+            <argument name="providers" xsi:type="array">
+                <item name="claude" xsi:type="object">MaggyAssistant\Base\Model\Ai\Provider\Claude</item>
+                <item name="openai" xsi:type="object">MaggyAssistant\Base\Model\Ai\Provider\OpenAi</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Tool Registry: inject all tools -->
+    <type name="MaggyAssistant\Base\Service\Tool\ToolRegistry">
+        <arguments>
+            <argument name="tools" xsi:type="array">
+                <item name="config_reader" xsi:type="object">MaggyAssistant\Base\Service\Skills\Configuration\ConfigReader</item>
+                <item name="config_writer" xsi:type="object">MaggyAssistant\Base\Service\Skills\Configuration\ConfigWriter</item>
+                <item name="cache_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Configuration\CacheManager</item>
+                <item name="indexer_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Configuration\IndexerManager</item>
+                <item name="sales_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData</item>
+                <item name="product_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\ProductData</item>
+                <item name="customer_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\CustomerData</item>
+                <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
+                <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
+                <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: SalesData -->
+    <type name="MaggyAssistant\Base\Service\Skills\Analytics\SalesData">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="revenue_summary" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData\RevenueAction</item>
+                <item name="top_products" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData\TopProductsAction</item>
+                <item name="top_refunded" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData\TopRefundedAction</item>
+                <item name="recent_orders" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData\RecentOrdersAction</item>
+                <item name="order_count" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData\OrderCountAction</item>
+                <item name="lookup_order" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData\LookupOrderAction</item>
+                <item name="search_orders" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData\SearchOrdersAction</item>
+                <item name="customer_orders" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\SalesData\CustomerOrdersAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: CustomerData -->
+    <type name="MaggyAssistant\Base\Service\Skills\Analytics\CustomerData">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="count" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\CustomerData\CountAction</item>
+                <item name="recent_signups" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\CustomerData\RecentSignupsAction</item>
+                <item name="top_spenders" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\CustomerData\TopSpendersAction</item>
+                <item name="lookup_customer" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\CustomerData\LookupCustomerAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: ProductData -->
+    <type name="MaggyAssistant\Base\Service\Skills\Analytics\ProductData">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="search" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\ProductData\SearchAction</item>
+                <item name="get_by_sku" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\ProductData\GetBySkuAction</item>
+                <item name="count" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\ProductData\CountAction</item>
+                <item name="low_stock" xsi:type="object">MaggyAssistant\Base\Service\Skills\Analytics\ProductData\LowStockAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: CmsData -->
+    <type name="MaggyAssistant\Base\Service\Skills\Content\CmsData">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="list_pages" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\ListPagesAction</item>
+                <item name="get_page" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\GetPageAction</item>
+                <item name="update_page" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\UpdatePageAction</item>
+                <item name="list_blocks" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\ListBlocksAction</item>
+                <item name="get_block" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\GetBlockAction</item>
+                <item name="update_block" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\UpdateBlockAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skills Grid DataProvider -->
+    <type name="MaggyAssistant\Base\Ui\DataProvider\SkillsDataProvider">
+        <arguments>
+            <argument name="name" xsi:type="string">maggy_skills_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">name</argument>
+            <argument name="requestFieldName" xsi:type="string">name</argument>
+        </arguments>
+    </type>
+
+    <!-- Conversations Grid DataProvider -->
+    <type name="MaggyAssistant\Base\Ui\DataProvider\ConversationsDataProvider">
+        <arguments>
+            <argument name="name" xsi:type="string">maggy_conversations_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">id</argument>
+        </arguments>
+    </type>
+
+    <!-- Debug Logger -->
+    <virtualType name="MaggyAssistantBaseDebugHandler" type="MaggyAssistant\Base\Logger\Handler\Debug"/>
+    <virtualType name="MaggyAssistantBaseDebugLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="name" xsi:type="string">MaggyAssistantBaseDebug</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">MaggyAssistantBaseDebugHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="MaggyAssistant\Base\Logger\DebugLogger">
+        <arguments>
+            <argument name="logger" xsi:type="object">MaggyAssistantBaseDebugLogger</argument>
+        </arguments>
+    </type>
+
+    <!-- Error Logger -->
+    <virtualType name="MaggyAssistantBaseErrorHandler" type="MaggyAssistant\Base\Logger\Handler\Error"/>
+    <virtualType name="MaggyAssistantBaseErrorLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="name" xsi:type="string">MaggyAssistantBaseError</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">MaggyAssistantBaseErrorHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="MaggyAssistant\Base\Logger\ErrorLogger">
+        <arguments>
+            <argument name="logger" xsi:type="object">MaggyAssistantBaseErrorLogger</argument>
+        </arguments>
+    </type>
+
+</config>

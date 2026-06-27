@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="debug" translate="label" sortOrder="100" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Debug &amp; Logging</label>
+        <attribute type="expanded">1</attribute>
+        <field id="debug" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Debug Mode</label>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <comment><![CDATA[Enable to write debug records (API requests, responses) into a debug log.<br/>Errors are always logged.]]></comment>
+        </field>
+    </group>
+</include>

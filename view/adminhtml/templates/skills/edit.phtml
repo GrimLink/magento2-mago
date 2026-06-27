@@ -1,0 +1,102 @@
+<?php
+/**
+ * Copyright © Maggy Assistant
+ */
+
+/** @var \MaggyAssistant\Base\Block\Adminhtml\SkillEdit $block */
+$skill = $block->getSkill();
+if (!$skill) {
+    return;
+}
+
+$users = $block->getAdminUsers();
+$permissions = $block->getCurrentPermissions();
+$saveUrl = $block->getSaveUrl();
+$backUrl = $block->getBackUrl();
+?>
+
+<div class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $block->escapeHtml(__('Skill Information')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <table class="admin__table-secondary">
+            <tr>
+                <th><?= $block->escapeHtml(__('Name')) ?></th>
+                <td><?= $block->escapeHtml($skill->getName()) ?></td>
+            </tr>
+            <tr>
+                <th><?= $block->escapeHtml(__('Description')) ?></th>
+                <td><?= $block->escapeHtml($skill->getDescription()) ?></td>
+            </tr>
+            <tr>
+                <th><?= $block->escapeHtml(__('Type')) ?></th>
+                <td><?= $block->escapeHtml($skill->isReadOnly() ? __('Read') : __('Write')) ?></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<form id="skill-permissions-form" action="<?= $block->escapeUrl($saveUrl) ?>" method="post">
+    <?= /* @noEscape */ $block->getBlockHtml('formkey') ?>
+    <input type="hidden" name="skill_name" value="<?= $block->escapeHtmlAttr($skill->getName()) ?>"/>
+
+    <div class="admin__page-section">
+        <div class="admin__page-section-title">
+            <span class="title"><?= $block->escapeHtml(__('User Permissions')) ?></span>
+        </div>
+        <div class="admin__page-section-content">
+            <?php if (empty($users)): ?>
+                <p><?= $block->escapeHtml(__('No active admin users found.')) ?></p>
+            <?php else: ?>
+                <table class="data-grid" style="width: auto; min-width: 500px;">
+                    <thead>
+                        <tr>
+                            <th class="data-grid-th"><?= $block->escapeHtml(__('User')) ?></th>
+                            <th class="data-grid-th"><?= $block->escapeHtml(__('Permission')) ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($users as $user): ?>
+                            <?php $userId = (int)$user['user_id']; ?>
+                            <?php $current = $permissions[$userId] ?? ''; ?>
+                            <tr>
+                                <td class="data-grid-td">
+                                    <?= $block->escapeHtml($user['username']) ?>
+                                    <span style="color:#999;margin-left:6px;">
+                                        (<?= $block->escapeHtml($user['firstname'] . ' ' . $user['lastname']) ?>)
+                                    </span>
+                                </td>
+                                <td class="data-grid-td">
+                                    <select name="permissions[<?= $userId ?>]" class="admin__control-select">
+                                        <option value=""<?= $current === '' ? ' selected' : '' ?>>
+                                            <?= $block->escapeHtml(__('Default (ACL)')) ?>
+                                        </option>
+                                        <option value="read"<?= $current === 'read' ? ' selected' : '' ?>>
+                                            <?= $block->escapeHtml(__('Read Only')) ?>
+                                        </option>
+                                        <option value="write"<?= $current === 'write' ? ' selected' : '' ?>>
+                                            <?= $block->escapeHtml(__('Read & Write')) ?>
+                                        </option>
+                                        <option value="disabled"<?= $current === 'disabled' ? ' selected' : '' ?>>
+                                            <?= $block->escapeHtml(__('Disabled')) ?>
+                                        </option>
+                                    </select>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="admin__page-actions" style="margin-top: 20px;">
+        <button type="button" class="action-default" onclick="window.location.href='<?= $block->escapeJs($backUrl) ?>'">
+            <span><?= $block->escapeHtml(__('Back')) ?></span>
+        </button>
+        <button type="submit" class="action-primary">
+            <span><?= $block->escapeHtml(__('Save Permissions')) ?></span>
+        </button>
+    </div>
+</form>

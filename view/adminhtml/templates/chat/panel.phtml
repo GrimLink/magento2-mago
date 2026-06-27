@@ -1,0 +1,93 @@
+<?php
+/** @var \MaggyAssistant\Base\Block\Adminhtml\ChatPanel $block */
+/** @var \Magento\Framework\Escaper $escaper */
+if (!$block->isVisible()) {
+    return;
+}
+$accentColorRaw = $block->getAccentColor();
+$textColorRaw = $block->getTextColor();
+// Sanitize: only allow valid hex colors
+$accentColor = preg_match('/^#[0-9a-fA-F]{6}$/', $accentColorRaw) ? $accentColorRaw : '#E8710A';
+$accentText = preg_match('/^#[0-9a-fA-F]{6}$/', $textColorRaw) ? $textColorRaw : '#FFFFFF';
+// Compute derived colors from accent
+$hex = ltrim($accentColor, '#');
+$r = hexdec(substr($hex, 0, 2));
+$g = hexdec(substr($hex, 2, 2));
+$b = hexdec(substr($hex, 4, 2));
+$accentColorLight = sprintf('#%02x%02x%02x', (int)(255 - (255 - $r) * 0.15), (int)(255 - (255 - $g) * 0.15), (int)(255 - (255 - $b) * 0.15));
+$accentRgb = "$r,$g,$b";
+// Hover: lighten dark colors, darken light colors
+$luminance = 0.2126 * ($r / 255) + 0.7152 * ($g / 255) + 0.0722 * ($b / 255);
+if ($luminance < 0.3) {
+    $accentColorHover = sprintf('#%02x%02x%02x', min(255, (int)($r + (255 - $r) * 0.25)), min(255, (int)($g + (255 - $g) * 0.25)), min(255, (int)($b + (255 - $b) * 0.25)));
+} else {
+    $accentColorHover = sprintf('#%02x%02x%02x', (int)($r * 0.8), (int)($g * 0.8), (int)($b * 0.8));
+}
+?>
+
+<style>
+:root {
+    --maggy-accent: <?= $accentColor ?>;
+    --maggy-accent-hover: <?= $accentColorHover ?>;
+    --maggy-accent-light: <?= $accentColorLight ?>;
+    --maggy-accent-rgb: <?= $accentRgb ?>;
+    --maggy-accent-text: <?= $accentText ?>;
+    --maggy-panel-width: 360px;
+}
+</style>
+
+<button type="button" id="maggy-toggle" class="maggy-toggle-tab" title="Open Admin Assistant">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <?= $escaper->escapeHtml($block->getAssistantName()) ?>
+</button>
+
+<div id="maggy-chat" class="maggy-chat-panel">
+    <div class="maggy-header">
+        <div class="maggy-header-left">
+            <div class="maggy-mascot">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="7" width="18" height="13" rx="3"/>
+                    <circle cx="9" cy="14" r="1.5" fill="currentColor" stroke="none"/>
+                    <circle cx="15" cy="14" r="1.5" fill="currentColor" stroke="none"/>
+                    <path d="M9 3v4M15 3v4"/>
+                    <path d="M1 12v4M23 12v4"/>
+                </svg>
+            </div>
+            <span class="maggy-title"><?= $escaper->escapeHtml($block->getAssistantName()) ?></span>
+        </div>
+        <div class="maggy-header-actions">
+            <button type="button" id="maggy-history" class="maggy-btn-icon" title="Chat History">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </button>
+            <button type="button" id="maggy-new" class="maggy-btn-icon" title="New Chat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button type="button" id="maggy-close" class="maggy-btn-icon" title="Close">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+    </div>
+    <div id="maggy-history-list" class="maggy-history-list" style="display:none;"></div>
+    <div id="maggy-messages" class="maggy-messages">
+        <div id="maggy-loading" class="maggy-message is-assistant" style="display:none;">
+            <div class="maggy-message-role"><?= $escaper->escapeHtml($block->getAssistantName()) ?></div>
+            <div class="maggy-typing"><span></span><span></span><span></span></div>
+        </div>
+    </div>
+    <div id="maggy-input-area" class="maggy-input-wrapper">
+        <div id="maggy-slash-menu" class="maggy-slash-menu"></div>
+        <textarea id="maggy-input" class="maggy-input" placeholder="Type / for skills, or ask anything..." rows="1"></textarea>
+        <button type="button" id="maggy-send" class="maggy-send-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+    </div>
+</div>
+
+<script>
+window.MAGGY_CONFIG = <?= /* @noEscape */ $block->getJsConfig() ?>;
+window.MAGGY_CONFIG.adminUser = '<?= $escaper->escapeJs($block->getAdminFirstName()) ?>';
+window.MAGGY_CONFIG.assistantName = '<?= $escaper->escapeJs($block->getAssistantName()) ?>';
+window.MAGGY_CONFIG.formKey = '<?= $escaper->escapeJs($block->getFormKey()) ?>';
+window.MAGGY_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
+</script>
+<script src="<?= $escaper->escapeUrl($block->getViewFileUrl('MaggyAssistant_Base::js/chat-panel.js')) ?>"></script>
