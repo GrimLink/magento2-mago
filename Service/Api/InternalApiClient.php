@@ -185,7 +185,6 @@ class InternalApiClient
         $responseBody = curl_exec($ch);
         $statusCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($curlError) {
             $this->errorLogger->addLog('InternalAPI curl error', $curlError);

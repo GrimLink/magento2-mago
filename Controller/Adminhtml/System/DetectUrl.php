@@ -107,7 +107,6 @@ class DetectUrl extends Action implements HttpGetActionInterface
         curl_exec($ch);
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_errno($ch);
-        curl_close($ch);
 
         // Any HTTP response (even 403/404) means the host is reachable
         return $error === 0 && $httpCode > 0;
