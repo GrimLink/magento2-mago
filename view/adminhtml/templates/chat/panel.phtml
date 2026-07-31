@@ -91,10 +91,8 @@ window.MAGGY_CONFIG.formKey = '<?= $escaper->escapeJs($block->getFormKey()) ?>';
 window.MAGGY_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
 </script>
 <script>
-// Temporarily hide RequireJS define so marked.min.js loads as a global (UMD otherwise picks AMD)
-var __defineBak = window.define;
-window.define = undefined;
+require(['marked'], function(marked) {
+    window.marked = marked;
+    require(['MaggyAssistant_Base/js/chat-panel']);
+});
 </script>
-<script src="<?= $escaper->escapeUrl($block->getViewFileUrl('MaggyAssistant_Base::js/marked.min.js')) ?>"></script>
-<script>window.define = __defineBak;</script>
-<script src="<?= $escaper->escapeUrl($block->getViewFileUrl('MaggyAssistant_Base::js/chat-panel.js')) ?>"></script>
