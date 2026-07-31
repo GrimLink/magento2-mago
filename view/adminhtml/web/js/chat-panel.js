@@ -243,6 +243,7 @@
         clearMsgs();
         lastDateLabel = '';
         conversationId = id;
+        loading.style.display = '';
 
         var fd = new FormData();
         fd.append('form_key', formKey);
@@ -256,12 +257,25 @@
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            (data.messages || []).forEach(function(m) {
+            loading.style.display = 'none';
+            var loaded = data.messages || [];
+            if (!loaded.length) {
+                showGreeting();
+                return;
+            }
+            loaded.forEach(function(m) {
                 if (m.role === 'user' || m.role === 'assistant') {
                     addDateSep(m.created_at);
                     addMsg(m.role, renderMd(m.content || ''), m.created_at);
                 }
             });
+            saveState();
+        })
+        .catch(function() {
+            loading.style.display = 'none';
+            conversationId = null;
+            showGreeting();
+            saveState();
         });
     }
 
