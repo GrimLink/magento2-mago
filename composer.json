@@ -15,6 +15,9 @@
         "magento/module-config": "*",
         "magento/module-store": "*"
     },
+    "suggest": {
+        "maggy-assistant/magento2-issue-tracker": "Add-on for reporting issues to GitHub, Jira, and other project trackers"
+    },
     "autoload": {
         "files": [
             "registration.php"
