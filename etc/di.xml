@@ -37,6 +37,16 @@
                 <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
                 <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
                 <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+                <item name="product_debug" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: ProductDebug -->
+    <type name="MaggyAssistant\Base\Service\Skills\Debug\ProductDebug">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="diagnose" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug\DiagnoseAction</item>
             </argument>
         </arguments>
     </type>
