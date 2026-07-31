@@ -604,6 +604,37 @@ body.maggy-active .maggy-toggle-tab {
     }
 }
 
+// Full-size mode
+.maggy-chat-panel.is-fullsize {
+    width: 100vw;
+    box-shadow: none;
+
+    .maggy-messages {
+        max-width: 960px;
+        margin: 0 auto;
+        width: 100%;
+        padding: 24px 32px;
+    }
+
+    .maggy-message {
+        max-width: 100%;
+    }
+
+    .maggy-input-wrapper {
+        max-width: 960px;
+        margin: 0 auto;
+        width: 100%;
+    }
+}
+
+body.maggy-active.maggy-fullsize .page-wrapper {
+    display: none !important;
+}
+
+body.maggy-active.maggy-fullsize .maggy-toggle-tab {
+    display: none;
+}
+
 // Responsive - full width on small screens
 @media (max-width: 768px) {
     .maggy-chat-panel {

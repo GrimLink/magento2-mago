@@ -12,11 +12,13 @@
     var filteredSkills = [];
     var SS_KEY_OPEN = 'maggy_open';
     var SS_KEY_CONV = 'maggy_conv';
+    var SS_KEY_FULL = 'maggy_fullsize';
 
     function saveState() {
         try {
             sessionStorage.setItem(SS_KEY_OPEN, chat.classList.contains('is-open') ? '1' : '0');
             sessionStorage.setItem(SS_KEY_CONV, conversationId ? String(conversationId) : '');
+            sessionStorage.setItem(SS_KEY_FULL, chat.classList.contains('is-fullsize') ? '1' : '0');
         } catch(e) {}
     }
 
@@ -53,8 +55,11 @@
     }
 
     function closePanel() {
-        chat.classList.remove('is-open');
-        document.body.classList.remove('maggy-active');
+        chat.classList.remove('is-open', 'is-fullsize');
+        document.body.classList.remove('maggy-active', 'maggy-fullsize');
+        var expandBtn = qs('#maggy-expand');
+        expandBtn.title = 'Full size';
+        expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
         if (showingHistory) hideHistory();
         hideSlashMenu();
         saveState();
@@ -68,6 +73,19 @@
         }
     };
     qs('#maggy-close').onclick = closePanel;
+    qs('#maggy-expand').onclick = function() {
+        var isFullsize = chat.classList.toggle('is-fullsize');
+        document.body.classList.toggle('maggy-fullsize', isFullsize);
+        var expandBtn = qs('#maggy-expand');
+        if (isFullsize) {
+            expandBtn.title = 'Side panel';
+            expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        } else {
+            expandBtn.title = 'Full size';
+            expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        }
+        saveState();
+    };
     qs('#maggy-new').onclick = function() {
         if (showingHistory) hideHistory();
         clearMsgs();
@@ -651,12 +669,20 @@
     try {
         var wasOpen = sessionStorage.getItem(SS_KEY_OPEN) === '1';
         var savedConv = sessionStorage.getItem(SS_KEY_CONV);
+        var wasFullsize = sessionStorage.getItem(SS_KEY_FULL) === '1';
         if (wasOpen) {
             if (savedConv) {
                 conversationId = parseInt(savedConv, 10) || null;
                 if (conversationId) {
                     loadConversation(conversationId);
                 }
+            }
+            if (wasFullsize) {
+                chat.classList.add('is-fullsize');
+                document.body.classList.add('maggy-fullsize');
+                var expandBtn = qs('#maggy-expand');
+                expandBtn.title = 'Side panel';
+                expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
             }
             openPanel();
         }
