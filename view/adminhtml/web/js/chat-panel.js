@@ -382,6 +382,11 @@
         return div;
     }
 
+    function clearDoneStatuses(msgEl) {
+        var done = msgEl.querySelectorAll('.maggy-tool-status.is-done');
+        for (var i = 0; i < done.length; i++) done[i].remove();
+    }
+
     function updateToolStatus(msgEl, toolName, status, message) {
         if (status === 'running') {
             var el = document.createElement('div');
@@ -477,6 +482,7 @@
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        clearDoneStatuses(msg);
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='conversation') { conversationId=d.conversation_id; saveState(); }
@@ -612,6 +618,7 @@
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        clearDoneStatuses(msg);
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='tool_call') {

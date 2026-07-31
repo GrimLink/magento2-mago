@@ -189,7 +189,7 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
     private function sendSse(string $event, array $data, bool $pad = false): void
     {
         $payload = "event: {$event}\ndata: " . json_encode($data) . "\n\n";
-        if ($pad) {
+        if ($pad || $event === 'tool_status') {
             $payload .= str_repeat(": \n", max(0, (int)ceil((4096 - strlen($payload)) / 3)));
         }
         echo $payload;

@@ -232,7 +232,7 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
     {
         // phpcs:ignore Magento2.Security.LanguageConstruct.DirectOutput
         $payload = "event: {$event}\ndata: " . json_encode($data) . "\n\n";
-        if ($pad) {
+        if ($pad || $event === 'tool_status') {
             // Add SSE comment padding to push data through network/proxy buffers (4KB)
             $payload .= str_repeat(": \n", max(0, (int)ceil((4096 - strlen($payload)) / 3)));
         }
