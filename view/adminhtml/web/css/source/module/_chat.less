@@ -240,6 +240,65 @@ body.maggy-active .maggy-toggle-tab {
         margin: 8px 0 4px;
         font-size: 14px;
     }
+
+    table {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: max-content;
+        min-width: 100%;
+        margin: 0;
+        font-size: 12px;
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 6px;
+    }
+
+    .maggy-table-wrap {
+        display: block;
+        overflow-x: auto;
+        margin: 10px 0;
+        border-radius: 6px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    th, td {
+        border: none !important;
+        border-bottom: 1px solid #e8e8e8 !important;
+        border-right: 1px solid #e8e8e8 !important;
+        padding: 7px 12px !important;
+        text-align: left;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+        vertical-align: middle;
+
+        &:last-child {
+            border-right: none !important;
+        }
+    }
+
+    tr:last-child td {
+        border-bottom: none !important;
+    }
+
+    th {
+        background: rgba(var(--maggy-accent-rgb, 232, 113, 10), 0.12) !important;
+        font-weight: 600;
+        color: #333;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    tr:hover td {
+        background: rgba(var(--maggy-accent-rgb, 232, 113, 10), 0.04) !important;
+    }
+
+    tr:nth-child(even) td {
+        background: #f8f8f8 !important;
+    }
+
+    tr:nth-child(even):hover td {
+        background: rgba(var(--maggy-accent-rgb, 232, 113, 10), 0.06) !important;
+    }
 }
 
 // Link colors per message type

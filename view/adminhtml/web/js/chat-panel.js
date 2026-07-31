@@ -284,21 +284,42 @@
         });
     }
 
+    // Configure marked.js once if available
+    if (window.marked) {
+        var markedRenderer = new marked.Renderer();
+        markedRenderer.link = function(href, title, text) {
+            if (typeof href === 'object' && href !== null) { text = href.text; title = href.title; href = href.href; }
+            var isAdmin = href && (href.indexOf('/admin') !== -1 || href.charAt(0) === '/');
+            var target = isAdmin ? '_self' : '_blank';
+            var titleAttr = title ? ' title="' + title + '"' : '';
+            return '<a href="' + href + '" target="' + target + '" rel="noopener"' + titleAttr + '>' + text + '</a>';
+        };
+        markedRenderer.table = function(token) {
+            // Render using the default logic but wrap in a scrollable div
+            var html = marked.Renderer.prototype.table.call(this, token);
+            return '<div class="maggy-table-wrap">' + html + '</div>';
+        };
+        marked.use({ renderer: markedRenderer, gfm: true, breaks: true });
+    }
+
     function renderMd(t) {
         if (!t) return '';
+        // Use marked.js if available (loaded from CDN)
+        if (window.marked) {
+            return marked.parse(t);
+        }
+        // Fallback: simple regex-based renderer
         var h = esc(t);
         h = h.replace(/```(\w*)\n([\s\S]*?)```/g, function(m,l,c){ return '<pre><code>'+c.trim()+'</code></pre>'; });
         h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
         h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        // Markdown links [text](url) — allow http(s) and relative admin URLs
         h = h.replace(/\[([^\]]+)\]\(((?:https?:\/\/[^ )]+|\/[^ )]+))\)/g, function(m, text, url) {
             url = url.replace(/[\n\r]+/g, '');
             var isAdmin = url.indexOf('/admin') !== -1 || url.charAt(0) === '/';
             var target = isAdmin ? '_self' : '_blank';
             return '<a href="' + url + '" target="' + target + '" rel="noopener">' + text + '</a>';
         });
-        // Bare URLs — auto-link https://... that aren't already wrapped in an <a> tag
         h = h.replace(/(https?:\/\/[^ <\n]+)/g, function(m, url, offset) {
             var before = h.substring(Math.max(0, offset - 6), offset);
             if (before.indexOf('href=') !== -1 || before.indexOf('">') !== -1) return m;
