@@ -69,6 +69,7 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
         while (ob_get_level()) {
             ob_end_clean();
         }
+        ob_implicit_flush(true);
 
         try {
             $rawBody = $this->getRequest()->getContent();
@@ -234,7 +235,7 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
         $payload = "event: {$event}\ndata: " . json_encode($data) . "\n\n";
         if ($pad || $event === 'tool_status') {
             // Add SSE comment padding to push data through network/proxy buffers (4KB)
-            $payload .= str_repeat(": \n", max(0, (int)ceil((4096 - strlen($payload)) / 3)));
+            $payload .= str_repeat(": \n", max(0, (int)ceil((8192 - strlen($payload)) / 3)));
         }
         echo $payload;
         flush();
