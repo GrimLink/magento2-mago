@@ -350,6 +350,28 @@
         return div;
     }
 
+    function updateToolStatus(msgEl, toolName, status, message) {
+        if (status === 'running') {
+            var el = document.createElement('div');
+            el.className = 'maggy-tool-status';
+            el.setAttribute('data-tool', toolName);
+            el.innerHTML = '<span class="maggy-tool-status-spinner"></span><span class="maggy-tool-status-text">' + esc(message || ('Running ' + toolName + '...')) + '</span>';
+            var contentEl = msgEl.querySelector('.maggy-message-content');
+            contentEl.appendChild(el);
+            msgs.scrollTop = msgs.scrollHeight;
+        } else if (status === 'done') {
+            var statusEl = msgEl.querySelector('.maggy-tool-status[data-tool="' + toolName + '"]:not(.is-done)');
+            if (statusEl) {
+                var spinner = statusEl.querySelector('.maggy-tool-status-spinner');
+                if (spinner) {
+                    spinner.className = 'maggy-tool-status-check';
+                    spinner.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                }
+                statusEl.classList.add('is-done');
+            }
+        }
+    }
+
     function addToolTag(msgEl, toolName) {
         var tags = msgEl.querySelector('.maggy-tool-tags');
         if (!tags) return;
@@ -429,6 +451,10 @@
                     else if (evt==='tool_call') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         addToolTag(msg, d.name);
+                    }
+                    else if (evt==='tool_status') {
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        updateToolStatus(msg, d.name, d.status, d.message);
                     }
                     else if (evt==='confirm') {
                         writeToolDetected = true;
@@ -559,6 +585,10 @@
                     else if (evt==='tool_call') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         addToolTag(msg, d.name);
+                    }
+                    else if (evt==='tool_status') {
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        updateToolStatus(msg, d.name, d.status, d.message);
                     }
                     else if (evt==='done') { busy=false; loading.style.display='none'; sendBtn.disabled=false; }
                     else if (evt==='error') {

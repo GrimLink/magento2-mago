@@ -38,7 +38,8 @@ interface ChatServiceInterface
      *
      * @param array $toolCalls
      * @param int|null $adminUserId
+     * @param callable|null $onChunk
      * @return array Results keyed by tool call ID
      */
-    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null): array;
+    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null, ?callable $onChunk = null): array;
 }

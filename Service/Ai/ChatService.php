@@ -141,7 +141,24 @@ class ChatService implements ChatServiceInterface
             ];
 
             foreach ($response['tool_calls'] as $toolCall) {
+                $statusMsg = $this->getToolStatusMessage(
+                    $toolCall['name'],
+                    $toolCall['input']['action'] ?? '',
+                    $toolCall['input'] ?? []
+                );
+                $onChunk('tool_status', [
+                    'name' => $toolCall['name'],
+                    'status' => 'running',
+                    'message' => $statusMsg,
+                ]);
+
                 $result = $this->executeTool($toolCall, $adminUserId);
+
+                $onChunk('tool_status', [
+                    'name' => $toolCall['name'],
+                    'status' => 'done',
+                ]);
+
                 $messages[] = [
                     'role' => 'tool',
                     'tool_call_id' => $toolCall['id'],
@@ -161,11 +178,31 @@ class ChatService implements ChatServiceInterface
      * @param array $toolCalls
      * @return array Results keyed by tool call ID
      */
-    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null): array
+    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null, ?callable $onChunk = null): array
     {
         $results = [];
         foreach ($toolCalls as $toolCall) {
+            if ($onChunk) {
+                $statusMsg = $this->getToolStatusMessage(
+                    $toolCall['name'],
+                    $toolCall['input']['action'] ?? '',
+                    $toolCall['input'] ?? []
+                );
+                $onChunk('tool_status', [
+                    'name' => $toolCall['name'],
+                    'status' => 'running',
+                    'message' => $statusMsg,
+                ]);
+            }
+
             $results[$toolCall['id']] = $this->executeTool($toolCall, $adminUserId);
+
+            if ($onChunk) {
+                $onChunk('tool_status', [
+                    'name' => $toolCall['name'],
+                    'status' => 'done',
+                ]);
+            }
         }
         return $results;
     }
@@ -264,6 +301,67 @@ class ChatService implements ChatServiceInterface
             }
         }
         $instructedTools[$toolName] = true;
+    }
+
+    private function getToolStatusMessage(string $toolName, string $action, array $input): string
+    {
+        $messages = [
+            'sales_data.revenue_summary' => 'Calculating revenue...',
+            'sales_data.recent_orders' => 'Fetching recent orders...',
+            'sales_data.lookup_order' => 'Looking up order...',
+            'sales_data.get_order_details' => 'Fetching order details...',
+            'product_data.search' => 'Searching products...',
+            'product_data.low_stock' => 'Checking low stock...',
+            'product_data.get_by_sku' => 'Fetching product...',
+            'customer_data.lookup_customer' => 'Searching for customer...',
+            'customer_data.recent_customers' => 'Fetching recent customers...',
+            'cms_data.create_page' => 'Creating CMS page...',
+            'cms_data.update_page' => 'Updating CMS page...',
+            'cms_data.list_pages' => 'Listing CMS pages...',
+            'cms_data.create_block' => 'Creating CMS block...',
+            'cms_data.update_block' => 'Updating CMS block...',
+            'cms_data.list_blocks' => 'Listing CMS blocks...',
+            'config_reader' => 'Reading configuration...',
+            'config_writer' => 'Updating configuration...',
+            'cache_manager.flush' => 'Flushing cache...',
+            'cache_manager.status' => 'Checking cache status...',
+            'indexer_manager.reindex' => 'Reindexing...',
+            'indexer_manager.status' => 'Checking indexer status...',
+            'order_manager.create_shipment' => 'Creating shipment...',
+            'order_manager.create_invoice' => 'Creating invoice...',
+            'order_manager.create_creditmemo' => 'Creating credit memo...',
+            'order_manager.add_comment' => 'Adding order comment...',
+            'order_manager.cancel' => 'Cancelling order...',
+            'order_manager.hold' => 'Holding order...',
+            'order_manager.unhold' => 'Removing hold from order...',
+        ];
+
+        $key = $action ? "{$toolName}.{$action}" : $toolName;
+
+        // Try exact match first
+        if (isset($messages[$key])) {
+            $msg = $messages[$key];
+
+            // Add context from input
+            if ($action === 'lookup_order' && !empty($input['order_number'])) {
+                return 'Looking up order #' . $input['order_number'] . '...';
+            }
+            if ($action === 'get_by_sku' && !empty($input['query'])) {
+                return 'Fetching product ' . $input['query'] . '...';
+            }
+            if ($action === 'lookup_customer' && !empty($input['search'])) {
+                return 'Searching for customer ' . $input['search'] . '...';
+            }
+
+            return $msg;
+        }
+
+        // Try tool-level match (no action)
+        if (isset($messages[$toolName])) {
+            return $messages[$toolName];
+        }
+
+        return 'Running ' . $toolName . '...';
     }
 
     private function prependSystemMessage(array $messages): array
