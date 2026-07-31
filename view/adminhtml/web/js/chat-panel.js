@@ -389,7 +389,7 @@
             el.setAttribute('data-tool', toolName);
             el.innerHTML = '<span class="maggy-tool-status-spinner"></span><span class="maggy-tool-status-text">' + esc(message || ('Running ' + toolName + '...')) + '</span>';
             var contentEl = msgEl.querySelector('.maggy-message-content');
-            contentEl.appendChild(el);
+            contentEl.after(el);
             msgs.scrollTop = msgs.scrollHeight;
         } else if (status === 'done') {
             var statusEl = msgEl.querySelector('.maggy-tool-status[data-tool="' + toolName + '"]:not(.is-done)');
