@@ -31,6 +31,7 @@ interface RepositoryInterface
     public const XML_PATH_TEXT_COLOR = 'maggy/chat/text_color';
     public const XML_PATH_ASSISTANT_NAME = 'maggy/chat/assistant_name';
     public const XML_PATH_INTERNAL_URL = 'maggy/api/internal_url';
+    public const XML_PATH_LANGUAGE = 'maggy/chat/language';
     /**
      * @return string
      */
@@ -122,6 +123,11 @@ interface RepositoryInterface
      * @return string
      */
     public function getAssistantName(): string;
+
+    /**
+     * @return string
+     */
+    public function getLanguage(): string;
 
     /**
      * @return string

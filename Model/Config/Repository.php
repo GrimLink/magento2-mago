@@ -79,7 +79,8 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
     public function getSystemPrompt(): string
     {
         $custom = $this->getStoreValue(self::XML_PATH_SYSTEM_PROMPT);
-        $base = 'You are a Magento store assistant with tools to take direct action. '
+        $base = 'Today is ' . date('Y-m-d') . '. '
+            . 'You are a Magento store assistant with tools to take direct action. '
             . 'IMPORTANT: Always USE your available tools to fulfill requests. Never tell the user to do something manually '
             . 'when you have a tool that can do it. '
             . 'NEVER ask the user for confirmation before using a tool. Just call the tool directly. '
@@ -90,7 +91,14 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
             . 'You ONLY help with Magento-related topics: store management, products, orders, customers, '
             . 'configuration, extensions, and troubleshooting. '
             . 'If a question is not related to Magento or e-commerce store management, politely decline. '
-            . 'Be concise and actionable. Respond in the same language as the user.';
+            . 'Be concise and actionable.';
+
+        $language = $this->getLanguage();
+        if ($language === 'auto') {
+            $base .= ' Respond in the same language as the user.';
+        } else {
+            $base .= ' IMPORTANT: You MUST always respond in ' . $language . ', regardless of what language the user writes in.';
+        }
 
         return $custom ? $base . "\n\n" . $custom : $base;
     }
@@ -113,6 +121,11 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
     public function getAssistantName(): string
     {
         return $this->getStoreValue(self::XML_PATH_ASSISTANT_NAME) ?: 'Maggy';
+    }
+
+    public function getLanguage(): string
+    {
+        return $this->getStoreValue(self::XML_PATH_LANGUAGE) ?: 'auto';
     }
 
     public function getInternalUrl(): string
