@@ -128,7 +128,9 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
             }
 
             foreach ($messages as $msg) {
-                $entry = ['role' => $msg['role'], 'content' => $msg['content'] ?? ''];
+                $role = $msg['role'] ?? 'user';
+                $content = $msg['content'] ?? '';
+
                 if (!empty($msg['tool_calls'])) {
                     $tc = $msg['tool_calls'];
                     if (is_string($tc)) {
@@ -147,12 +149,32 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
                         }
                     }
                     if ($allResolved && !empty($tc)) {
-                        $entry['tool_calls'] = $tc;
+                        $entry = ['role' => $role, 'content' => $content, 'tool_calls' => $tc];
+                    } else {
+                        // Tool calls without responses (rejected/abandoned confirmation) —
+                        // skip this message entirely if it has no text content
+                        if (empty(trim($content))) {
+                            continue;
+                        }
+                        $entry = ['role' => $role, 'content' => $content];
+                    }
+                } elseif ($role === 'tool') {
+                    // Only include tool responses if they have matching tool_calls already included
+                    $toolCallId = $msg['tool_call_id'] ?? '';
+                    if ($toolCallId && !isset($toolResponseIds[$toolCallId])) {
+                        continue;
+                    }
+                    $entry = ['role' => $role, 'content' => $content];
+                    if ($toolCallId) {
+                        $entry['tool_call_id'] = $toolCallId;
+                    }
+                } else {
+                    $entry = ['role' => $role, 'content' => $content];
+                    if (!empty($msg['tool_call_id'])) {
+                        $entry['tool_call_id'] = $msg['tool_call_id'];
                     }
                 }
-                if (!empty($msg['tool_call_id'])) {
-                    $entry['tool_call_id'] = $msg['tool_call_id'];
-                }
+
                 $formattedMessages[] = $entry;
             }
 
