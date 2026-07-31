@@ -72,12 +72,10 @@ class DeactivateRuleAction implements ActionInterface
 
         $ruleName = $rule['name'] ?? '';
 
-        // Deactivate by setting is_active to false
+        // Deactivate by updating the existing rule
+        $rule['is_active'] = false;
         $result = $this->apiClient->put('salesRules/' . $ruleId, [
-            'rule' => [
-                'rule_id' => $ruleId,
-                'is_active' => false,
-            ],
+            'rule' => $rule,
         ], $adminUserId);
 
         if (isset($result['error'])) {

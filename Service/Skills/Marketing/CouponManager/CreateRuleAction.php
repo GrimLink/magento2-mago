@@ -106,32 +106,40 @@ class CreateRuleAction implements ActionInterface
             default => 'by_percent',
         };
 
-        // Determine coupon type
-        $couponCode = $params['coupon_code'] ?? '';
+        // Determine coupon type and code
+        $couponCode = trim((string)($params['coupon_code'] ?? ''));
         $couponType = $couponCode ? 2 : 1; // 2 = specific coupon, 1 = no coupon
 
-        // Build website IDs - default to all
-        $websiteIds = $params['website_ids'] ?? null;
-        if ($websiteIds === null) {
+        // Build website IDs - default to all (excluding admin website 0)
+        $websiteIds = !empty($params['website_ids']) ? $params['website_ids'] : null;
+        if (!$websiteIds) {
             $websiteIds = $this->getAllWebsiteIds($adminUserId);
         }
+        $websiteIds = array_map('intval', array_values((array)$websiteIds));
 
         // Build customer group IDs - default to all
-        $customerGroupIds = $params['customer_group_ids'] ?? null;
-        if ($customerGroupIds === null) {
+        $customerGroupIds = !empty($params['customer_group_ids']) ? $params['customer_group_ids'] : null;
+        if (!$customerGroupIds) {
             $customerGroupIds = $this->getAllCustomerGroupIds($adminUserId);
         }
+        $customerGroupIds = array_map('intval', array_values((array)$customerGroupIds));
 
         $ruleData = [
             'rule' => [
                 'name' => $name,
+                'description' => $params['description'] ?? '',
                 'is_active' => true,
                 'simple_action' => $simpleAction,
                 'discount_amount' => $discountAmount,
+                'discount_qty' => 0,
+                'discount_step' => 0,
+                'apply_to_shipping' => false,
                 'coupon_type' => $couponType,
+                'use_auto_generation' => false,
                 'website_ids' => $websiteIds,
                 'customer_group_ids' => $customerGroupIds,
                 'stop_rules_processing' => false,
+                'sort_order' => 0,
             ],
         ];
 
@@ -140,7 +148,7 @@ class CreateRuleAction implements ActionInterface
         }
 
         if ($discountType === 'free_shipping') {
-            $ruleData['rule']['simple_free_shipping'] = 1;
+            $ruleData['rule']['simple_free_shipping'] = '1';
             $ruleData['rule']['discount_amount'] = 0;
         }
 
