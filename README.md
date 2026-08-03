@@ -11,6 +11,7 @@ AI-powered admin assistant — chat with your store using Claude or OpenAI.
 - **ACL-based permissions** — read/write access controlled per admin role
 - **Write confirmation** — destructive actions always require explicit user approval
 - **Multi-provider** — supports Claude (Anthropic) and OpenAI
+- **Documentation grounding** — answers admin how-to questions from Magento/Adobe Commerce docs, fetched into your database (optional)
 
 ## Requirements
 
@@ -51,8 +52,43 @@ Examples:
 | Store Configuration | `config_reader`, `config_writer`, `cache_manager`, `indexer_manager` | Read / Write |
 | Content Management | `cms_data`, `content_generator` | Read / Write |
 | Navigation | `admin_navigator` | Read |
+| Documentation | `docs_search` | Read |
 
 See [docs/skills-examples.md](docs/skills-examples.md) for example prompts per skill and [docs/skills-roadmap.md](docs/skills-roadmap.md) for the full roadmap of planned skills.
+
+## Documentation grounding
+
+When enabled, the assistant can answer "how do I…" questions from the official Magento admin documentation instead of guessing. The `docs_search` skill runs a MySQL FULLTEXT search over an indexed copy of the docs and cites the source page it used.
+
+### Configuration
+
+`Stores > Configuration > Maggy Assistant > Documentation`
+
+| Field | Config path | Default | Purpose |
+|---|---|---|---|
+| Enable documentation grounding | `maggy/docs/enabled` | `0` | Master switch; also gates the sync cron |
+| Source repository | `maggy/docs/source_repo` | `mage-os/mirror-commerce-admin.en` | GitHub `owner/repo` to index. Default is the MIT-licensed Mage-OS mirror of Adobe's Commerce Admin docs |
+| Source branch / commit | `maggy/docs/ref` | `main` | Branch or commit to index; pin to a commit for reproducibility |
+| Results per search | `maggy/docs/top_k` | `5` | Max doc pages returned per search |
+| Sync schedule | `maggy/docs/cron_expr` | `0 4 1 * *` (monthly) | Cron expression for the re-index job |
+
+### How the corpus is built
+
+A cron job (`maggy_docs` group, its own process) indexes the docs into the `maggy_doc` table (~5 MB). To index immediately instead of waiting for the cron:
+
+```bash
+bin/magento maggy:docs:index --force
+```
+
+Sync is cheap to run often because it is **change-detected by git tree SHA**: an unchanged source repo costs a single API call and skips re-fetching entirely. This is why the default schedule can safely be raised when you feed docs that update more often than the Mage-OS mirror. On a real change, every `help/**.md` is fetched (including `_includes/`, needed to resolve `{{$include}}` partials), Experience League markup is normalized to plain text, and the table is swapped in a single transaction — a failed sync keeps the previous corpus.
+
+### Why MySQL FULLTEXT (not embeddings)
+
+Retrieval uses a MySQL FULLTEXT index rather than vector embeddings so the feature works on any Magento install with **zero extra infrastructure** — no vector database, no embeddings service, and no dependency on a specific AI provider (Anthropic, for one, has no embeddings API). For a bounded, well-structured doc corpus this keyword search is accurate enough, and the assistant compensates for the lack of semantic matching by issuing multiple searches with different terms when the first result set is thin. Semantic/vector retrieval can be added later as an optional backend without changing the skill contract.
+
+### Custom docs
+
+The pipeline is source-repo agnostic: point `Source repository` at any public GitHub repo of Adobe Experience League-flavored (or plain) markdown to ground the assistant on your own documentation. Private repos and non-GitHub sources are on the roadmap.
 
 ## Extending with Custom Skills
 

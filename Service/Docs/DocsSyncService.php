@@ -54,13 +54,10 @@ class DocsSyncService
             $storedSha = (string)$this->flagManager->getFlagData(self::FLAG_SHA);
             $count = $this->docRepository->count();
 
-            // An identical git tree SHA guarantees identical content, so a matching SHA with a
-            // non-empty corpus means there is nothing to do — no time-based re-fetch needed.
             if (!$force && $sha !== '' && $sha === $storedSha && $count > 0) {
                 return ['skipped' => 'up-to-date', 'sha' => $sha, 'docs' => $count];
             }
 
-            // Fetch every help/**.md (including _includes, needed to resolve includes).
             $rawByPath = [];
             foreach ($tree['paths'] as $path) {
                 $content = $this->source->fetchRaw($repo, $ref, $path);

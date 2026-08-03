@@ -1,11 +1,6 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
     <group id="maggy_docs">
-        <!--
-            Schedule comes from maggy/docs/cron_expr (admin-configurable), defaulting to
-            monthly. A no-op sync costs one API call (git tree SHA change-detect), so raise
-            the frequency when you feed custom docs that update more often than the Mage-OS mirror.
-        -->
         <job name="maggy_docs_sync" instance="MaggyAssistant\Base\Cron\SyncDocs" method="execute">
             <config_path>maggy/docs/cron_expr</config_path>
         </job>

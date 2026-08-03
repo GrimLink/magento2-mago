@@ -41,7 +41,6 @@ class ExlMarkdownNormalizer
             }
         }
 
-        // Inline includes, resolving nested includes up to a small depth cap.
         for ($depth = 0; $depth < 3; $depth++) {
             $replaced = 0;
             $body = preg_replace_callback(
