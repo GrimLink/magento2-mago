@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Model\Config;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 class Repository extends System\BaseRepository implements ConfigRepositoryInterface
@@ -118,5 +119,27 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
     public function getInternalUrl(): string
     {
         return trim((string)$this->getStoreValue(self::XML_PATH_INTERNAL_URL));
+    }
+
+    public function isDocsEnabled(): bool
+    {
+        return $this->isSetFlag(self::XML_PATH_DOCS_ENABLED, null, ScopeConfigInterface::SCOPE_TYPE_DEFAULT);
+    }
+
+    public function getDocsSourceRepo(): string
+    {
+        $value = trim($this->getStoreValue(self::XML_PATH_DOCS_SOURCE_REPO, null, ScopeConfigInterface::SCOPE_TYPE_DEFAULT));
+        return $value !== '' ? $value : 'mage-os/mirror-commerce-admin.en';
+    }
+
+    public function getDocsRef(): string
+    {
+        $value = trim($this->getStoreValue(self::XML_PATH_DOCS_REF, null, ScopeConfigInterface::SCOPE_TYPE_DEFAULT));
+        return $value !== '' ? $value : 'main';
+    }
+
+    public function getDocsTopK(): int
+    {
+        return (int)($this->getStoreValue(self::XML_PATH_DOCS_TOP_K, null, ScopeConfigInterface::SCOPE_TYPE_DEFAULT) ?: 5);
     }
 }

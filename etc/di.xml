@@ -37,6 +37,26 @@
                 <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
                 <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
                 <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+                <item name="docs_search" xsi:type="object">MaggyAssistant\Base\Service\Skills\Docs\DocsSearch</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: DocsSearch -->
+    <type name="MaggyAssistant\Base\Service\Skills\Docs\DocsSearch">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="search" xsi:type="object">MaggyAssistant\Base\Service\Skills\Docs\DocsSearch\SearchAction</item>
+                <item name="get_doc" xsi:type="object">MaggyAssistant\Base\Service\Skills\Docs\DocsSearch\GetDocAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Docs indexing CLI command -->
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="maggy_docs_index" xsi:type="object">MaggyAssistant\Base\Console\Command\IndexDocs</item>
             </argument>
         </arguments>
     </type>

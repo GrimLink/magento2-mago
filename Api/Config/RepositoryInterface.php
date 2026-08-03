@@ -31,6 +31,10 @@ interface RepositoryInterface
     public const XML_PATH_TEXT_COLOR = 'maggy/chat/text_color';
     public const XML_PATH_ASSISTANT_NAME = 'maggy/chat/assistant_name';
     public const XML_PATH_INTERNAL_URL = 'maggy/api/internal_url';
+    public const XML_PATH_DOCS_ENABLED = 'maggy/docs/enabled';
+    public const XML_PATH_DOCS_SOURCE_REPO = 'maggy/docs/source_repo';
+    public const XML_PATH_DOCS_REF = 'maggy/docs/ref';
+    public const XML_PATH_DOCS_TOP_K = 'maggy/docs/top_k';
     /**
      * @return string
      */
@@ -127,4 +131,24 @@ interface RepositoryInterface
      * @return string
      */
     public function getInternalUrl(): string;
+
+    /**
+     * @return bool
+     */
+    public function isDocsEnabled(): bool;
+
+    /**
+     * @return string
+     */
+    public function getDocsSourceRepo(): string;
+
+    /**
+     * @return string
+     */
+    public function getDocsRef(): string;
+
+    /**
+     * @return int
+     */
+    public function getDocsTopK(): int;
 }
