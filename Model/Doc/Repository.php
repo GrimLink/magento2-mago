@@ -12,6 +12,7 @@ use Magento\Framework\DB\Sql\Expression;
 class Repository
 {
     private const TABLE = 'maggy_doc';
+    private const MAX_SEARCH_LIMIT = 20;
 
     public function __construct(
         private readonly ResourceConnection $resourceConnection
@@ -38,6 +39,13 @@ class Repository
         $quoted = $connection->quote($query);
         $matchExpr = "MATCH(title, description, tags, content) AGAINST ({$quoted} IN NATURAL LANGUAGE MODE)";
 
+        $snippetExpr = 'SUBSTRING(content, 1, 400)';
+        $anchor = $this->longestWord($query);
+        if ($anchor !== '') {
+            $anchorQuoted = $connection->quote($anchor);
+            $snippetExpr = "SUBSTRING(content, GREATEST(1, LOCATE({$anchorQuoted}, content) - 120), 400)";
+        }
+
         $select = $connection->select()
             ->from($table, [
                 'entity_id',
@@ -45,14 +53,24 @@ class Repository
                 'description',
                 'url',
                 'edition',
-                'snippet' => new Expression('SUBSTRING(content, 1, 400)'),
+                'snippet' => new Expression($snippetExpr),
                 'relevance' => new Expression($matchExpr),
             ])
             ->where($matchExpr)
             ->order('relevance DESC')
-            ->limit(max(1, $limit));
+            ->limit(min(self::MAX_SEARCH_LIMIT, max(1, $limit)));
 
         return $connection->fetchAll($select);
+    }
+
+    private function longestWord(string $query): string
+    {
+        if (!preg_match_all('/\w{3,}/u', $query, $matches) || !$matches[0]) {
+            return '';
+        }
+        usort($matches[0], static fn(string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+
+        return $matches[0][0];
     }
 
     /**

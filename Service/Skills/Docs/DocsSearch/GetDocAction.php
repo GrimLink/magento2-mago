@@ -26,7 +26,8 @@ class GetDocAction implements ActionInterface
     public function getDescription(): string
     {
         return 'Fetch the full text of one documentation page by its id (from search results). '
-            . 'Answer the user from it and cite its url.';
+            . 'Answer the user from it and cite its url. Long docs are returned in chunks; if the '
+            . 'result says it was truncated, call get_doc again with the given "offset" to read on.';
     }
 
     public function getParameterSchema(): array
@@ -35,6 +36,11 @@ class GetDocAction implements ActionInterface
             'id' => [
                 'type' => 'integer',
                 'description' => 'The doc id returned by the "search" action.',
+            ],
+            'offset' => [
+                'type' => 'integer',
+                'description' => 'Byte offset to start reading from (default 0). Use the offset a '
+                    . 'previous truncated result reported to continue.',
             ],
         ];
     }
@@ -67,11 +73,14 @@ class GetDocAction implements ActionInterface
         }
 
         $content = (string)($doc['content'] ?? '');
-        $bytes = strlen($content);
-        if ($bytes > self::CONTENT_CAP) {
-            $remaining = (int)ceil(($bytes - self::CONTENT_CAP) / 1024);
-            $content = mb_strcut($content, 0, self::CONTENT_CAP)
-                . "\n\n[truncated, {$remaining} KB remaining — ask about a specific section to see more]";
+        $total = strlen($content);
+        $offset = min(max(0, (int)($params['offset'] ?? 0)), $total);
+
+        $chunk = mb_strcut($content, $offset, self::CONTENT_CAP);
+        $nextOffset = $offset + strlen($chunk);
+        if ($nextOffset < $total) {
+            $remaining = (int)ceil(($total - $nextOffset) / 1024);
+            $chunk .= "\n\n[truncated, {$remaining} KB remaining — call get_doc again with offset={$nextOffset} to continue]";
         }
 
         return [
@@ -79,7 +88,7 @@ class GetDocAction implements ActionInterface
             'title' => (string)($doc['title'] ?? ''),
             'url' => (string)($doc['url'] ?? ''),
             'edition' => ($doc['edition'] ?? null) ?: null,
-            'content' => $content,
+            'content' => $chunk,
         ];
     }
 }
