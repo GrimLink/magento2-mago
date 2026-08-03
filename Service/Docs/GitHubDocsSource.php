@@ -10,13 +10,6 @@ use Magento\Framework\HTTP\Client\CurlFactory;
 use Magento\Framework\Serialize\Serializer\Json;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 
-/**
- * Fetches documentation from a GitHub repo.
- * - change detection + file list via the Git Trees API (one request);
- * - raw file content via commit/branch-pinned raw.githubusercontent.com (unauthenticated).
- *
- * NOTE: intentionally a separate HTTP client from InternalApiClient (which disables redirects).
- */
 class GitHubDocsSource
 {
     private const TREES_URL = 'https://api.github.com/repos/%s/git/trees/%s?recursive=1';
@@ -24,6 +17,7 @@ class GitHubDocsSource
     private const USER_AGENT = 'MaggyAssistant-Base';
 
     public function __construct(
+        // Own client, not InternalApiClient: raw.githubusercontent.com redirects, which that client disables.
         private readonly CurlFactory $curlFactory,
         private readonly Json $json,
         private readonly ErrorLogger $errorLogger

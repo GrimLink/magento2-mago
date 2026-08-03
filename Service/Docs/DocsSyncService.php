@@ -11,10 +11,6 @@ use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 use MaggyAssistant\Base\Model\Doc\Repository as DocRepository;
 
-/**
- * Orchestrates fetching + normalizing + storing the docs corpus.
- * Cheap change-detection (tree SHA) so a no-op sync costs one API call.
- */
 class DocsSyncService
 {
     private const FLAG_SHA = 'maggy_docs_source_sha';

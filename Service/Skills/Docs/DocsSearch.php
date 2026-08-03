@@ -8,10 +8,6 @@ namespace MaggyAssistant\Base\Service\Skills\Docs;
 
 use MaggyAssistant\Base\Service\Skills\AbstractSkill;
 
-/**
- * Read-only skill: search + fetch the official Magento/Adobe Commerce admin documentation.
- * Two actions: search (find docs) and get_doc (read one full doc).
- */
 class DocsSearch extends AbstractSkill
 {
     public function getName(): string

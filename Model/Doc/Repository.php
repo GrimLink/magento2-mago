@@ -9,9 +9,6 @@ namespace MaggyAssistant\Base\Model\Doc;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Sql\Expression;
 
-/**
- * Data access for the documentation corpus (maggy_doc).
- */
 class Repository
 {
     private const TABLE = 'maggy_doc';

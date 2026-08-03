@@ -6,13 +6,6 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Service\Docs;
 
-/**
- * Normalizes Adobe Experience League flavored markdown into plain search/grounding text:
- * - extracts YAML front matter (title, description, feature -> tags);
- * - inlines {{$include /help/_includes/x.md}} partials;
- * - unwraps [!UICONTROL x] / [!DNL x];
- * - strips image attribute blocks {width="700" zoomable="yes"}.
- */
 class ExlMarkdownNormalizer
 {
     /**
