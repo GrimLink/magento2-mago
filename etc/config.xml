@@ -23,6 +23,13 @@
             <debug>
                 <debug>0</debug>
             </debug>
+            <docs>
+                <enabled>0</enabled>
+                <source_repo>mage-os/mirror-commerce-admin.en</source_repo>
+                <ref>main</ref>
+                <top_k>5</top_k>
+                <cron_expr>0 4 1 * *</cron_expr>
+            </docs>
         </maggy>
     </default>
 </config>

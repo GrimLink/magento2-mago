@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="docs" translate="label comment" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Documentation</label>
+        <comment><![CDATA[Ground the assistant on Magento admin how-to documentation so it gives correct procedures. Fetched into your database; nothing is bundled.]]></comment>
+        <attribute type="expanded">1</attribute>
+        <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Enable documentation grounding</label>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <comment><![CDATA[When enabled, a cron indexes the docs into the <code>maggy_doc</code> table (~5 MB) on the schedule below. For an immediate first index, run <code>bin/magento maggy:docs:index --force</code>.]]></comment>
+        </field>
+        <field id="source_repo" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Source repository</label>
+            <comment><![CDATA[GitHub <code>owner/repo</code>. Default is the MIT-licensed Mage-OS mirror of Adobe's Commerce Admin docs. Content is Magento/Adobe Commerce documentation, not Mage-OS-specific.]]></comment>
+            <depends><field id="enabled">1</field></depends>
+        </field>
+        <field id="ref" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Source branch / commit</label>
+            <comment>Which branch or commit of the source repository above to index (e.g. main). Pin to a commit for reproducible results.</comment>
+            <depends><field id="enabled">1</field></depends>
+        </field>
+        <field id="top_k" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Results per search</label>
+            <comment>Max number of documentation pages pulled in as context per search (default 5). Higher = broader but noisier and more costly.</comment>
+            <depends><field id="enabled">1</field></depends>
+        </field>
+        <field id="cron_expr" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Sync schedule</label>
+            <comment><![CDATA[Cron expression for the re-index job (default <code>0 4 1 * *</code>, monthly). A no-op sync costs one API call, so raise the frequency if you feed custom docs that change more often.]]></comment>
+            <depends><field id="enabled">1</field></depends>
+        </field>
+    </group>
+</include>

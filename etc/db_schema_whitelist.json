@@ -72,5 +72,26 @@
             "MAGGY_USAGE_LOG_CREATED_AT": true,
             "MAGGY_USAGE_LOG_PROVIDER": true
         }
+    },
+    "maggy_doc": {
+        "column": {
+            "entity_id": true,
+            "source": true,
+            "path": true,
+            "title": true,
+            "description": true,
+            "tags": true,
+            "edition": true,
+            "url": true,
+            "content": true,
+            "source_sha": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        },
+        "index": {
+            "MAGGY_DOC_FULLTEXT": true
+        }
     }
 }

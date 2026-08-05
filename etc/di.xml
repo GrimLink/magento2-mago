@@ -44,6 +44,7 @@
                 <item name="order_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager</item>
                 <item name="cron_status" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus</item>
                 <item name="product_debug" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug</item>
+                <item name="docs_search" xsi:type="object">MaggyAssistant\Base\Service\Skills\Docs\DocsSearch</item>
             </argument>
         </arguments>
     </type>
@@ -57,6 +58,16 @@
                 <item name="create_coupon" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager\CreateCouponAction</item>
                 <item name="create_rule" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager\CreateRuleAction</item>
                 <item name="deactivate_rule" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager\DeactivateRuleAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: DocsSearch -->
+    <type name="MaggyAssistant\Base\Service\Skills\Docs\DocsSearch">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="search" xsi:type="object">MaggyAssistant\Base\Service\Skills\Docs\DocsSearch\SearchAction</item>
+                <item name="get_doc" xsi:type="object">MaggyAssistant\Base\Service\Skills\Docs\DocsSearch\GetDocAction</item>
             </argument>
         </arguments>
     </type>
@@ -130,6 +141,15 @@
         <arguments>
             <argument name="actions" xsi:type="array">
                 <item name="diagnose" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug\DiagnoseAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Docs indexing CLI command -->
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="maggy_docs_index" xsi:type="object">MaggyAssistant\Base\Console\Command\IndexDocs</item>
             </argument>
         </arguments>
     </type>

@@ -1,0 +1,37 @@
+name: Label issue as review needed on commit
+
+on:
+  push:
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const issueRefPattern = /#(\d+)/g;
+            const issueNumbers = new Set();
+
+            for (const commit of context.payload.commits ?? []) {
+              let match;
+              while ((match = issueRefPattern.exec(commit.message)) !== null) {
+                issueNumbers.add(Number(match[1]));
+              }
+            }
+
+            for (const issueNumber of issueNumbers) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  labels: ["review needed"],
+                });
+              } catch (error) {
+                core.warning(`Could not label #${issueNumber}: ${error.message}`);
+              }
+            }
