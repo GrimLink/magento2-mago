@@ -43,6 +43,7 @@
                 <item name="review_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager</item>
                 <item name="order_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager</item>
                 <item name="cron_status" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus</item>
+                <item name="product_debug" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug</item>
             </argument>
         </arguments>
     </type>
@@ -120,6 +121,15 @@
                 <item name="list_failed" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus\ListFailedAction</item>
                 <item name="health_check" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus\HealthCheckAction</item>
                 <item name="schedule_job" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus\ScheduleJobAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: ProductDebug -->
+    <type name="MaggyAssistant\Base\Service\Skills\Debug\ProductDebug">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="diagnose" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug\DiagnoseAction</item>
             </argument>
         </arguments>
     </type>
