@@ -29,10 +29,13 @@ class DocsSyncService
     }
 
     /**
+     * @param callable(string $step, int $current, int $total): void|null $onProgress
      * @return array<string, mixed> summary of what happened
      */
-    public function sync(bool $force = false): array
+    public function sync(bool $force = false, ?callable $onProgress = null): array
     {
+        $progress = $onProgress ?? static function (): void {};
+
         if (!$this->config->isDocsEnabled()) {
             return ['skipped' => 'disabled'];
         }
@@ -41,6 +44,7 @@ class DocsSyncService
         $ref = $this->config->getDocsRef();
 
         try {
+            $progress('tree', 0, 0);
             $tree = $this->source->fetchTree($repo, $ref);
             if ($tree === null) {
                 throw new \RuntimeException('Could not fetch doc tree from ' . $repo . '@' . $ref);
@@ -54,8 +58,10 @@ class DocsSyncService
                 return ['skipped' => 'up-to-date', 'sha' => $sha, 'docs' => $count];
             }
 
+            $totalPaths = count($tree['paths']);
             $rawByPath = [];
-            foreach ($tree['paths'] as $path) {
+            foreach ($tree['paths'] as $i => $path) {
+                $progress('fetch', $i + 1, $totalPaths);
                 $content = $this->source->fetchRaw($repo, $ref, $path);
                 if ($content !== null) {
                     $rawByPath[$path] = $content;
@@ -71,8 +77,12 @@ class DocsSyncService
                 return $rawByPath[$path] ?? null;
             };
 
+            $totalRaw = count($rawByPath);
             $rows = [];
+            $normalized_i = 0;
             foreach ($rawByPath as $path => $raw) {
+                $normalized_i++;
+                $progress('normalize', $normalized_i, $totalRaw);
                 if (!$this->normalizer->isIndexable($path)) {
                     continue;
                 }
@@ -98,7 +108,9 @@ class DocsSyncService
                 throw new \RuntimeException('No indexable docs produced (0 rows) — keeping existing corpus');
             }
 
+            $progress('store', 0, count($rows));
             $this->docRepository->replaceAll($rows);
+            $progress('store', count($rows), count($rows));
 
             $this->flagManager->saveFlag(self::FLAG_SHA, $sha);
             $this->flagManager->saveFlag(self::FLAG_SYNCED_AT, time());
