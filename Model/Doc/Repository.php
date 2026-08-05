@@ -98,8 +98,8 @@ class Repository
     }
 
     /**
-     * Atomically replace the whole corpus (delete all + bulk insert) in one transaction,
-     * so retrieval never sees an empty table mid-request.
+     * Replace the whole corpus: truncate + bulk insert with the fulltext index temporarily
+     * disabled to avoid InnoDB deadlocks on the FTS auxiliary tables.
      *
      * @param array<int, array<string, mixed>> $rows
      */
@@ -108,18 +108,16 @@ class Repository
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName(self::TABLE);
 
-        $connection->beginTransaction();
+        $connection->query("ALTER TABLE {$table} DISABLE KEYS");
         try {
-            $connection->delete($table);
+            $connection->truncateTable($table);
             foreach (array_chunk($rows, 50) as $chunk) {
                 if ($chunk) {
                     $connection->insertMultiple($table, $chunk);
                 }
             }
-            $connection->commit();
-        } catch (\Throwable $e) {
-            $connection->rollBack();
-            throw $e;
+        } finally {
+            $connection->query("ALTER TABLE {$table} ENABLE KEYS");
         }
     }
 }
