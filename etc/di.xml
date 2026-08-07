@@ -26,6 +26,7 @@
     <!-- Tool Registry: inject all tools -->
     <type name="MaggyAssistant\Base\Service\Tool\ToolRegistry">
         <arguments>
+            <argument name="permissionChecker" xsi:type="object">MaggyAssistant\Base\Service\Skills\PermissionChecker</argument>
             <argument name="tools" xsi:type="array">
                 <item name="config_reader" xsi:type="object">MaggyAssistant\Base\Service\Skills\Configuration\ConfigReader</item>
                 <item name="config_writer" xsi:type="object">MaggyAssistant\Base\Service\Skills\Configuration\ConfigWriter</item>

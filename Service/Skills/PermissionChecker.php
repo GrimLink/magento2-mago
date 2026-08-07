@@ -11,6 +11,9 @@ use Magento\Framework\AuthorizationInterface;
 
 class PermissionChecker
 {
+    /** @var array<int, array<string, string>> */
+    private array $permissionsByUser = [];
+
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
         private readonly AuthorizationInterface $authorization
@@ -19,20 +22,14 @@ class PermissionChecker
 
     public function isAllowed(int $adminUserId, string $skillName, string $action = 'read'): bool
     {
-        $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_skill_permission');
+        $permission = $this->getPermission($adminUserId, $skillName);
 
-        $permission = $connection->fetchOne(
-            $connection->select()
-                ->from($table, ['permission'])
-                ->where('admin_user_id = ?', $adminUserId)
-                ->where('skill_name = ?', $skillName)
-        );
-
-        if ($permission !== false) {
-            if ($permission === 'disabled') return false;
-            if ($permission === 'read') return $action === 'read';
-            if ($permission === 'write') return true;
+        if ($permission !== null) {
+            return match ($permission) {
+                'write' => true,
+                'read' => $action === 'read',
+                default => false,
+            };
         }
 
         // Fallback to standard ACL
@@ -40,5 +37,21 @@ class PermissionChecker
             return $this->authorization->isAllowed('MaggyAssistant_Base::assistant_write');
         }
         return $this->authorization->isAllowed('MaggyAssistant_Base::assistant_read');
+    }
+
+    private function getPermission(int $adminUserId, string $skillName): ?string
+    {
+        if (!isset($this->permissionsByUser[$adminUserId])) {
+            $connection = $this->resourceConnection->getConnection();
+            $table = $this->resourceConnection->getTableName('maggy_skill_permission');
+
+            $this->permissionsByUser[$adminUserId] = $connection->fetchPairs(
+                $connection->select()
+                    ->from($table, ['skill_name', 'permission'])
+                    ->where('admin_user_id = ?', $adminUserId)
+            );
+        }
+
+        return $this->permissionsByUser[$adminUserId][$skillName] ?? null;
     }
 }

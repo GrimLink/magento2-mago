@@ -31,7 +31,7 @@ class ChatService implements ChatServiceInterface
     public function processMessage(array $messages, ?int $conversationId = null, ?int $adminUserId = null): array
     {
         $provider = $this->providerFactory->create();
-        $tools = $this->toolRegistry->getToolDefinitions();
+        $tools = $this->toolRegistry->getToolDefinitions($adminUserId);
         $maxIterations = $this->configRepository->getMaxToolIterations();
 
         $messages = $this->prependSystemMessage($messages);
@@ -53,7 +53,7 @@ class ChatService implements ChatServiceInterface
 
             // Check if any tool call requires confirmation (write action)
             foreach ($response['tool_calls'] as $toolCall) {
-                $tool = $this->toolRegistry->getTool($toolCall['name']);
+                $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
                 if ($tool && !$tool->isReadOnlyAction($toolCall['input'] ?? [])) {
                     return [
                         'content' => $response['content'],
@@ -88,7 +88,7 @@ class ChatService implements ChatServiceInterface
     public function processMessageStreaming(array $messages, callable $onChunk, ?int $conversationId = null, ?int $adminUserId = null): array
     {
         $provider = $this->providerFactory->create();
-        $tools = $this->toolRegistry->getToolDefinitions();
+        $tools = $this->toolRegistry->getToolDefinitions($adminUserId);
         $maxIterations = $this->configRepository->getMaxToolIterations();
 
         $messages = $this->prependSystemMessage($messages);
@@ -110,12 +110,12 @@ class ChatService implements ChatServiceInterface
 
             // Check for write actions needing confirmation
             foreach ($response['tool_calls'] as $toolCall) {
-                $tool = $this->toolRegistry->getTool($toolCall['name']);
+                $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
                 if ($tool && !$tool->isReadOnlyAction($toolCall['input'] ?? [])) {
                     // Send confirm event with tool details so frontend can show what will happen
                     $confirmTools = [];
                     foreach ($response['tool_calls'] as $tc) {
-                        $t = $this->toolRegistry->getTool($tc['name']);
+                        $t = $this->toolRegistry->getTool($tc['name'], $adminUserId);
                         if ($t && !$t->isReadOnlyAction($tc['input'] ?? [])) {
                             $confirmTools[] = [
                                 'name' => $tc['name'],
@@ -240,9 +240,16 @@ class ChatService implements ChatServiceInterface
 
     private function executeTool(array $toolCall, ?int $adminUserId = null): array
     {
-        $tool = $this->toolRegistry->getTool($toolCall['name']);
+        $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
         if (!$tool) {
             return ['error' => 'Tool not found: ' . $toolCall['name']];
+        }
+
+        if (!$this->toolRegistry->isCallAllowed($tool, $toolCall['input'] ?? [], $adminUserId)) {
+            return ['error' => sprintf(
+                'Access denied: your skill permissions do not allow this action with the %s tool',
+                $tool->getName()
+            )];
         }
 
         // Check Magento-native ACL if the tool requires it
@@ -289,7 +296,7 @@ class ChatService implements ChatServiceInterface
             return;
         }
 
-        $tool = $this->toolRegistry->getTool($toolName);
+        $tool = $this->toolRegistry->getToolByName($toolName);
         $instructions = $tool ? $tool->getInstructions() : '';
         if ($instructions) {
             $messages[] = [

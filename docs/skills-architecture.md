@@ -350,6 +350,18 @@ Magento_Backend::admin
 | `assistant_read` + `assistant_write` | All 10 tools | Required for write tools |
 | None | Chat only, no tools | N/A |
 
+### Per-User Skill Permissions
+
+On top of role ACL, the **Skills** admin screen (Maggy Assistant → Skills) stores a per-admin-user permission per skill in the `maggy_skill_permission` table: `disabled`, `read`, or `write`. `PermissionChecker` resolves these; when a user has no row for a skill, the role ACL above is the fallback. Unknown values in a row are treated as `disabled` (fail closed).
+
+Enforcement happens at three points, all keyed on the acting admin user id, which the chat controllers pass through `ChatService` into `ToolRegistry`:
+
+1. **Advertising** — `ToolRegistry::getToolDefinitions($adminUserId)` excludes skills the user may not use at all. Availability requires the grant to cover the skill's least-privileged side: `read` suffices for read-only and mixed skills, write-only skills require `write`.
+2. **Action filtering** — for a user with only a `read` grant, a mixed skill (e.g. `cms_data`) stays available but its advertised `action` enum is filtered to its read-only actions.
+3. **Execution** — `ToolRegistry::isCallAllowed($tool, $input, $adminUserId)` re-checks every invocation per action (`isReadOnlyAction($input)`), including tool calls executed via the Confirm flow. A missing user id routes through the ACL fallback rather than allowing everything.
+
+`getAllTools()` / `getToolByName()` remain unfiltered — they serve the Skills admin UI and JIT instruction lookup, not tool access.
+
 ---
 
 ## Building Custom Skills
