@@ -102,6 +102,21 @@ See [docs/skills-architecture.md](docs/skills-architecture.md) for the full arch
 - Data & privacy details
 - MCP compatibility roadmap
 
+## Testing
+
+End-to-end tests run with Playwright against Chromium. No test calls Claude or OpenAI: the
+chat panel is covered with browser-level SSE stubs, the backend with WireMock standing in for
+the provider endpoint.
+
+```bash
+cd Test/End-2-end
+npm install && npx playwright install chromium
+BASE_URL="https://your-store.test/" npx playwright test
+```
+
+See [Test/End-2-end/README.md](Test/End-2-end/README.md) for configuration, the WireMock setup
+and how to add scenarios.
+
 ## Permissions
 
 | ACL Resource | Grants |

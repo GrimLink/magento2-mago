@@ -22,6 +22,13 @@
                 <field id="maggy/api/provider">claude</field>
             </depends>
         </field>
+        <field id="claude_base_url" translate="label comment" type="text" sortOrder="27" showInDefault="1" showInWebsite="0" showInStore="0">
+            <label>Claude API URL</label>
+            <comment><![CDATA[Leave empty for the default <em>https://api.anthropic.com/v1/messages</em>. Set this to route through a gateway, proxy or mock server.]]></comment>
+            <depends>
+                <field id="maggy/api/provider">claude</field>
+            </depends>
+        </field>
         <field id="openai_api_key" translate="label comment" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>OpenAI API Key</label>
             <comment>Your OpenAI API key</comment>
@@ -37,6 +44,13 @@
                 <field id="maggy/api/provider">openai</field>
             </depends>
         </field>
+        <field id="openai_base_url" translate="label comment" type="text" sortOrder="37" showInDefault="1" showInWebsite="0" showInStore="0">
+            <label>OpenAI API URL</label>
+            <comment><![CDATA[Leave empty for the default <em>https://api.openai.com/v1/chat/completions</em>. Set this to route through a gateway, proxy or mock server.]]></comment>
+            <depends>
+                <field id="maggy/api/provider">openai</field>
+            </depends>
+        </field>
         <field id="max_tokens" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Max Tokens</label>
             <comment>Maximum tokens per response (default: 4096)</comment>
@@ -44,7 +58,7 @@
         </field>
         <field id="temperature" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Temperature</label>
-            <comment>Controls randomness. 0 = deterministic, 1 = creative (default: 0.7)</comment>
+            <comment>Controls randomness. 0 = deterministic, 1 = creative (default: 0.7).</comment>
         </field>
         <field id="streaming" translate="label comment" type="select" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Enable Streaming</label>

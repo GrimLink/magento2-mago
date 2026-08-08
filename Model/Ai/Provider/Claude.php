@@ -8,11 +8,12 @@ namespace MaggyAssistant\Base\Model\Ai\Provider;
 
 use MaggyAssistant\Base\Api\Ai\ProviderInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
+use MaggyAssistant\Base\Model\Ai\Claude\SupportedModel;
 use MaggyAssistant\Base\Service\Ai\RestClient;
 
 class Claude implements ProviderInterface
 {
-    private const API_URL = 'https://api.anthropic.com/v1/messages';
+    private const DEFAULT_API_URL = 'https://api.anthropic.com/v1/messages';
     private const API_VERSION = '2023-06-01';
 
     public function __construct(
@@ -27,7 +28,7 @@ class Claude implements ProviderInterface
         $headers = $this->getHeaders();
 
         $response = $this->restClient->execute(
-            self::API_URL,
+            $this->getApiUrl(),
             $headers,
             $body,
             $this->configRepository->isDebugEnabled()
@@ -61,7 +62,7 @@ class Claude implements ProviderInterface
         $usage = ['input_tokens' => 0, 'output_tokens' => 0];
 
         $this->restClient->stream(
-            self::API_URL,
+            $this->getApiUrl(),
             $headers,
             $body,
             function (string $chunk) use (&$fullContent, &$toolCalls, &$currentToolCall, &$buffer, &$usage, $onChunk) {
@@ -163,6 +164,11 @@ class Claude implements ProviderInterface
         return 'claude';
     }
 
+    private function getApiUrl(): string
+    {
+        return $this->configRepository->getApiBaseUrl() ?: self::DEFAULT_API_URL;
+    }
+
     private function getHeaders(): array
     {
         return [
@@ -176,14 +182,16 @@ class Claude implements ProviderInterface
         $systemMessages = array_filter($messages, fn($m) => ($m['role'] ?? '') === 'system');
         $nonSystemMessages = array_values(array_filter($messages, fn($m) => ($m['role'] ?? '') !== 'system'));
 
+        $model = $options['model'] ?? $this->configRepository->getModel();
+
         $body = [
-            'model' => $options['model'] ?? $this->configRepository->getModel(),
+            'model' => $model,
             'max_tokens' => $options['max_tokens'] ?? $this->configRepository->getMaxTokens(),
             'messages' => $this->formatMessages($nonSystemMessages),
         ];
 
         $temperature = $options['temperature'] ?? $this->configRepository->getTemperature();
-        if ($temperature > 0) {
+        if ($temperature > 0 && SupportedModel::canModelUseTemperature($model)) {
             $body['temperature'] = $temperature;
         }
 

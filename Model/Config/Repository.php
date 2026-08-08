@@ -8,6 +8,7 @@ namespace MaggyAssistant\Base\Model\Config;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
+use MaggyAssistant\Base\Model\Ai\Claude\SupportedModel;
 
 class Repository extends System\BaseRepository implements ConfigRepositoryInterface
 {
@@ -58,7 +59,14 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
     {
         $provider = $this->getProvider();
         $path = $provider === 'openai' ? self::XML_PATH_OPENAI_MODEL : self::XML_PATH_CLAUDE_MODEL;
-        return $this->getStoreValue($path) ?: ($provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514');
+        return $this->getStoreValue($path) ?: ($provider === 'openai' ? 'gpt-4o' : SupportedModel::Opus5->value);
+    }
+
+    public function getApiBaseUrl(): string
+    {
+        $path = $this->getProvider() === 'openai' ? self::XML_PATH_OPENAI_BASE_URL : self::XML_PATH_CLAUDE_BASE_URL;
+
+        return trim((string)$this->getStoreValue($path));
     }
 
     public function getMaxTokens(): int
