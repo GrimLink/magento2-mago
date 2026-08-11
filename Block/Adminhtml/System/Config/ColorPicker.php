@@ -14,7 +14,7 @@ class ColorPicker extends Field
     protected function _getElementHtml(AbstractElement $element): string
     {
         $html = $element->getElementHtml();
-        $value = $element->getEscapedValue() ?: '#E8710A';
+        $value = $element->getEscapedValue() ?: '#F26322';
 
         $html .= '<script>
             require(["jquery", "domReady!"], function($) {

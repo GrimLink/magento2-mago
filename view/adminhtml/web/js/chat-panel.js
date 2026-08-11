@@ -42,9 +42,20 @@
         loading.style.display = 'none';
     }
 
+    // The tab stays visible alongside the open panel, so its tooltip has to
+    // follow the state it will actually put the panel in when clicked.
+    function syncToggleLabel() {
+        var open = chat.classList.contains('is-open');
+        var label = open ? toggle.getAttribute('data-label-close') : toggle.getAttribute('data-label-open');
+        if (label) {
+            toggle.title = label;
+        }
+    }
+
     function openPanel() {
         chat.classList.add('is-open');
         document.body.classList.add('maggy-active');
+        syncToggleLabel();
         if (msgs.children.length <= 1 && !conversationId) {
             showGreeting();
         }
@@ -55,6 +66,7 @@
     function closePanel() {
         chat.classList.remove('is-open');
         document.body.classList.remove('maggy-active');
+        syncToggleLabel();
         if (showingHistory) hideHistory();
         hideSlashMenu();
         saveState();

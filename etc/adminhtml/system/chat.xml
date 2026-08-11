@@ -18,7 +18,7 @@
         </field>
         <field id="accent_color" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
             <label>Accent Color</label>
-            <comment>Background color for the chat header, user messages and buttons (default: #E8710A).</comment>
+            <comment>Background color for the chat header, user messages and buttons (default: #F26322).</comment>
             <validate>validate-no-empty</validate>
             <frontend_model>MaggyAssistant\Base\Block\Adminhtml\System\Config\ColorPicker</frontend_model>
         </field>
