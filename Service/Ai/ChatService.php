@@ -6,12 +6,12 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Service\Ai;
 
+use MageOS\AiBase\Api\AiClientInterface;
 use MaggyAssistant\Base\Api\ChatServiceInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 use Magento\Framework\AuthorizationInterface;
-use MaggyAssistant\Base\Model\Ai\ProviderFactory;
 use MaggyAssistant\Base\Service\Tool\ToolRegistry;
 use MaggyAssistant\Base\Service\Usage\UsageLogger;
 
@@ -19,7 +19,7 @@ class ChatService implements ChatServiceInterface
 {
     public function __construct(
         private readonly ConfigRepository $configRepository,
-        private readonly ProviderFactory $providerFactory,
+        private readonly Client $client,
         private readonly ToolRegistry $toolRegistry,
         private readonly DebugLogger $debugLogger,
         private readonly ErrorLogger $errorLogger,
@@ -30,7 +30,13 @@ class ChatService implements ChatServiceInterface
 
     public function processMessage(array $messages, ?int $conversationId = null, ?int $adminUserId = null): array
     {
-        $provider = $this->providerFactory->create();
+        try {
+            $client = $this->client->resolve();
+        } catch (\Throwable $e) {
+            $this->errorLogger->addLog('ChatService', $e->getMessage());
+            return ['content' => 'An error occurred: ' . $e->getMessage(), 'tool_calls' => []];
+        }
+
         $tools = $this->toolRegistry->getToolDefinitions();
         $maxIterations = $this->configRepository->getMaxToolIterations();
 
@@ -39,13 +45,13 @@ class ChatService implements ChatServiceInterface
 
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
-                $response = $provider->chat($messages, $tools);
+                $response = $this->client->chat($client, $messages, $tools);
             } catch (\Throwable $e) {
                 $this->errorLogger->addLog('ChatService', $e->getMessage());
                 return ['content' => 'An error occurred: ' . $e->getMessage(), 'tool_calls' => []];
             }
 
-            $this->logUsage($response, $adminUserId, $conversationId, $provider, $messages);
+            $this->logUsage($response, $adminUserId, $conversationId, $client, $messages);
 
             if (empty($response['tool_calls'])) {
                 return $response;
@@ -87,7 +93,7 @@ class ChatService implements ChatServiceInterface
 
     public function processMessageStreaming(array $messages, callable $onChunk, ?int $conversationId = null, ?int $adminUserId = null): array
     {
-        $provider = $this->providerFactory->create();
+        $client = $this->client->resolve();
         $tools = $this->toolRegistry->getToolDefinitions();
         $maxIterations = $this->configRepository->getMaxToolIterations();
 
@@ -96,13 +102,13 @@ class ChatService implements ChatServiceInterface
 
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
-                $response = $provider->stream($messages, $tools, [], $onChunk);
+                $response = $this->client->stream($client, $messages, $tools, $onChunk);
             } catch (\Throwable $e) {
                 $this->errorLogger->addLog('ChatService Stream', $e->getMessage());
                 throw $e;
             }
 
-            $this->logUsage($response, $adminUserId, $conversationId, $provider, $messages);
+            $this->logUsage($response, $adminUserId, $conversationId, $client, $messages);
 
             if (empty($response['tool_calls'])) {
                 return $response;
@@ -211,10 +217,13 @@ class ChatService implements ChatServiceInterface
         array $response,
         ?int $adminUserId,
         ?int $conversationId,
-        \MaggyAssistant\Base\Api\Ai\ProviderInterface $provider,
+        AiClientInterface $client,
         ?array $messages = null
     ): void {
-        if (empty($response['usage'])) {
+        $inputTokens = (int)($response['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int)($response['usage']['output_tokens'] ?? 0);
+
+        if ($inputTokens === 0 && $outputTokens === 0) {
             return;
         }
 
@@ -222,10 +231,10 @@ class ChatService implements ChatServiceInterface
             $this->usageLogger->log(
                 $adminUserId ?? 0,
                 $conversationId,
-                $provider->getProviderName(),
-                $this->configRepository->getModel(),
-                $response['usage']['input_tokens'] ?? 0,
-                $response['usage']['output_tokens'] ?? 0,
+                $client->getServiceCode(),
+                $client->getModel(),
+                $inputTokens,
+                $outputTokens,
                 array_column($response['tool_calls'] ?? [], 'name'),
                 $messages,
                 [

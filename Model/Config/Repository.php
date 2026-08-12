@@ -8,7 +8,6 @@ namespace MaggyAssistant\Base\Model\Config;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
-use MaggyAssistant\Base\Model\Ai\Claude\SupportedModel;
 
 class Repository extends System\BaseRepository implements ConfigRepositoryInterface
 {
@@ -42,42 +41,14 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
         return $this->isSetFlag(self::XML_PATH_DEBUG);
     }
 
-    public function getProvider(): string
+    public function getAiServiceId(): string
     {
-        return $this->getStoreValue(self::XML_PATH_PROVIDER) ?: 'claude';
-    }
-
-    public function getApiKey(): string
-    {
-        $provider = $this->getProvider();
-        $path = $provider === 'openai' ? self::XML_PATH_OPENAI_API_KEY : self::XML_PATH_CLAUDE_API_KEY;
-        $encrypted = $this->getStoreValue($path);
-        return $encrypted ? $this->encryptor->decrypt($encrypted) : '';
-    }
-
-    public function getModel(): string
-    {
-        $provider = $this->getProvider();
-        $path = $provider === 'openai' ? self::XML_PATH_OPENAI_MODEL : self::XML_PATH_CLAUDE_MODEL;
-        return $this->getStoreValue($path) ?: ($provider === 'openai' ? 'gpt-4o' : SupportedModel::Opus5->value);
-    }
-
-    public function getApiBaseUrl(): string
-    {
-        $path = $this->getProvider() === 'openai' ? self::XML_PATH_OPENAI_BASE_URL : self::XML_PATH_CLAUDE_BASE_URL;
-
-        return trim((string)$this->getStoreValue($path));
+        return trim((string)$this->getStoreValue(self::XML_PATH_AI_SERVICE));
     }
 
     public function getMaxTokens(): int
     {
         return (int)($this->getStoreValue(self::XML_PATH_MAX_TOKENS) ?: 4096);
-    }
-
-    public function getTemperature(): float
-    {
-        $value = $this->getStoreValue(self::XML_PATH_TEMPERATURE);
-        return $value !== '' ? (float)$value : 0.7;
     }
 
     public function isStreamingEnabled(): bool

@@ -50,7 +50,6 @@ class ChatPanel extends Template
             'statusUrl' => $this->getUrl('maggy/chat/status'),
             'apiBaseUrl' => $this->getUrl('rest/V1/assistant'),
             'isStreamingEnabled' => $this->configRepository->isStreamingEnabled(),
-            'provider' => $this->configRepository->getProvider(),
         ]);
     }
 

@@ -13,16 +13,6 @@
     <!-- WebApi -->
     <preference for="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" type="MaggyAssistant\Base\Model\WebApi\ChatManagement"/>
 
-    <!-- AI Provider Factory: inject providers map -->
-    <type name="MaggyAssistant\Base\Model\Ai\ProviderFactory">
-        <arguments>
-            <argument name="providers" xsi:type="array">
-                <item name="claude" xsi:type="object">MaggyAssistant\Base\Model\Ai\Provider\Claude</item>
-                <item name="openai" xsi:type="object">MaggyAssistant\Base\Model\Ai\Provider\OpenAi</item>
-            </argument>
-        </arguments>
-    </type>
-
     <!-- Tool Registry: inject all tools -->
     <type name="MaggyAssistant\Base\Service\Tool\ToolRegistry">
         <arguments>

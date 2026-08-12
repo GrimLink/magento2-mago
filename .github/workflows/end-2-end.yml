@@ -33,6 +33,16 @@ jobs:
           docker compose -f $COMPOSE_FILE up -d --quiet-pull
           timeout 90 bash -c 'until docker exec wiremock curl -sf http://localhost:8080/__admin/health > /dev/null; do sleep 2; done'
 
+      # MageOS_AiBase has no tagged release yet, so it comes off its branch under an inline alias
+      # that satisfies this module's ^1.0. Drop both lines once it is on Packagist.
+      # Its Symfony AI bridges are a `suggest`, which composer never installs on its own, and
+      # without one there is no client to call Anthropic with at all.
+      - name: Install the AI base module and its Anthropic bridge
+        run: |
+          docker exec mage-os-community-edition composer config repositories.mage-os-ai-base vcs https://github.com/mage-os-lab/module-ai-base
+          docker exec mage-os-community-edition ./retry "composer require --no-update mage-os/module-ai-base:'dev-main as 1.0.0'"
+          docker exec mage-os-community-edition ./retry "composer require --no-update symfony/ai-anthropic-platform"
+
       - name: Upload the module into the Mage-OS container
         run: |
           sed -i '/version/d' ./composer.json
@@ -41,7 +51,7 @@ jobs:
 
       - name: Activate the extension
         run: |
-          docker exec mage-os-community-edition ./retry "php bin/magento module:enable MaggyAssistant_Base"
+          docker exec mage-os-community-edition ./retry "php bin/magento module:enable MageOS_AiBase MaggyAssistant_Base"
           # Its modal covers the whole admin on first login and swallows every click.
           docker exec mage-os-community-edition ./retry "php bin/magento module:disable Magento_AdminAnalytics"
           docker exec mage-os-community-edition ./retry "php bin/magento setup:upgrade --keep-generated --no-interaction"
@@ -51,10 +61,13 @@ jobs:
           docker exec mage-os-community-edition /bin/bash ./change-base-url $BASE_URL
           docker exec mage-os-community-edition /bin/bash ./disable-2fa
           docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/general/enabled 1"
-          docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/api/provider claude"
-          docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/api/claude_base_url http://wiremock:8080/v1/messages"
-          # Stream.php refuses to run without a key. WireMock never checks it.
-          docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/api/claude_api_key not-a-real-key"
+          # One MageOS_AiBase service row, pointed at WireMock rather than api.anthropic.com. The
+          # bridge appends /v1/messages itself, so the base URL stops at the host. config:set does
+          # not run the field's backend model, so this lands unencrypted; the selector reads legacy
+          # plaintext, and the key is a throwaway WireMock never checks.
+          docker exec mage-os-community-edition ./retry "bin/magento config:set mageos_ai/services/configuration '{\"_e2e_row_1\":{\"anthropic\":{\"api_key\":\"not-a-real-key\",\"model\":\"claude-sonnet-4-6\",\"base_url\":\"http://wiremock:8080\"}}}'"
+          # Empty means "first usable service", which is the one row above.
+          docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/api/ai_service ''"
           # One admin session is shared by every parallel worker.
           docker exec mage-os-community-edition ./retry "bin/magento config:set admin/security/admin_account_sharing 1"
           docker exec mage-os-community-edition ./retry "bin/magento config:set admin/security/session_lifetime 86400"

@@ -1,6 +1,6 @@
 # Admin Assistant for Magento 2
 
-AI-powered admin assistant — chat with your store using Claude or OpenAI.
+AI-powered admin assistant — chat with your store using the AI provider of your choice.
 
 ## Features
 
@@ -10,30 +10,38 @@ AI-powered admin assistant — chat with your store using Claude or OpenAI.
 - **Extensible architecture** — third-party modules can register custom skills via DI
 - **ACL-based permissions** — read/write access controlled per admin role
 - **Write confirmation** — destructive actions always require explicit user approval
-- **Multi-provider** — supports Claude (Anthropic) and OpenAI
+- **Multi-provider** — Anthropic, OpenAI, Azure, Google Gemini, DeepSeek, Hugging Face, OpenRouter, Ollama and LM Studio, through [MageOS_AiBase](https://github.com/mage-os-lab/module-ai-base)
 - **Documentation grounding** — answers admin how-to questions from Magento/Adobe Commerce docs, fetched into your database (optional)
 
 ## Requirements
 
-- PHP >= 8.1
+- PHP >= 8.2
 - Magento >= 2.4.4
-- API key for Claude or OpenAI
+- An API key for one of the supported providers
 
 ## Installation
 
+Providers, credentials and models are owned by `MageOS_AiBase`. Its Symfony AI bridges are
+optional dependencies, so install the one for the provider you intend to use — without a bridge
+there is nothing to call the provider with.
+
 ```bash
 composer require maggy-assistant/magento2-base
-bin/magento module:enable MaggyAssistant_Base
+composer require symfony/ai-anthropic-platform   # or symfony/ai-open-ai-platform, ...
+bin/magento module:enable MageOS_AiBase MaggyAssistant_Base
 bin/magento setup:upgrade
 ```
 
 ## Configuration
 
-`Stores > Configuration > Maggy Assistant > General`
+First add a provider under `Stores > Configuration > Mage-OS > AI Configuration`: pick the
+backend, paste the API key, choose a model, and use **Test Connection** to check it answers.
 
-1. **Enable** the module
-2. **Select AI provider** (Claude or OpenAI)
-3. **Enter API key**
+Then, under `Stores > Configuration > Maggy Assistant`:
+
+1. **Enable** the module (General)
+2. **Pick the AI Service** the assistant runs on (API Settings). Leave it on *Automatic* to use
+   the first usable one, which is what a single-provider store wants.
 
 ### Internal API URL (Docker / reverse proxy setups)
 
@@ -104,7 +112,7 @@ See [docs/skills-architecture.md](docs/skills-architecture.md) for the full arch
 
 ## Testing
 
-End-to-end tests run with Playwright against Chromium. No test calls Claude or OpenAI: the
+End-to-end tests run with Playwright against Chromium. No test calls a real provider: the
 chat panel is covered with browser-level SSE stubs, the backend with WireMock standing in for
 the provider endpoint.
 
