@@ -72,7 +72,7 @@ redirected and no credential is involved:
 ```bash
 docker run -d --name wiremock -p 8080:8080 -v "$(pwd)/wiremock:/home/wiremock:ro" wiremock/wiremock:3.13.1
 bin/magento config:set mageos_ai/services/configuration \
-  '{"_e2e_row_1":{"lmstudio":{"base_url":"http://wiremock:8080","model":"e2e-model"}}}'
+  '{"_e2e_row_1":{"lmstudio":{"base_url":"http://wiremock:8080","model":"gemma-3-4b-it-qat"}}}'
 bin/magento cache:flush config
 ```
 
@@ -89,9 +89,10 @@ to resolve from inside the container running Magento, so put WireMock on the sam
 from `symfony/ai-lm-studio-platform`, which is a `suggest` of `MageOS_AiBase` and so has to be
 installed explicitly.
 
-The fixtures are OpenAI chat-completions SSE, which is what LM Studio speaks. `e2e-model` is not in
-any bridge catalogue, which is deliberate: `MageOS_AiBase` registers whatever model a row is
-configured with, and these tests cover that path.
+The fixtures are OpenAI chat-completions SSE, which is what LM Studio speaks. The model has to be
+one the bridge's own catalogue lists, because a bridge refuses to route anything else before a
+request is ever sent; `gemma-3-4b-it-qat` ships with `symfony/ai-lm-studio-platform` and declares
+tool calling and streaming, which is all these tests need of it.
 
 ## Browsers
 

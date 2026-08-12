@@ -65,7 +65,7 @@ jobs:
           # runtime address by design, so nothing has to be redirected to make this work. It speaks
           # OpenAI chat-completions and appends /v1/chat/completions itself, so the base URL stops
           # at the host. No credential is involved: a local runtime takes none.
-          docker exec mage-os-community-edition ./retry "bin/magento config:set mageos_ai/services/configuration '{\"_e2e_row_1\":{\"lmstudio\":{\"base_url\":\"http://wiremock:8080\",\"model\":\"e2e-model\"}}}'"
+          docker exec mage-os-community-edition ./retry "bin/magento config:set mageos_ai/services/configuration '{\"_e2e_row_1\":{\"lmstudio\":{\"base_url\":\"http://wiremock:8080\",\"model\":\"gemma-3-4b-it-qat\"}}}'"
           # Empty means "first usable service", which is the one row above.
           docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/api/ai_service ''"
           # One admin session is shared by every parallel worker.
