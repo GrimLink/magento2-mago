@@ -5,7 +5,7 @@ Layout and configuration follow [mollie/magento2](https://github.com/mollie/mage
 
 ## How the AI is kept out of the loop
 
-The browser never talks to Claude or OpenAI. It reads an SSE stream of
+The browser never talks to an AI provider. It reads an SSE stream of
 `text` / `tool_call` / `confirm` / `done` / `error` events from `maggy/chat/stream`.
 `ChatMock` intercepts that endpoint and replays the fixtures in `fixtures/scenarios.ts`,
 so every run is deterministic, free and offline. No API key is needed and no test ever
@@ -65,13 +65,14 @@ npx playwright test --ui        # Playwright UI mode
 
 Reports: `npx playwright show-report`.
 
-The backend tests need an AI service pointed at WireMock instead of Anthropic. Providers live in
-`MageOS_AiBase`, so this is one service row rather than a handful of `maggy/api/*` values:
+The backend tests need an AI service pointed at WireMock instead of a real provider. The row uses
+the LM Studio bridge, whose base URL is a local-runtime address by design, so nothing has to be
+redirected and no credential is involved:
 
 ```bash
 docker run -d --name wiremock -p 8080:8080 -v "$(pwd)/wiremock:/home/wiremock:ro" wiremock/wiremock:3.13.1
 bin/magento config:set mageos_ai/services/configuration \
-  '{"_e2e_row_1":{"anthropic":{"api_key":"not-a-real-key","model":"claude-sonnet-4-6","base_url":"http://wiremock:8080"}}}'
+  '{"_e2e_row_1":{"lmstudio":{"base_url":"http://wiremock:8080","model":"e2e-model"}}}'
 bin/magento cache:flush config
 ```
 
@@ -82,17 +83,15 @@ be read back once gone.** Point it at a throwaway store, or save the row first:
 bin/magento config:show mageos_ai/services/configuration
 ```
 
-The base URL stops at the host: the Anthropic bridge appends `/v1/messages` itself. The hostname
-has to resolve from inside the container running Magento, so put WireMock on the same network. See
-`.github/workflows/templates/docker-compose.yml` for a working example.
+The base URL stops at the host: the bridge appends `/v1/chat/completions` itself. The hostname has
+to resolve from inside the container running Magento, so put WireMock on the same network. See
+`.github/workflows/templates/docker-compose.yml` for a working example. The bridge itself comes
+from `symfony/ai-lm-studio-platform`, which is a `suggest` of `MageOS_AiBase` and so has to be
+installed explicitly.
 
-`config:set` does not run the field's backend model, so the row lands unencrypted. That is fine for
-a throwaway key WireMock never checks, and the selector reads plaintext rows; anything real should
-be entered through the admin form, which encrypts it.
-
-The bridge validates the model against its own catalogue before any request leaves, so a model it
-does not know fails with `No provider found for model` and never reaches WireMock. Keep the model
-in the row to one `symfony/ai-anthropic-platform` ships.
+The fixtures are OpenAI chat-completions SSE, which is what LM Studio speaks. `e2e-model` is not in
+any bridge catalogue, which is deliberate: `MageOS_AiBase` registers whatever model a row is
+configured with, and these tests cover that path.
 
 ## Browsers
 

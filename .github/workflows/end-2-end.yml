@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # WireMock replaces the call to Anthropic, so no API key is ever needed.
+      # WireMock stands in for the provider, so no API key is ever needed.
       - name: Start the containers
         run: |
           docker compose -f $COMPOSE_FILE up -d --quiet-pull
@@ -36,12 +36,12 @@ jobs:
       # MageOS_AiBase has no tagged release yet, so it comes off its branch under an inline alias
       # that satisfies this module's ^1.0. Drop both lines once it is on Packagist.
       # Its Symfony AI bridges are a `suggest`, which composer never installs on its own, and
-      # without one there is no client to call Anthropic with at all.
-      - name: Install the AI base module and its Anthropic bridge
+      # without one there is no client to call a provider with at all.
+      - name: Install the AI base module and a provider bridge
         run: |
           docker exec mage-os-community-edition composer config repositories.mage-os-ai-base vcs https://github.com/mage-os-lab/module-ai-base
           docker exec mage-os-community-edition ./retry "composer require --no-update mage-os/module-ai-base:'dev-main as 1.0.0'"
-          docker exec mage-os-community-edition ./retry "composer require --no-update symfony/ai-anthropic-platform"
+          docker exec mage-os-community-edition ./retry "composer require --no-update symfony/ai-lm-studio-platform"
 
       - name: Upload the module into the Mage-OS container
         run: |
@@ -61,11 +61,11 @@ jobs:
           docker exec mage-os-community-edition /bin/bash ./change-base-url $BASE_URL
           docker exec mage-os-community-edition /bin/bash ./disable-2fa
           docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/general/enabled 1"
-          # One MageOS_AiBase service row, pointed at WireMock rather than api.anthropic.com. The
-          # bridge appends /v1/messages itself, so the base URL stops at the host. config:set does
-          # not run the field's backend model, so this lands unencrypted; the selector reads legacy
-          # plaintext, and the key is a throwaway WireMock never checks.
-          docker exec mage-os-community-edition ./retry "bin/magento config:set mageos_ai/services/configuration '{\"_e2e_row_1\":{\"anthropic\":{\"api_key\":\"not-a-real-key\",\"model\":\"claude-sonnet-4-6\",\"base_url\":\"http://wiremock:8080\"}}}'"
+          # One MageOS_AiBase service row on the LM Studio bridge, whose base URL is a local
+          # runtime address by design, so nothing has to be redirected to make this work. It speaks
+          # OpenAI chat-completions and appends /v1/chat/completions itself, so the base URL stops
+          # at the host. No credential is involved: a local runtime takes none.
+          docker exec mage-os-community-edition ./retry "bin/magento config:set mageos_ai/services/configuration '{\"_e2e_row_1\":{\"lmstudio\":{\"base_url\":\"http://wiremock:8080\",\"model\":\"e2e-model\"}}}'"
           # Empty means "first usable service", which is the one row above.
           docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/api/ai_service ''"
           # One admin session is shared by every parallel worker.
