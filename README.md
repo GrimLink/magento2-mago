@@ -44,6 +44,8 @@ Examples:
 - DDEV: `https://ddev-<project>-web:443`
 - Leave empty to use the store's base URL (works for most setups)
 
+These calls verify the TLS certificate by default. Loopback hosts (`127.0.0.1`, `localhost`, `app`) always skip verification: the server presents the store-domain certificate there, which cannot match the loopback URL host. For other hosts with a self-signed certificate (e.g. `https://nginx:443`), set `Verify TLS Certificate` to No. Keep it enabled in production.
+
 ## Built-in Skills
 
 | Skill area | Tools | Access |

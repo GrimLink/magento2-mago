@@ -31,6 +31,7 @@ interface RepositoryInterface
     public const XML_PATH_TEXT_COLOR = 'maggy/chat/text_color';
     public const XML_PATH_ASSISTANT_NAME = 'maggy/chat/assistant_name';
     public const XML_PATH_INTERNAL_URL = 'maggy/api/internal_url';
+    public const XML_PATH_INTERNAL_SSL_VERIFY = 'maggy/api/internal_ssl_verify';
     public const XML_PATH_LANGUAGE = 'maggy/chat/language';
     public const XML_PATH_DOCS_ENABLED = 'maggy/docs/enabled';
     public const XML_PATH_DOCS_SOURCE_REPO = 'maggy/docs/source_repo';
@@ -137,6 +138,11 @@ interface RepositoryInterface
      * @return string
      */
     public function getInternalUrl(): string;
+
+    /**
+     * @return bool
+     */
+    public function isInternalSslVerifyEnabled(): bool;
 
     /**
      * @return bool
