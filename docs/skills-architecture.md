@@ -639,6 +639,12 @@ The existing `ToolInterface` methods map 1:1 to MCP tool definitions, making thi
 |------|-------------|---------|
 | `maggy/api/internal_url` | Internal URL for REST API calls (Docker/proxy setups) | — (uses store base URL) |
 
+#### Debug & Logging
+| Path | Description | Default |
+|------|-------------|---------|
+| `maggy/debug/debug` | Debug log, and full request/response payloads in the usage log | No |
+| `maggy/debug/payload_retention_days` | Days before a daily cron removes stored payloads from the usage log (0 keeps forever); token statistics are never deleted | `30` |
+
 #### Per-Tool Toggles (Not implemented)
 
 > **Status: Not planned** — Per-tool config toggles are superseded by the DB-based `PermissionChecker` system which provides per-user granularity. No additional config UI needed.
@@ -719,4 +725,5 @@ Admin types message
 - **Disable unused tools** — if you don't need CMS editing via the assistant, disable `cms_data`.
 - **Use ACL roles** — give catalog managers `assistant_read` only. Reserve `assistant_write` for senior admins.
 - **Audit conversations** — conversations are stored in `maggy_conversation` and `maggy_message` tables. Review periodically.
+- **Usage log** — `maggy_usage_log` always records token counts and skill names for accounting. The full request/response payloads are only stored while Debug Mode is on, and a daily cron removes stored payloads older than `maggy/debug/payload_retention_days` (default 30 days).
 - **Be aware of AI provider data policies** — messages and tool results are processed by the selected AI provider (Anthropic or OpenAI). Review their data retention and usage policies.

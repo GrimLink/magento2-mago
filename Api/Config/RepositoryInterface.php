@@ -17,6 +17,7 @@ interface RepositoryInterface
     public const EXTENSION_CODE = 'MaggyAssistant_Base';
     public const XML_PATH_EXTENSION_ENABLE = 'maggy/general/enabled';
     public const XML_PATH_DEBUG = 'maggy/debug/debug';
+    public const XML_PATH_PAYLOAD_RETENTION_DAYS = 'maggy/debug/payload_retention_days';
     public const XML_PATH_PROVIDER = 'maggy/api/provider';
     public const XML_PATH_CLAUDE_API_KEY = 'maggy/api/claude_api_key';
     public const XML_PATH_CLAUDE_MODEL = 'maggy/api/claude_model';
@@ -72,6 +73,11 @@ interface RepositoryInterface
      * @return bool
      */
     public function isDebugEnabled(): bool;
+
+    /**
+     * @return int
+     */
+    public function getPayloadRetentionDays(): int;
 
     /**
      * @return string
