@@ -5,7 +5,7 @@
             <config_path>maggy/docs/cron_expr</config_path>
         </job>
     </group>
-    <group id="default">
+    <group id="maggy">
         <job name="maggy_usage_clean_payloads" instance="MaggyAssistant\Base\Cron\CleanUsageLog" method="execute">
             <schedule>0 3 * * *</schedule>
         </job>
