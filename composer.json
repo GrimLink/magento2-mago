@@ -15,19 +15,19 @@
         "magento/module-cms": "*",
         "magento/module-config": "*",
         "magento/module-store": "*",
-        "magento/module-cron": "*"
+        "magento/module-cron": "*",
+        "symfony/ai-anthropic-platform": "^0.4",
+        "symfony/ai-open-ai-platform": "^0.4"
     },
     "suggest": {
         "maggy-assistant/magento2-issue-tracker": "Add-on for reporting issues to GitHub, Jira, and other project trackers",
-        "symfony/ai-anthropic-platform": "Required to run the assistant on Anthropic",
-        "symfony/ai-azure-platform": "Required to run the assistant on Azure OpenAI",
-        "symfony/ai-deep-seek-platform": "Required to run the assistant on DeepSeek",
-        "symfony/ai-gemini-platform": "Required to run the assistant on Google Gemini",
-        "symfony/ai-hugging-face-platform": "Required to run the assistant on Hugging Face",
-        "symfony/ai-lm-studio-platform": "Required to run the assistant on a local LM Studio instance",
-        "symfony/ai-ollama-platform": "Required to run the assistant on a local Ollama instance",
-        "symfony/ai-open-ai-platform": "Required to run the assistant on OpenAI",
-        "symfony/ai-open-router-platform": "Required to run the assistant on OpenRouter"
+        "symfony/ai-azure-platform": "Run the assistant on Azure OpenAI",
+        "symfony/ai-deep-seek-platform": "Run the assistant on DeepSeek",
+        "symfony/ai-gemini-platform": "Run the assistant on Google Gemini",
+        "symfony/ai-hugging-face-platform": "Run the assistant on Hugging Face",
+        "symfony/ai-lm-studio-platform": "Run the assistant on a local LM Studio instance",
+        "symfony/ai-ollama-platform": "Run the assistant on a local Ollama instance",
+        "symfony/ai-open-router-platform": "Run the assistant on OpenRouter"
     },
     "autoload": {
         "files": [

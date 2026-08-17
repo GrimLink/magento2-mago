@@ -21,13 +21,11 @@ AI-powered admin assistant — chat with your store using the AI provider of you
 
 ## Installation
 
-Providers, credentials and models are owned by `MageOS_AiBase`. Its Symfony AI bridges are
-optional dependencies, so install the one for the provider you intend to use — without a bridge
-there is nothing to call the provider with.
+Anthropic and OpenAI are included out of the box. For other providers (Azure, Gemini, DeepSeek,
+Ollama, LM Studio, etc.) install the matching Symfony AI bridge — see `composer.json` suggests.
 
 ```bash
 composer require maggy-assistant/magento2-base
-composer require symfony/ai-anthropic-platform   # or symfony/ai-open-ai-platform, ...
 bin/magento module:enable MageOS_AiBase MaggyAssistant_Base
 bin/magento setup:upgrade
 ```
