@@ -7,11 +7,13 @@ declare(strict_types=1);
 namespace MaggyAssistant\Base\Service\Usage;
 
 use Magento\Framework\App\ResourceConnection;
+use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 class UsageLogger
 {
     public function __construct(
-        private readonly ResourceConnection $resourceConnection
+        private readonly ResourceConnection $resourceConnection,
+        private readonly ConfigRepositoryInterface $configRepository
     ) {
     }
 
@@ -40,12 +42,15 @@ class UsageLogger
             'skill_names' => !empty($skillNames) ? implode(',', $skillNames) : null,
         ];
 
-        if ($requestPayload !== null) {
-            $data['request_payload'] = json_encode($requestPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        }
+        // Full payloads can hold store data and PII; only persist them in debug mode (issue #26)
+        if ($this->configRepository->isDebugEnabled()) {
+            if ($requestPayload !== null) {
+                $data['request_payload'] = json_encode($requestPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
 
-        if ($responsePayload !== null) {
-            $data['response_payload'] = json_encode($responsePayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            if ($responsePayload !== null) {
+                $data['response_payload'] = json_encode($responsePayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
         }
 
         $connection->insert($table, $data);

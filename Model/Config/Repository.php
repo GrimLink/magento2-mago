@@ -41,6 +41,13 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
         return $this->isSetFlag(self::XML_PATH_DEBUG);
     }
 
+    public function getPayloadRetentionDays(): int
+    {
+        // Non-numeric/negative config falls back to 30 rather than failing open to keep-forever
+        $value = $this->getStoreValue(self::XML_PATH_PAYLOAD_RETENTION_DAYS);
+        return ctype_digit($value) ? (int)$value : 30;
+    }
+
     public function getProvider(): string
     {
         return $this->getStoreValue(self::XML_PATH_PROVIDER) ?: 'claude';
