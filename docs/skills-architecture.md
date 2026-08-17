@@ -189,22 +189,23 @@ The `_links` convention is optional — tools work fine without it. But it signi
 
 ### Provider Layer
 
-The AI provider is abstracted behind `ProviderInterface`:
+Providers are not this module's concern. `MageOS_AiBase` owns them — credentials, models,
+endpoints and the wire format of every backend it supports — and hands back a
+`MageOS\AiBase\Api\AiClientInterface` that speaks `chat()`, `streamChat()` and `complete()`.
 
-```
-MaggyAssistant\Base\Api\Ai\ProviderInterface
-```
+Two classes bridge that to the rest of this module:
 
-```php
-interface ProviderInterface
-{
-    public function chat(array $messages, array $tools = [], array $options = []): array;
-    public function stream(array $messages, array $tools = [], array $options = [], callable $onChunk = null): array;
-    public function getProviderName(): string;
-}
-```
+| Class | Responsibility |
+|---|---|
+| `Service\Ai\RequestFactory` | Turns the conversation arrays the panel and the conversation store speak into a `ChatRequestInterface`, tools included |
+| `Service\Ai\Client` | Resolves the configured service row, applies `max_tokens`, and maps responses and stream chunks back to the array shape `ChatService` returns |
 
-Built-in providers: **Claude** (`Model/Ai/Provider/Claude.php`) and **OpenAI** (`Model/Ai/Provider/OpenAi.php`). The `ProviderFactory` selects the active provider based on configuration.
+`ChatService` therefore never sees a provider. Streaming yields `StreamChunkInterface` values with
+tool calls already complete and their arguments decoded, so there is no SSE parsing or partial-JSON
+stitching anywhere in this module.
+
+Which service a store runs on is `maggy/api/ai_service`, an id pointing at a row configured under
+*Stores > Configuration > Mage-OS > AI Configuration*. Empty means the first usable one.
 
 ---
 
@@ -631,13 +632,8 @@ The existing `ToolInterface` methods map 1:1 to MCP tool definitions, making thi
 #### AI Provider
 | Path | Description | Default |
 |------|-------------|---------|
-| `maggy/api/provider` | AI provider (`claude` or `openai`) | `claude` |
-| `maggy/api/claude_api_key` | Claude API key (encrypted) | — |
-| `maggy/api/claude_model` | Claude model | `claude-opus-5` |
-| `maggy/api/openai_api_key` | OpenAI API key (encrypted) | — |
-| `maggy/api/openai_model` | OpenAI model | — |
+| `maggy/api/ai_service` | Row id of the `MageOS_AiBase` service to run on; empty means the first usable one | — |
 | `maggy/api/max_tokens` | Maximum response tokens | `4096` |
-| `maggy/api/temperature` | Response randomness | `0.7` |
 | `maggy/api/streaming` | Enable SSE streaming | Yes |
 
 #### Chat Behavior

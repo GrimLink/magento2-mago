@@ -18,15 +18,8 @@ interface RepositoryInterface
     public const XML_PATH_EXTENSION_ENABLE = 'maggy/general/enabled';
     public const XML_PATH_DEBUG = 'maggy/debug/debug';
     public const XML_PATH_PAYLOAD_RETENTION_DAYS = 'maggy/debug/payload_retention_days';
-    public const XML_PATH_PROVIDER = 'maggy/api/provider';
-    public const XML_PATH_CLAUDE_API_KEY = 'maggy/api/claude_api_key';
-    public const XML_PATH_CLAUDE_MODEL = 'maggy/api/claude_model';
-    public const XML_PATH_CLAUDE_BASE_URL = 'maggy/api/claude_base_url';
-    public const XML_PATH_OPENAI_API_KEY = 'maggy/api/openai_api_key';
-    public const XML_PATH_OPENAI_MODEL = 'maggy/api/openai_model';
-    public const XML_PATH_OPENAI_BASE_URL = 'maggy/api/openai_base_url';
+    public const XML_PATH_AI_SERVICE = 'maggy/api/ai_service';
     public const XML_PATH_MAX_TOKENS = 'maggy/api/max_tokens';
-    public const XML_PATH_TEMPERATURE = 'maggy/api/temperature';
     public const XML_PATH_STREAMING = 'maggy/api/streaming';
     public const XML_PATH_SYSTEM_PROMPT = 'maggy/chat/system_prompt';
     public const XML_PATH_MAX_TOOL_ITERATIONS = 'maggy/chat/max_tool_iterations';
@@ -82,36 +75,20 @@ interface RepositoryInterface
     public function getPayloadRetentionDays(): int;
 
     /**
-     * @return string
-     */
-    public function getProvider(): string;
-
-    /**
-     * @return string
-     */
-    public function getApiKey(): string;
-
-    /**
-     * @return string
-     */
-    public function getModel(): string;
-
-    /**
-     * Endpoint for the active provider. Empty means the provider's own default.
+     * Row id of the MageOS_AiBase service the assistant runs on.
+     *
+     * Empty means "whichever service is usable first", which is what a single-provider store wants
+     * and what a fresh install has. Credentials, model and endpoint all live on that row, under
+     * Stores > Configuration > Mage-OS > AI Configuration.
      *
      * @return string
      */
-    public function getApiBaseUrl(): string;
+    public function getAiServiceId(): string;
 
     /**
      * @return int
      */
     public function getMaxTokens(): int;
-
-    /**
-     * @return float
-     */
-    public function getTemperature(): float;
 
     /**
      * @return bool
