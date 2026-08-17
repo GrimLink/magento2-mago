@@ -7,7 +7,7 @@
     "require": {
         "php": ">=8.2",
         "mage-os/module-ai-base": "^1.0",
-        "magento/framework": ">=103.0.0",
+        "magento/framework": ">=103.0.9",
         "magento/module-backend": "*",
         "magento/module-sales": "*",
         "magento/module-catalog": "*",
@@ -16,8 +16,8 @@
         "magento/module-config": "*",
         "magento/module-store": "*",
         "magento/module-cron": "*",
-        "symfony/ai-anthropic-platform": "^0.4",
-        "symfony/ai-open-ai-platform": "^0.4"
+        "symfony/ai-anthropic-platform": "^0.12",
+        "symfony/ai-open-ai-platform": "^0.12"
     },
     "suggest": {
         "maggy-assistant/magento2-issue-tracker": "Add-on for reporting issues to GitHub, Jira, and other project trackers",

@@ -16,7 +16,7 @@ AI-powered admin assistant — chat with your store using the AI provider of you
 ## Requirements
 
 - PHP >= 8.2
-- Magento >= 2.4.4
+- Magento >= 2.4.9 or Mage-OS >= 2.3 (Symfony 7.3+ required by the AI bridges)
 - An API key for one of the supported providers
 
 ## Installation
