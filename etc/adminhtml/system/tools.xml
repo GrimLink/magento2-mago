@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="tools" translate="label" type="text" sortOrder="35" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Tools</label>
+        <field id="max_response_tokens" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Max Tool Response Tokens</label>
+            <validate>validate-digits</validate>
+            <comment><![CDATA[Tool output larger than this estimated token count is truncated before it is sent to the AI, so one large result cannot crowd out the conversation (default: 4000).]]></comment>
+        </field>
+    </group>
+</include>

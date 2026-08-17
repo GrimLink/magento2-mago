@@ -149,18 +149,18 @@ Orchestrates the conversation loop:
    execute write tool ──▶ result back to AI ──▶ continue
 ```
 
-### Response Limits (Planned)
+### Response Limits
 
-> **Status: Planned** — Truncation logic is not yet implemented in ChatService. Tool output is currently returned in full.
+> **Status: Truncation implemented.** Execution timeouts are still planned.
 
-Tool output should be truncated by the `ChatService` to prevent context window exhaustion. A single CMS page or large product set can easily produce thousands of tokens — without limits, one tool call can crowd out the rest of the conversation.
+Tool output is truncated by the `ChatService` to prevent context window exhaustion. A single CMS page or large product set can easily produce thousands of tokens — without limits, one tool call can crowd out the rest of the conversation.
 
 | Limit | Default | Configurable |
 |-------|---------|--------------|
-| Max response size per tool | 4,000 tokens | `maggy/tools/max_response_tokens` |
-| Execution timeout | 5 seconds (read), 10 seconds (write) | `maggy/tools/execution_timeout` |
+| Max response size per tool | 4,000 tokens (estimated as 4 bytes per token on the JSON output) | `maggy/tools/max_response_tokens` |
+| Execution timeout (planned) | 5 seconds (read), 10 seconds (write) | `maggy/tools/execution_timeout` |
 
-When implemented, the `ChatService` will append a `_truncated: true` flag so the LLM knows the data is incomplete and can ask the user to narrow the query.
+When a tool result exceeds the limit, the result sent to the LLM is replaced by an envelope: `_truncated: true`, an `output` field with the first part of the JSON (cut multibyte-safe, may stop mid-value), `total_bytes`/`returned_bytes`, and a `note` instructing the model not to retry the same call but to narrow the query. The cap applies to all three execution paths (plain, streaming, confirmed writes); the debug log still records the full result before truncation.
 
 ### Resource Links (Planned frontend rendering)
 
@@ -633,6 +633,11 @@ The existing `ToolInterface` methods map 1:1 to MCP tool definitions, making thi
 |------|-------------|---------|
 | `maggy/chat/system_prompt` | System instruction sent with every request | — |
 | `maggy/chat/max_tool_iterations` | Max tool execution loops per message | `10` |
+
+#### Tools
+| Path | Description | Default |
+|------|-------------|---------|
+| `maggy/tools/max_response_tokens` | Estimated token cap per tool result before truncation | `4000` |
 
 #### Internal API
 | Path | Description | Default |

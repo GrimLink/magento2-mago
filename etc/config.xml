@@ -20,6 +20,9 @@
                 <accent_color>#E8710A</accent_color>
                 <text_color>#FFFFFF</text_color>
             </chat>
+            <tools>
+                <max_response_tokens>4000</max_response_tokens>
+            </tools>
             <debug>
                 <debug>0</debug>
             </debug>

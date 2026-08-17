@@ -22,6 +22,7 @@
             </group>
             <include path="MaggyAssistant_Base::system/api.xml"/>
             <include path="MaggyAssistant_Base::system/chat.xml"/>
+            <include path="MaggyAssistant_Base::system/tools.xml"/>
             <include path="MaggyAssistant_Base::system/docs.xml"/>
             <include path="MaggyAssistant_Base::system/debug.xml"/>
         </section>
