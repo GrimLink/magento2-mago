@@ -5,10 +5,10 @@
       "priority": 1,
       "request": {
         "method": "POST",
-        "urlPath": "/v1/messages",
+        "urlPath": "/v1/chat/completions",
         "bodyPatterns": [
           {"contains": "E2E WireMock check"},
-          {"contains": "tool_result"}
+          {"contains": "\"role\":\"tool\""}
         ]
       },
       "response": {
@@ -23,10 +23,10 @@
       "priority": 2,
       "request": {
         "method": "POST",
-        "urlPath": "/v1/messages",
+        "urlPath": "/v1/chat/completions",
         "bodyPatterns": [
           {"contains": "E2E WireMock check"},
-          {"doesNotMatch": ".*tool_result.*"}
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
         ]
       },
       "response": {

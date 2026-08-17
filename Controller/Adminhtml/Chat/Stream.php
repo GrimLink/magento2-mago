@@ -20,6 +20,7 @@ use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
+use MaggyAssistant\Base\Service\Ai\Client;
 
 class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
@@ -30,6 +31,7 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
         private readonly ChatServiceInterface $chatService,
         private readonly ConversationRepositoryInterface $conversationRepository,
         private readonly ConfigRepository $configRepository,
+        private readonly Client $client,
         private readonly Json $json,
         private readonly ErrorLogger $errorLogger,
         private readonly DebugLogger $debugLogger
@@ -100,9 +102,12 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
                 $this->terminateResponse();
             }
 
-            if (!$this->configRepository->getApiKey()) {
-                $provider = ucfirst($this->configRepository->getProvider());
-                $this->sendSse('error', ['error' => 'No API key configured. Add your ' . $provider . ' API key in Stores > Configuration > Maggy Assistant > API Settings.']);
+            // Before the conversation row exists: an unconfigured store would otherwise persist the
+            // question and then fail, leaving a conversation nobody ever got an answer to.
+            try {
+                $this->client->resolve();
+            } catch (\Throwable $e) {
+                $this->sendSse('error', ['error' => $e->getMessage()]);
                 $this->sendSse('done', []);
                 $this->terminateResponse();
             }
