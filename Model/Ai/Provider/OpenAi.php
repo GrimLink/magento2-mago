@@ -12,7 +12,7 @@ use MaggyAssistant\Base\Service\Ai\RestClient;
 
 class OpenAi implements ProviderInterface
 {
-    private const API_URL = 'https://api.openai.com/v1/chat/completions';
+    private const DEFAULT_API_URL = 'https://api.openai.com/v1/chat/completions';
 
     public function __construct(
         private readonly ConfigRepository $configRepository,
@@ -26,7 +26,7 @@ class OpenAi implements ProviderInterface
         $headers = $this->getHeaders();
 
         $response = $this->restClient->execute(
-            self::API_URL,
+            $this->getApiUrl(),
             $headers,
             $body,
             $this->configRepository->isDebugEnabled()
@@ -61,7 +61,7 @@ class OpenAi implements ProviderInterface
         $usage = ['input_tokens' => 0, 'output_tokens' => 0];
 
         $this->restClient->stream(
-            self::API_URL,
+            $this->getApiUrl(),
             $headers,
             $body,
             function (string $chunk) use (&$fullContent, &$toolCalls, &$currentToolCalls, &$buffer, &$usage, $onChunk) {
@@ -154,6 +154,11 @@ class OpenAi implements ProviderInterface
     public function getProviderName(): string
     {
         return 'openai';
+    }
+
+    private function getApiUrl(): string
+    {
+        return $this->configRepository->getApiBaseUrl() ?: self::DEFAULT_API_URL;
     }
 
     private function getHeaders(): array

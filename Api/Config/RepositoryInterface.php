@@ -21,8 +21,10 @@ interface RepositoryInterface
     public const XML_PATH_PROVIDER = 'maggy/api/provider';
     public const XML_PATH_CLAUDE_API_KEY = 'maggy/api/claude_api_key';
     public const XML_PATH_CLAUDE_MODEL = 'maggy/api/claude_model';
+    public const XML_PATH_CLAUDE_BASE_URL = 'maggy/api/claude_base_url';
     public const XML_PATH_OPENAI_API_KEY = 'maggy/api/openai_api_key';
     public const XML_PATH_OPENAI_MODEL = 'maggy/api/openai_model';
+    public const XML_PATH_OPENAI_BASE_URL = 'maggy/api/openai_base_url';
     public const XML_PATH_MAX_TOKENS = 'maggy/api/max_tokens';
     public const XML_PATH_TEMPERATURE = 'maggy/api/temperature';
     public const XML_PATH_STREAMING = 'maggy/api/streaming';
@@ -93,6 +95,13 @@ interface RepositoryInterface
      * @return string
      */
     public function getModel(): string;
+
+    /**
+     * Endpoint for the active provider. Empty means the provider's own default.
+     *
+     * @return string
+     */
+    public function getApiBaseUrl(): string;
 
     /**
      * @return int

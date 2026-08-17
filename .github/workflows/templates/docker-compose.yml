@@ -1,0 +1,15 @@
+services:
+  mage-os:
+    image: ghcr.io/controlaltdelete-nl/magento2-in-a-box/mage-os-community-edition:${PHP_VERSION}-mage-os${MAGEOS_VERSION}-sample-data
+    container_name: mage-os-community-edition
+    volumes:
+      - ../../../mage-os-logs:/data/var/log
+    ports:
+      - 80:80
+
+  wiremock:
+    image: wiremock/wiremock:3.13.1
+    container_name: wiremock
+    command: ["--verbose", "--disable-banner"]
+    volumes:
+      - ../../../Test/End-2-end/wiremock:/home/wiremock:ro
