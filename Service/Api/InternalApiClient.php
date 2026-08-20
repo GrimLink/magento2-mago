@@ -19,8 +19,6 @@ use MaggyAssistant\Base\Logger\ErrorLogger;
 
 class InternalApiClient
 {
-    private const LOOPBACK_HOSTS = ['127.0.0.1', 'localhost', 'app'];
-
     private array $tokens = [];
 
     public function __construct(
@@ -142,13 +140,12 @@ class InternalApiClient
             'body' => $body ? $this->json->serialize($body) : null,
         ]);
 
-        // When curling to a loopback IP/container, nginx needs the real hostname
+        // When the internal URL host differs from the store host, nginx needs the real hostname
         $urlHost = parse_url($url, PHP_URL_HOST);
         $storeHost = parse_url(
             $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB),
             PHP_URL_HOST
         ) ?: 'localhost';
-        $isLoopback = in_array($urlHost, self::LOOPBACK_HOSTS, true);
 
         $ch = curl_init();
         $headers = [
@@ -156,12 +153,11 @@ class InternalApiClient
             'Content-Type: application/json',
             'Accept: application/json',
         ];
-        if ($isLoopback) {
+        if ($urlHost !== $storeHost) {
             $headers[] = 'Host: ' . $storeHost;
         }
 
-        // Loopback targets present the store-domain cert, which cannot match the loopback URL host, so verification stays off there
-        $sslVerify = !$isLoopback && $this->configRepository->isInternalSslVerifyEnabled();
+        $sslVerify = $this->configRepository->isInternalSslVerifyEnabled();
 
         $curlOptions = [
             CURLOPT_URL => $url,

@@ -59,7 +59,7 @@
         <field id="internal_ssl_verify" translate="label comment" type="select" sortOrder="95" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Verify TLS Certificate</label>
             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-            <comment><![CDATA[Verify the TLS certificate on internal REST API calls. Keep enabled in production. Disable only for local or Docker setups with a self-signed certificate. Loopback hosts (127.0.0.1, localhost, app) always skip verification.]]></comment>
+            <comment><![CDATA[Verify the TLS certificate on internal REST API calls. Keep enabled in production. Disable for local or Docker setups where the certificate does not match the internal URL host.]]></comment>
         </field>
     </group>
 </include>
