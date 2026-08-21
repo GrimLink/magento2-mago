@@ -9,18 +9,18 @@ namespace MaggyAssistant\Base\Controller\Adminhtml\Chat;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\App\CsrfAwareActionInterface;
-use Magento\Framework\App\Request\InvalidRequestException;
-use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Response\Http as HttpResponse;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Serialize\Serializer\Json;
 use MaggyAssistant\Base\Api\ChatServiceInterface;
 use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 
-class Confirm extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
+class Confirm extends Action implements HttpPostActionInterface
 {
+    use FormKeyJsonValidation;
+
     public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_write';
 
     public function __construct(
@@ -28,24 +28,10 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
         private readonly ChatServiceInterface $chatService,
         private readonly ConversationRepositoryInterface $conversationRepository,
         private readonly Json $json,
-        private readonly ErrorLogger $errorLogger
+        private readonly ErrorLogger $errorLogger,
+        private readonly FormKey $formKey
     ) {
         parent::__construct($context);
-    }
-
-    public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
-    {
-        return null;
-    }
-
-    public function validateForCsrf(RequestInterface $request): ?bool
-    {
-        return true;
-    }
-
-    public function _processUrlKeys(): bool
-    {
-        return true;
     }
 
     public function execute(): ResultInterface|HttpResponse
@@ -74,7 +60,15 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
                 $this->terminateResponse();
             }
 
-            $message = $this->conversationRepository->getMessageById($messageId);
+            $user = $this->_auth->getUser();
+            $adminUserId = $user ? (int)$user->getId() : 0;
+            if (!$adminUserId) {
+                $this->sendSse('error', ['error' => 'Not authorized']);
+                $this->sendSse('done', []);
+                $this->terminateResponse();
+            }
+
+            $message = $this->conversationRepository->getMessageForUser($messageId, $adminUserId);
             if (empty($message['pending_confirmation'])) {
                 $this->sendSse('error', ['error' => 'No pending confirmation for this message']);
                 $this->sendSse('done', []);
@@ -86,13 +80,10 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
                 $toolCalls = $this->json->unserialize($toolCalls);
             }
 
-            $user = $this->_auth->getUser();
-            $adminUserId = $user ? (int)$user->getId() : 0;
-
             $results = $this->chatService->executeConfirmedTools($toolCalls, $adminUserId, function (string $type, array $data) {
                 $this->sendSse($type, $data);
             });
-            $this->conversationRepository->resolveConfirmation($messageId, true);
+            $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId);
 
             $conversationId = (int)$message['conversation_id'];
             foreach ($results as $toolCallId => $result) {

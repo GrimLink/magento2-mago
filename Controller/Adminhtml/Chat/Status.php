@@ -9,11 +9,9 @@ namespace MaggyAssistant\Base\Controller\Adminhtml\Chat;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\App\CsrfAwareActionInterface;
-use Magento\Framework\App\Request\InvalidRequestException;
-use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Serialize\Serializer\Json;
 use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
 
@@ -21,32 +19,20 @@ use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
  * Fallback endpoint to check if a conversation has a pending confirmation.
  * Used when SSE done event is lost due to nginx/proxy buffering.
  */
-class Status extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
+class Status extends Action implements HttpPostActionInterface
 {
+    use FormKeyJsonValidation;
+
     public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_read';
 
     public function __construct(
         Context $context,
         private readonly ConversationRepositoryInterface $conversationRepository,
         private readonly JsonFactory $jsonFactory,
-        private readonly Json $json
+        private readonly Json $json,
+        private readonly FormKey $formKey
     ) {
         parent::__construct($context);
-    }
-
-    public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
-    {
-        return null;
-    }
-
-    public function validateForCsrf(RequestInterface $request): ?bool
-    {
-        return true;
-    }
-
-    public function _processUrlKeys(): bool
-    {
-        return true;
     }
 
     public function execute(): ResultInterface
@@ -62,6 +48,14 @@ class Status extends Action implements HttpPostActionInterface, CsrfAwareActionI
                 return $result->setData(['pending_confirmation' => false]);
             }
 
+            $user = $this->_auth->getUser();
+            $adminUserId = $user ? (int)$user->getId() : 0;
+            if (!$adminUserId) {
+                return $result->setData(['error' => 'Not authorized']);
+            }
+
+            // Assert ownership before reading the conversation's messages
+            $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
             $messages = $this->conversationRepository->getMessages($conversationId);
             $lastAssistant = null;
             foreach (array_reverse($messages) as $msg) {

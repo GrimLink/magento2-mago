@@ -29,10 +29,16 @@ class ChatManagement implements ChatManagementInterface
     {
         try {
             $adminUserId = (int)$this->userContext->getUserId();
+            if (!$adminUserId) {
+                return $this->json->serialize(['error' => 'Not authorized']);
+            }
 
             if (!$conversationId) {
                 $title = mb_substr($message, 0, 50);
                 $conversationId = $this->conversationRepository->create($adminUserId, $title);
+            } else {
+                // Reject posting into another admin's conversation
+                $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
             }
 
             $this->conversationRepository->addMessage($conversationId, 'user', $message);
@@ -78,9 +84,12 @@ class ChatManagement implements ChatManagementInterface
     public function getConversation(int $conversationId): string
     {
         try {
-            $conversation = $this->conversationRepository->getById($conversationId);
-            $messages = $this->conversationRepository->getMessages($conversationId);
-            $conversation['messages'] = $messages;
+            $adminUserId = (int)$this->userContext->getUserId();
+            if (!$adminUserId) {
+                return $this->json->serialize(['error' => 'Not authorized']);
+            }
+            $conversation = $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
+            $conversation['messages'] = $this->conversationRepository->getMessages($conversationId);
             return $this->json->serialize($conversation);
         } catch (\Throwable $e) {
             return $this->json->serialize(['error' => $e->getMessage()]);
@@ -90,7 +99,11 @@ class ChatManagement implements ChatManagementInterface
     public function deleteConversation(int $conversationId): string
     {
         try {
-            $this->conversationRepository->delete($conversationId);
+            $adminUserId = (int)$this->userContext->getUserId();
+            if (!$adminUserId) {
+                return $this->json->serialize(['error' => 'Not authorized']);
+            }
+            $this->conversationRepository->delete($conversationId, $adminUserId);
             return $this->json->serialize(['success' => true]);
         } catch (\Throwable $e) {
             return $this->json->serialize(['error' => $e->getMessage()]);
@@ -100,7 +113,11 @@ class ChatManagement implements ChatManagementInterface
     public function confirmAction(int $messageId): string
     {
         try {
-            $message = $this->conversationRepository->getMessageById($messageId);
+            $adminUserId = (int)$this->userContext->getUserId();
+            if (!$adminUserId) {
+                return $this->json->serialize(['error' => 'Not authorized']);
+            }
+            $message = $this->conversationRepository->getMessageForUser($messageId, $adminUserId);
             if (empty($message['pending_confirmation'])) {
                 return $this->json->serialize(['error' => 'No pending confirmation for this message']);
             }
@@ -112,10 +129,9 @@ class ChatManagement implements ChatManagementInterface
 
             /** @var ChatService $chatService */
             $chatService = $this->chatService;
-            $adminUserId = (int)$this->userContext->getUserId();
             $results = $chatService->executeConfirmedTools($toolCalls, $adminUserId);
 
-            $this->conversationRepository->resolveConfirmation($messageId, true);
+            $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId);
 
             // Add tool results as messages and continue conversation
             $conversationId = (int)$message['conversation_id'];
@@ -153,9 +169,13 @@ class ChatManagement implements ChatManagementInterface
     public function rejectAction(int $messageId): string
     {
         try {
-            $this->conversationRepository->resolveConfirmation($messageId, false);
+            $adminUserId = (int)$this->userContext->getUserId();
+            if (!$adminUserId) {
+                return $this->json->serialize(['error' => 'Not authorized']);
+            }
+            $message = $this->conversationRepository->getMessageForUser($messageId, $adminUserId);
+            $this->conversationRepository->resolveConfirmation($messageId, false, $adminUserId);
 
-            $message = $this->conversationRepository->getMessageById($messageId);
             $conversationId = (int)$message['conversation_id'];
 
             $this->conversationRepository->addMessage(

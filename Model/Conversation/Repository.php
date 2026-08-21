@@ -47,6 +47,25 @@ class Repository implements ConversationRepositoryInterface
         return $row;
     }
 
+    public function getByIdForUser(int $conversationId, int $adminUserId): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('maggy_conversation');
+
+        $select = $connection->select()
+            ->from($table)
+            ->where('entity_id = ?', $conversationId)
+            ->where('admin_user_id = ?', $adminUserId);
+        $row = $connection->fetchRow($select);
+
+        if (!$row) {
+            // Same message for missing and foreign rows, so the id space cannot be probed
+            throw new \InvalidArgumentException('Conversation not found: ' . $conversationId);
+        }
+
+        return $row;
+    }
+
     public function getListByUser(int $adminUserId): array
     {
         $connection = $this->resourceConnection->getConnection();
@@ -60,11 +79,17 @@ class Repository implements ConversationRepositoryInterface
         return $connection->fetchAll($select);
     }
 
-    public function delete(int $conversationId): void
+    public function delete(int $conversationId, ?int $adminUserId = null): void
     {
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('maggy_conversation');
-        $connection->delete($table, ['entity_id = ?' => $conversationId]);
+
+        $where = ['entity_id = ?' => $conversationId];
+        if ($adminUserId !== null) {
+            $where['admin_user_id = ?'] = $adminUserId;
+        }
+
+        $connection->delete($table, $where);
     }
 
     public function addMessage(
@@ -131,10 +156,41 @@ class Repository implements ConversationRepositoryInterface
         return $row;
     }
 
-    public function resolveConfirmation(int $messageId, bool $confirmed): void
+    public function getMessageForUser(int $messageId, int $adminUserId): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $messageTable = $this->resourceConnection->getTableName('maggy_message');
+        $conversationTable = $this->resourceConnection->getTableName('maggy_conversation');
+
+        $select = $connection->select()
+            ->from(['m' => $messageTable])
+            ->join(['c' => $conversationTable], 'c.entity_id = m.conversation_id', [])
+            ->where('m.entity_id = ?', $messageId)
+            ->where('c.admin_user_id = ?', $adminUserId);
+        $row = $connection->fetchRow($select);
+
+        if (!$row) {
+            // Same message for missing and foreign rows, so the id space cannot be probed
+            throw new \InvalidArgumentException('Message not found: ' . $messageId);
+        }
+
+        return $row;
+    }
+
+    public function resolveConfirmation(int $messageId, bool $confirmed, ?int $adminUserId = null): void
     {
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('maggy_message');
-        $connection->update($table, ['pending_confirmation' => 0], ['entity_id = ?' => $messageId]);
+
+        $where = ['entity_id = ?' => $messageId];
+        if ($adminUserId !== null) {
+            $conversationTable = $this->resourceConnection->getTableName('maggy_conversation');
+            $where[] = $connection->quoteInto(
+                'conversation_id IN (SELECT entity_id FROM ' . $conversationTable . ' WHERE admin_user_id = ?)',
+                $adminUserId
+            );
+        }
+
+        $connection->update($table, ['pending_confirmation' => 0], $where);
     }
 }

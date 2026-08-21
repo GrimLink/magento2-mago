@@ -9,17 +9,17 @@ namespace MaggyAssistant\Base\Controller\Adminhtml\Chat;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\App\CsrfAwareActionInterface;
-use Magento\Framework\App\Request\InvalidRequestException;
-use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Serialize\Serializer\Json;
 use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 
-class Reject extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
+class Reject extends Action implements HttpPostActionInterface
 {
+    use FormKeyJsonValidation;
+
     public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_write';
 
     public function __construct(
@@ -27,24 +27,10 @@ class Reject extends Action implements HttpPostActionInterface, CsrfAwareActionI
         private readonly ConversationRepositoryInterface $conversationRepository,
         private readonly JsonFactory $jsonFactory,
         private readonly Json $json,
-        private readonly ErrorLogger $errorLogger
+        private readonly ErrorLogger $errorLogger,
+        private readonly FormKey $formKey
     ) {
         parent::__construct($context);
-    }
-
-    public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
-    {
-        return null;
-    }
-
-    public function validateForCsrf(RequestInterface $request): ?bool
-    {
-        return true;
-    }
-
-    public function _processUrlKeys(): bool
-    {
-        return true;
     }
 
     public function execute(): ResultInterface
@@ -60,9 +46,15 @@ class Reject extends Action implements HttpPostActionInterface, CsrfAwareActionI
                 return $result->setData(['error' => 'message_id is required']);
             }
 
-            $this->conversationRepository->resolveConfirmation($messageId, false);
+            $user = $this->_auth->getUser();
+            $adminUserId = $user ? (int)$user->getId() : 0;
+            if (!$adminUserId) {
+                return $result->setData(['error' => 'Not authorized']);
+            }
 
-            $message = $this->conversationRepository->getMessageById($messageId);
+            $message = $this->conversationRepository->getMessageForUser($messageId, $adminUserId);
+            $this->conversationRepository->resolveConfirmation($messageId, false, $adminUserId);
+
             $conversationId = (int)$message['conversation_id'];
 
             $this->conversationRepository->addMessage(
