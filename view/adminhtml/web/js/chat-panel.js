@@ -120,6 +120,7 @@
 
     function selectSlashSkill(skill) {
         input.value = 'Use the ' + skill.name + ' skill to ';
+        autoGrow();
         hideSlashMenu();
         input.focus();
     }
@@ -132,7 +133,13 @@
         if (items[slashIndex]) items[slashIndex].scrollIntoView({block:'nearest'});
     }
 
+    function autoGrow() {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 240) + 'px';
+    }
+
     input.addEventListener('input', function() {
+        autoGrow();
         var v = input.value;
         if (v.charAt(0) === '/') {
             var filter = v.substring(1);
@@ -386,6 +393,7 @@
         if (!text || busy) return;
         hideSlashMenu();
         input.value = '';
+        autoGrow();
         busy = true;
         loading.style.display = '';
         sendBtn.disabled = true;
