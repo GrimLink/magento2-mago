@@ -67,7 +67,8 @@ class CacheManager implements ToolInterface
 
     public function isReadOnlyAction(array $input): bool
     {
-        return $this->isReadOnly();
+        // status only reads cache state; flush/flush_type mutate. Unknown actions fail closed to write.
+        return ($input['action'] ?? '') === 'status';
     }
 
     public function getRequiredAcl(): string

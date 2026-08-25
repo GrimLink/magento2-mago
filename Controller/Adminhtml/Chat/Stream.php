@@ -20,6 +20,7 @@ use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
+use MaggyAssistant\Base\Service\Ai\Client;
 
 class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
@@ -30,6 +31,7 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
         private readonly ChatServiceInterface $chatService,
         private readonly ConversationRepositoryInterface $conversationRepository,
         private readonly ConfigRepository $configRepository,
+        private readonly Client $client,
         private readonly Json $json,
         private readonly ErrorLogger $errorLogger,
         private readonly DebugLogger $debugLogger
@@ -69,6 +71,7 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
         while (ob_get_level()) {
             ob_end_clean();
         }
+        ob_implicit_flush(true);
 
         try {
             $rawBody = $this->getRequest()->getContent();
@@ -99,9 +102,12 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
                 $this->terminateResponse();
             }
 
-            if (!$this->configRepository->getApiKey()) {
-                $provider = ucfirst($this->configRepository->getProvider());
-                $this->sendSse('error', ['error' => 'No API key configured. Add your ' . $provider . ' API key in Stores > Configuration > Maggy Assistant > API Settings.']);
+            // Before the conversation row exists: an unconfigured store would otherwise persist the
+            // question and then fail, leaving a conversation nobody ever got an answer to.
+            try {
+                $this->client->resolve();
+            } catch (\Throwable $e) {
+                $this->sendSse('error', ['error' => $e->getMessage()]);
                 $this->sendSse('done', []);
                 $this->terminateResponse();
             }
@@ -128,7 +134,9 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
             }
 
             foreach ($messages as $msg) {
-                $entry = ['role' => $msg['role'], 'content' => $msg['content'] ?? ''];
+                $role = $msg['role'] ?? 'user';
+                $content = $msg['content'] ?? '';
+
                 if (!empty($msg['tool_calls'])) {
                     $tc = $msg['tool_calls'];
                     if (is_string($tc)) {
@@ -147,12 +155,32 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
                         }
                     }
                     if ($allResolved && !empty($tc)) {
-                        $entry['tool_calls'] = $tc;
+                        $entry = ['role' => $role, 'content' => $content, 'tool_calls' => $tc];
+                    } else {
+                        // Tool calls without responses (rejected/abandoned confirmation) —
+                        // skip this message entirely if it has no text content
+                        if (empty(trim($content))) {
+                            continue;
+                        }
+                        $entry = ['role' => $role, 'content' => $content];
+                    }
+                } elseif ($role === 'tool') {
+                    // Only include tool responses if they have matching tool_calls already included
+                    $toolCallId = $msg['tool_call_id'] ?? '';
+                    if ($toolCallId && !isset($toolResponseIds[$toolCallId])) {
+                        continue;
+                    }
+                    $entry = ['role' => $role, 'content' => $content];
+                    if ($toolCallId) {
+                        $entry['tool_call_id'] = $toolCallId;
+                    }
+                } else {
+                    $entry = ['role' => $role, 'content' => $content];
+                    if (!empty($msg['tool_call_id'])) {
+                        $entry['tool_call_id'] = $msg['tool_call_id'];
                     }
                 }
-                if (!empty($msg['tool_call_id'])) {
-                    $entry['tool_call_id'] = $msg['tool_call_id'];
-                }
+
                 $formattedMessages[] = $entry;
             }
 
@@ -210,9 +238,9 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
     {
         // phpcs:ignore Magento2.Security.LanguageConstruct.DirectOutput
         $payload = "event: {$event}\ndata: " . json_encode($data) . "\n\n";
-        if ($pad) {
+        if ($pad || $event === 'tool_status') {
             // Add SSE comment padding to push data through network/proxy buffers (4KB)
-            $payload .= str_repeat(": \n", max(0, (int)ceil((4096 - strlen($payload)) / 3)));
+            $payload .= str_repeat(": \n", max(0, (int)ceil((8192 - strlen($payload)) / 3)));
         }
         echo $payload;
         flush();

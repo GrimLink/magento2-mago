@@ -1,0 +1,8 @@
+{
+  "name": "maggy-assistant-end-2-end",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.47.2",
+    "@types/node": "^22.7.4"
+  }
+}

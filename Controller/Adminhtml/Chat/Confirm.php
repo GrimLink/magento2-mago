@@ -61,6 +61,7 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
         while (ob_get_level()) {
             ob_end_clean();
         }
+        ob_implicit_flush(true);
 
         try {
             $rawBody = $this->getRequest()->getContent();
@@ -88,7 +89,9 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
             $user = $this->_auth->getUser();
             $adminUserId = $user ? (int)$user->getId() : 0;
 
-            $results = $this->chatService->executeConfirmedTools($toolCalls, $adminUserId);
+            $results = $this->chatService->executeConfirmedTools($toolCalls, $adminUserId, function (string $type, array $data) {
+                $this->sendSse($type, $data);
+            });
             $this->conversationRepository->resolveConfirmation($messageId, true);
 
             $conversationId = (int)$message['conversation_id'];
@@ -116,7 +119,9 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
 
             $formattedMessages = [];
             foreach ($messages as $msg) {
-                $entry = ['role' => $msg['role'], 'content' => $msg['content'] ?? ''];
+                $role = $msg['role'] ?? 'user';
+                $content = $msg['content'] ?? '';
+
                 if (!empty($msg['tool_calls'])) {
                     $tc = $msg['tool_calls'];
                     if (is_string($tc)) {
@@ -126,7 +131,6 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
                             $tc = [];
                         }
                     }
-                    // Only include tool_calls if all responses exist
                     $allResolved = true;
                     foreach ($tc as $call) {
                         if (!isset($toolResponseIds[$call['id'] ?? ''])) {
@@ -135,12 +139,29 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
                         }
                     }
                     if ($allResolved && !empty($tc)) {
-                        $entry['tool_calls'] = $tc;
+                        $entry = ['role' => $role, 'content' => $content, 'tool_calls' => $tc];
+                    } else {
+                        if (empty(trim($content))) {
+                            continue;
+                        }
+                        $entry = ['role' => $role, 'content' => $content];
+                    }
+                } elseif ($role === 'tool') {
+                    $toolCallId = $msg['tool_call_id'] ?? '';
+                    if ($toolCallId && !isset($toolResponseIds[$toolCallId])) {
+                        continue;
+                    }
+                    $entry = ['role' => $role, 'content' => $content];
+                    if ($toolCallId) {
+                        $entry['tool_call_id'] = $toolCallId;
+                    }
+                } else {
+                    $entry = ['role' => $role, 'content' => $content];
+                    if (!empty($msg['tool_call_id'])) {
+                        $entry['tool_call_id'] = $msg['tool_call_id'];
                     }
                 }
-                if (!empty($msg['tool_call_id'])) {
-                    $entry['tool_call_id'] = $msg['tool_call_id'];
-                }
+
                 $formattedMessages[] = $entry;
             }
 
@@ -169,8 +190,8 @@ class Confirm extends Action implements HttpPostActionInterface, CsrfAwareAction
     private function sendSse(string $event, array $data, bool $pad = false): void
     {
         $payload = "event: {$event}\ndata: " . json_encode($data) . "\n\n";
-        if ($pad) {
-            $payload .= str_repeat(": \n", max(0, (int)ceil((4096 - strlen($payload)) / 3)));
+        if ($pad || $event === 'tool_status') {
+            $payload .= str_repeat(": \n", max(0, (int)ceil((8192 - strlen($payload)) / 3)));
         }
         echo $payload;
         flush();

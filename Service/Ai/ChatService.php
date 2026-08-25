@@ -6,12 +6,12 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Service\Ai;
 
+use MageOS\AiBase\Api\AiClientInterface;
 use MaggyAssistant\Base\Api\ChatServiceInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 use Magento\Framework\AuthorizationInterface;
-use MaggyAssistant\Base\Model\Ai\ProviderFactory;
 use MaggyAssistant\Base\Service\Tool\ToolRegistry;
 use MaggyAssistant\Base\Service\Usage\UsageLogger;
 
@@ -19,7 +19,7 @@ class ChatService implements ChatServiceInterface
 {
     public function __construct(
         private readonly ConfigRepository $configRepository,
-        private readonly ProviderFactory $providerFactory,
+        private readonly Client $client,
         private readonly ToolRegistry $toolRegistry,
         private readonly DebugLogger $debugLogger,
         private readonly ErrorLogger $errorLogger,
@@ -30,8 +30,14 @@ class ChatService implements ChatServiceInterface
 
     public function processMessage(array $messages, ?int $conversationId = null, ?int $adminUserId = null): array
     {
-        $provider = $this->providerFactory->create();
-        $tools = $this->toolRegistry->getToolDefinitions();
+        try {
+            $client = $this->client->resolve();
+        } catch (\Throwable $e) {
+            $this->errorLogger->addLog('ChatService', $e->getMessage());
+            return ['content' => 'An error occurred: ' . $e->getMessage(), 'tool_calls' => []];
+        }
+
+        $tools = $this->toolRegistry->getToolDefinitions($adminUserId);
         $maxIterations = $this->configRepository->getMaxToolIterations();
 
         $messages = $this->prependSystemMessage($messages);
@@ -39,13 +45,13 @@ class ChatService implements ChatServiceInterface
 
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
-                $response = $provider->chat($messages, $tools);
+                $response = $this->client->chat($client, $messages, $tools);
             } catch (\Throwable $e) {
                 $this->errorLogger->addLog('ChatService', $e->getMessage());
                 return ['content' => 'An error occurred: ' . $e->getMessage(), 'tool_calls' => []];
             }
 
-            $this->logUsage($response, $adminUserId, $conversationId, $provider, $messages);
+            $this->logUsage($response, $adminUserId, $conversationId, $client, $messages);
 
             if (empty($response['tool_calls'])) {
                 return $response;
@@ -53,7 +59,7 @@ class ChatService implements ChatServiceInterface
 
             // Check if any tool call requires confirmation (write action)
             foreach ($response['tool_calls'] as $toolCall) {
-                $tool = $this->toolRegistry->getTool($toolCall['name']);
+                $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
                 if ($tool && !$tool->isReadOnlyAction($toolCall['input'] ?? [])) {
                     return [
                         'content' => $response['content'],
@@ -87,8 +93,8 @@ class ChatService implements ChatServiceInterface
 
     public function processMessageStreaming(array $messages, callable $onChunk, ?int $conversationId = null, ?int $adminUserId = null): array
     {
-        $provider = $this->providerFactory->create();
-        $tools = $this->toolRegistry->getToolDefinitions();
+        $client = $this->client->resolve();
+        $tools = $this->toolRegistry->getToolDefinitions($adminUserId);
         $maxIterations = $this->configRepository->getMaxToolIterations();
 
         $messages = $this->prependSystemMessage($messages);
@@ -96,13 +102,13 @@ class ChatService implements ChatServiceInterface
 
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
-                $response = $provider->stream($messages, $tools, [], $onChunk);
+                $response = $this->client->stream($client, $messages, $tools, $onChunk);
             } catch (\Throwable $e) {
                 $this->errorLogger->addLog('ChatService Stream', $e->getMessage());
                 throw $e;
             }
 
-            $this->logUsage($response, $adminUserId, $conversationId, $provider, $messages);
+            $this->logUsage($response, $adminUserId, $conversationId, $client, $messages);
 
             if (empty($response['tool_calls'])) {
                 return $response;
@@ -110,12 +116,12 @@ class ChatService implements ChatServiceInterface
 
             // Check for write actions needing confirmation
             foreach ($response['tool_calls'] as $toolCall) {
-                $tool = $this->toolRegistry->getTool($toolCall['name']);
+                $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
                 if ($tool && !$tool->isReadOnlyAction($toolCall['input'] ?? [])) {
                     // Send confirm event with tool details so frontend can show what will happen
                     $confirmTools = [];
                     foreach ($response['tool_calls'] as $tc) {
-                        $t = $this->toolRegistry->getTool($tc['name']);
+                        $t = $this->toolRegistry->getTool($tc['name'], $adminUserId);
                         if ($t && !$t->isReadOnlyAction($tc['input'] ?? [])) {
                             $confirmTools[] = [
                                 'name' => $tc['name'],
@@ -141,7 +147,24 @@ class ChatService implements ChatServiceInterface
             ];
 
             foreach ($response['tool_calls'] as $toolCall) {
+                $statusMsg = $this->getToolStatusMessage(
+                    $toolCall['name'],
+                    $toolCall['input']['action'] ?? '',
+                    $toolCall['input'] ?? []
+                );
+                $onChunk('tool_status', [
+                    'name' => $toolCall['name'],
+                    'status' => 'running',
+                    'message' => $statusMsg,
+                ]);
+
                 $result = $this->executeTool($toolCall, $adminUserId);
+
+                $onChunk('tool_status', [
+                    'name' => $toolCall['name'],
+                    'status' => 'done',
+                ]);
+
                 $messages[] = [
                     'role' => 'tool',
                     'tool_call_id' => $toolCall['id'],
@@ -161,11 +184,31 @@ class ChatService implements ChatServiceInterface
      * @param array $toolCalls
      * @return array Results keyed by tool call ID
      */
-    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null): array
+    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null, ?callable $onChunk = null): array
     {
         $results = [];
         foreach ($toolCalls as $toolCall) {
+            if ($onChunk) {
+                $statusMsg = $this->getToolStatusMessage(
+                    $toolCall['name'],
+                    $toolCall['input']['action'] ?? '',
+                    $toolCall['input'] ?? []
+                );
+                $onChunk('tool_status', [
+                    'name' => $toolCall['name'],
+                    'status' => 'running',
+                    'message' => $statusMsg,
+                ]);
+            }
+
             $results[$toolCall['id']] = $this->executeTool($toolCall, $adminUserId);
+
+            if ($onChunk) {
+                $onChunk('tool_status', [
+                    'name' => $toolCall['name'],
+                    'status' => 'done',
+                ]);
+            }
         }
         return $results;
     }
@@ -174,10 +217,13 @@ class ChatService implements ChatServiceInterface
         array $response,
         ?int $adminUserId,
         ?int $conversationId,
-        \MaggyAssistant\Base\Api\Ai\ProviderInterface $provider,
+        AiClientInterface $client,
         ?array $messages = null
     ): void {
-        if (empty($response['usage'])) {
+        $inputTokens = (int)($response['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int)($response['usage']['output_tokens'] ?? 0);
+
+        if ($inputTokens === 0 && $outputTokens === 0) {
             return;
         }
 
@@ -185,10 +231,10 @@ class ChatService implements ChatServiceInterface
             $this->usageLogger->log(
                 $adminUserId ?? 0,
                 $conversationId,
-                $provider->getProviderName(),
-                $this->configRepository->getModel(),
-                $response['usage']['input_tokens'] ?? 0,
-                $response['usage']['output_tokens'] ?? 0,
+                $client->getServiceCode(),
+                $client->getModel(),
+                $inputTokens,
+                $outputTokens,
                 array_column($response['tool_calls'] ?? [], 'name'),
                 $messages,
                 [
@@ -203,9 +249,16 @@ class ChatService implements ChatServiceInterface
 
     private function executeTool(array $toolCall, ?int $adminUserId = null): array
     {
-        $tool = $this->toolRegistry->getTool($toolCall['name']);
+        $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
         if (!$tool) {
             return ['error' => 'Tool not found: ' . $toolCall['name']];
+        }
+
+        if (!$this->toolRegistry->isCallAllowed($tool, $toolCall['input'] ?? [], $adminUserId)) {
+            return ['error' => sprintf(
+                'Access denied: your skill permissions do not allow this action with the %s tool',
+                $tool->getName()
+            )];
         }
 
         // Check Magento-native ACL if the tool requires it
@@ -252,7 +305,7 @@ class ChatService implements ChatServiceInterface
             return;
         }
 
-        $tool = $this->toolRegistry->getTool($toolName);
+        $tool = $this->toolRegistry->getToolByName($toolName);
         $instructions = $tool ? $tool->getInstructions() : '';
         if ($instructions) {
             $messages[] = [
@@ -264,6 +317,67 @@ class ChatService implements ChatServiceInterface
             }
         }
         $instructedTools[$toolName] = true;
+    }
+
+    private function getToolStatusMessage(string $toolName, string $action, array $input): string
+    {
+        $messages = [
+            'sales_data.revenue_summary' => 'Calculating revenue...',
+            'sales_data.recent_orders' => 'Fetching recent orders...',
+            'sales_data.lookup_order' => 'Looking up order...',
+            'sales_data.get_order_details' => 'Fetching order details...',
+            'product_data.search' => 'Searching products...',
+            'product_data.low_stock' => 'Checking low stock...',
+            'product_data.get_by_sku' => 'Fetching product...',
+            'customer_data.lookup_customer' => 'Searching for customer...',
+            'customer_data.recent_customers' => 'Fetching recent customers...',
+            'cms_data.create_page' => 'Creating CMS page...',
+            'cms_data.update_page' => 'Updating CMS page...',
+            'cms_data.list_pages' => 'Listing CMS pages...',
+            'cms_data.create_block' => 'Creating CMS block...',
+            'cms_data.update_block' => 'Updating CMS block...',
+            'cms_data.list_blocks' => 'Listing CMS blocks...',
+            'config_reader' => 'Reading configuration...',
+            'config_writer' => 'Updating configuration...',
+            'cache_manager.flush' => 'Flushing cache...',
+            'cache_manager.status' => 'Checking cache status...',
+            'indexer_manager.reindex' => 'Reindexing...',
+            'indexer_manager.status' => 'Checking indexer status...',
+            'order_manager.create_shipment' => 'Creating shipment...',
+            'order_manager.create_invoice' => 'Creating invoice...',
+            'order_manager.create_creditmemo' => 'Creating credit memo...',
+            'order_manager.add_comment' => 'Adding order comment...',
+            'order_manager.cancel' => 'Cancelling order...',
+            'order_manager.hold' => 'Holding order...',
+            'order_manager.unhold' => 'Removing hold from order...',
+        ];
+
+        $key = $action ? "{$toolName}.{$action}" : $toolName;
+
+        // Try exact match first
+        if (isset($messages[$key])) {
+            $msg = $messages[$key];
+
+            // Add context from input
+            if ($action === 'lookup_order' && !empty($input['order_number'])) {
+                return 'Looking up order #' . $input['order_number'] . '...';
+            }
+            if ($action === 'get_by_sku' && !empty($input['query'])) {
+                return 'Fetching product ' . $input['query'] . '...';
+            }
+            if ($action === 'lookup_customer' && !empty($input['search'])) {
+                return 'Searching for customer ' . $input['search'] . '...';
+            }
+
+            return $msg;
+        }
+
+        // Try tool-level match (no action)
+        if (isset($messages[$toolName])) {
+            return $messages[$toolName];
+        }
+
+        return 'Running ' . $toolName . '...';
     }
 
     private function prependSystemMessage(array $messages): array

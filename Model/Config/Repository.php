@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Model\Config;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 class Repository extends System\BaseRepository implements ConfigRepositoryInterface
@@ -40,35 +41,21 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
         return $this->isSetFlag(self::XML_PATH_DEBUG);
     }
 
-    public function getProvider(): string
+    public function getPayloadRetentionDays(): int
     {
-        return $this->getStoreValue(self::XML_PATH_PROVIDER) ?: 'claude';
+        // Non-numeric/negative config falls back to 30 rather than failing open to keep-forever
+        $value = $this->getStoreValue(self::XML_PATH_PAYLOAD_RETENTION_DAYS);
+        return ctype_digit($value) ? (int)$value : 30;
     }
 
-    public function getApiKey(): string
+    public function getAiServiceId(): string
     {
-        $provider = $this->getProvider();
-        $path = $provider === 'openai' ? self::XML_PATH_OPENAI_API_KEY : self::XML_PATH_CLAUDE_API_KEY;
-        $encrypted = $this->getStoreValue($path);
-        return $encrypted ? $this->encryptor->decrypt($encrypted) : '';
-    }
-
-    public function getModel(): string
-    {
-        $provider = $this->getProvider();
-        $path = $provider === 'openai' ? self::XML_PATH_OPENAI_MODEL : self::XML_PATH_CLAUDE_MODEL;
-        return $this->getStoreValue($path) ?: ($provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514');
+        return trim((string)$this->getStoreValue(self::XML_PATH_AI_SERVICE));
     }
 
     public function getMaxTokens(): int
     {
         return (int)($this->getStoreValue(self::XML_PATH_MAX_TOKENS) ?: 4096);
-    }
-
-    public function getTemperature(): float
-    {
-        $value = $this->getStoreValue(self::XML_PATH_TEMPERATURE);
-        return $value !== '' ? (float)$value : 0.7;
     }
 
     public function isStreamingEnabled(): bool
@@ -79,7 +66,8 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
     public function getSystemPrompt(): string
     {
         $custom = $this->getStoreValue(self::XML_PATH_SYSTEM_PROMPT);
-        $base = 'You are a Magento store assistant with tools to take direct action. '
+        $base = 'Today is ' . date('Y-m-d') . '. '
+            . 'You are a Magento store assistant with tools to take direct action. '
             . 'IMPORTANT: Always USE your available tools to fulfill requests. Never tell the user to do something manually '
             . 'when you have a tool that can do it. '
             . 'NEVER ask the user for confirmation before using a tool. Just call the tool directly. '
@@ -90,7 +78,14 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
             . 'You ONLY help with Magento-related topics: store management, products, orders, customers, '
             . 'configuration, extensions, and troubleshooting. '
             . 'If a question is not related to Magento or e-commerce store management, politely decline. '
-            . 'Be concise and actionable. Respond in the same language as the user.';
+            . 'Be concise and actionable.';
+
+        $language = $this->getLanguage();
+        if ($language === 'auto') {
+            $base .= ' Respond in the same language as the user.';
+        } else {
+            $base .= ' IMPORTANT: You MUST always respond in ' . $language . ', regardless of what language the user writes in.';
+        }
 
         return $custom ? $base . "\n\n" . $custom : $base;
     }
@@ -115,8 +110,35 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
         return $this->getStoreValue(self::XML_PATH_ASSISTANT_NAME) ?: 'Maggy';
     }
 
+    public function getLanguage(): string
+    {
+        return $this->getStoreValue(self::XML_PATH_LANGUAGE) ?: 'auto';
+    }
+
     public function getInternalUrl(): string
     {
         return trim((string)$this->getStoreValue(self::XML_PATH_INTERNAL_URL));
+    }
+
+    public function isDocsEnabled(): bool
+    {
+        return $this->isSetFlag(self::XML_PATH_DOCS_ENABLED, null, ScopeConfigInterface::SCOPE_TYPE_DEFAULT);
+    }
+
+    public function getDocsSourceRepo(): string
+    {
+        $value = trim($this->getStoreValue(self::XML_PATH_DOCS_SOURCE_REPO, null, ScopeConfigInterface::SCOPE_TYPE_DEFAULT));
+        return $value !== '' ? $value : 'mage-os/mirror-commerce-admin.en';
+    }
+
+    public function getDocsRef(): string
+    {
+        $value = trim($this->getStoreValue(self::XML_PATH_DOCS_REF, null, ScopeConfigInterface::SCOPE_TYPE_DEFAULT));
+        return $value !== '' ? $value : 'main';
+    }
+
+    public function getDocsTopK(): int
+    {
+        return (int)($this->getStoreValue(self::XML_PATH_DOCS_TOP_K, null, ScopeConfigInterface::SCOPE_TYPE_DEFAULT) ?: 5);
     }
 }

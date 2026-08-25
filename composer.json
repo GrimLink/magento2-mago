@@ -1,19 +1,33 @@
 {
     "name": "maggy-assistant/magento2-base",
-    "description": "AI-powered admin assistant for Magento 2 — chat with your store using Claude or OpenAI",
+    "description": "AI-powered admin assistant for Magento 2. Chat with your store using Anthropic, OpenAI, Gemini, Ollama and more.",
     "type": "magento2-module",
     "version": "1.0.0",
     "license": "MIT",
     "require": {
-        "php": ">=8.1",
-        "magento/framework": ">=103.0.0",
+        "php": ">=8.2",
+        "mage-os/module-ai-base": "^1.0",
+        "magento/framework": ">=103.0.9",
         "magento/module-backend": "*",
         "magento/module-sales": "*",
         "magento/module-catalog": "*",
         "magento/module-customer": "*",
         "magento/module-cms": "*",
         "magento/module-config": "*",
-        "magento/module-store": "*"
+        "magento/module-store": "*",
+        "magento/module-cron": "*",
+        "symfony/ai-anthropic-platform": "^0.12",
+        "symfony/ai-open-ai-platform": "^0.12"
+    },
+    "suggest": {
+        "maggy-assistant/magento2-issue-tracker": "Add-on for reporting issues to GitHub, Jira, and other project trackers",
+        "symfony/ai-azure-platform": "Run the assistant on Azure OpenAI",
+        "symfony/ai-deep-seek-platform": "Run the assistant on DeepSeek",
+        "symfony/ai-gemini-platform": "Run the assistant on Google Gemini",
+        "symfony/ai-hugging-face-platform": "Run the assistant on Hugging Face",
+        "symfony/ai-lm-studio-platform": "Run the assistant on a local LM Studio instance",
+        "symfony/ai-ollama-platform": "Run the assistant on a local Ollama instance",
+        "symfony/ai-open-router-platform": "Run the assistant on OpenRouter"
     },
     "autoload": {
         "files": [

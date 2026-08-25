@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="maggy_docs">
+        <job name="maggy_docs_sync" instance="MaggyAssistant\Base\Cron\SyncDocs" method="execute">
+            <config_path>maggy/docs/cron_expr</config_path>
+        </job>
+    </group>
+    <group id="maggy">
+        <job name="maggy_usage_clean_payloads" instance="MaggyAssistant\Base\Cron\CleanUsageLog" method="execute">
+            <schedule>0 3 * * *</schedule>
+        </job>
+    </group>
+</config>

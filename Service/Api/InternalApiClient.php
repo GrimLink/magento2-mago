@@ -137,6 +137,7 @@ class InternalApiClient
             'method' => $method,
             'url' => $url,
             'admin_user_id' => $adminUserId,
+            'body' => $body ? $this->json->serialize($body) : null,
         ]);
 
         // When curling to a loopback IP/container, nginx needs the real hostname
@@ -191,10 +192,14 @@ class InternalApiClient
             return ['error' => 'Internal API request failed: ' . $curlError];
         }
 
-        $this->debugLogger->addLog('InternalAPI Response', [
+        $logData = [
             'status' => $statusCode,
             'body_length' => strlen((string)$responseBody),
-        ]);
+        ];
+        if ($statusCode >= 400) {
+            $logData['body'] = substr((string)$responseBody, 0, 1000);
+        }
+        $this->debugLogger->addLog('InternalAPI Response', $logData);
 
         if ($statusCode >= 300 && $statusCode < 400) {
             $this->errorLogger->addLog('InternalAPI redirect detected', [
