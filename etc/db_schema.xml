@@ -80,4 +80,27 @@
         </index>
     </table>
 
+    <table name="maggy_doc" resource="default" engine="innodb" comment="Admin Assistant Documentation Corpus">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="source" nullable="false" length="255" default="" comment="Source repo"/>
+        <column xsi:type="varchar" name="path" nullable="false" length="512" default="" comment="Doc path in source"/>
+        <column xsi:type="varchar" name="title" nullable="false" length="512" default="" comment="Doc title"/>
+        <column xsi:type="text" name="description" nullable="true" comment="Doc description"/>
+        <column xsi:type="text" name="tags" nullable="true" comment="Comma/space-separated tags"/>
+        <column xsi:type="varchar" name="edition" nullable="true" length="32" comment="Edition, e.g. commerce for Commerce-only docs"/>
+        <column xsi:type="text" name="url" nullable="true" comment="Source URL"/>
+        <column xsi:type="mediumtext" name="content" nullable="true" comment="Normalized markdown content"/>
+        <column xsi:type="varchar" name="source_sha" nullable="false" length="64" default="" comment="Source tree SHA at index time"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="MAGGY_DOC_FULLTEXT" indexType="fulltext">
+            <column name="title"/>
+            <column name="description"/>
+            <column name="tags"/>
+            <column name="content"/>
+        </index>
+    </table>
+
 </schema>

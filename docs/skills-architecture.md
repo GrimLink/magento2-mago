@@ -189,22 +189,23 @@ The `_links` convention is optional — tools work fine without it. But it signi
 
 ### Provider Layer
 
-The AI provider is abstracted behind `ProviderInterface`:
+Providers are not this module's concern. `MageOS_AiBase` owns them — credentials, models,
+endpoints and the wire format of every backend it supports — and hands back a
+`MageOS\AiBase\Api\AiClientInterface` that speaks `chat()`, `streamChat()` and `complete()`.
 
-```
-MaggyAssistant\Base\Api\Ai\ProviderInterface
-```
+Two classes bridge that to the rest of this module:
 
-```php
-interface ProviderInterface
-{
-    public function chat(array $messages, array $tools = [], array $options = []): array;
-    public function stream(array $messages, array $tools = [], array $options = [], callable $onChunk = null): array;
-    public function getProviderName(): string;
-}
-```
+| Class | Responsibility |
+|---|---|
+| `Service\Ai\RequestFactory` | Turns the conversation arrays the panel and the conversation store speak into a `ChatRequestInterface`, tools included |
+| `Service\Ai\Client` | Resolves the configured service row, applies `max_tokens`, and maps responses and stream chunks back to the array shape `ChatService` returns |
 
-Built-in providers: **Claude** (`Model/Ai/Provider/Claude.php`) and **OpenAI** (`Model/Ai/Provider/OpenAi.php`). The `ProviderFactory` selects the active provider based on configuration.
+`ChatService` therefore never sees a provider. Streaming yields `StreamChunkInterface` values with
+tool calls already complete and their arguments decoded, so there is no SSE parsing or partial-JSON
+stitching anywhere in this module.
+
+Which service a store runs on is `maggy/api/ai_service`, an id pointing at a row configured under
+*Stores > Configuration > Mage-OS > AI Configuration*. Empty means the first usable one.
 
 ---
 
@@ -349,6 +350,18 @@ Magento_Backend::admin
 | `assistant_read` | ConfigReader, SalesData, ProductData, CustomerData, AdminNavigator | N/A |
 | `assistant_read` + `assistant_write` | All 10 tools | Required for write tools |
 | None | Chat only, no tools | N/A |
+
+### Per-User Skill Permissions
+
+On top of role ACL, the **Skills** admin screen (Maggy Assistant → Skills) stores a per-admin-user permission per skill in the `maggy_skill_permission` table: `disabled`, `read`, or `write`. `PermissionChecker` resolves these; when a user has no row for a skill, the role ACL above is the fallback. Unknown values in a row are treated as `disabled` (fail closed).
+
+Enforcement happens at three points, all keyed on the acting admin user id, which the chat controllers pass through `ChatService` into `ToolRegistry`:
+
+1. **Advertising** — `ToolRegistry::getToolDefinitions($adminUserId)` excludes skills the user may not use at all. Availability requires the grant to cover the skill's least-privileged side: `read` suffices for read-only and mixed skills, write-only skills require `write`.
+2. **Action filtering** — for a user with only a `read` grant, a mixed skill (e.g. `cms_data`) stays available but its advertised `action` enum is filtered to its read-only actions.
+3. **Execution** — `ToolRegistry::isCallAllowed($tool, $input, $adminUserId)` re-checks every invocation per action (`isReadOnlyAction($input)`), including tool calls executed via the Confirm flow. A missing user id routes through the ACL fallback rather than allowing everything.
+
+`getAllTools()` / `getToolByName()` remain unfiltered — they serve the Skills admin UI and JIT instruction lookup, not tool access.
 
 ---
 
@@ -619,13 +632,8 @@ The existing `ToolInterface` methods map 1:1 to MCP tool definitions, making thi
 #### AI Provider
 | Path | Description | Default |
 |------|-------------|---------|
-| `maggy/api/provider` | AI provider (`claude` or `openai`) | `claude` |
-| `maggy/api/claude_api_key` | Claude API key (encrypted) | — |
-| `maggy/api/claude_model` | Claude model | `claude-sonnet-4-20250514` |
-| `maggy/api/openai_api_key` | OpenAI API key (encrypted) | — |
-| `maggy/api/openai_model` | OpenAI model | — |
+| `maggy/api/ai_service` | Row id of the `MageOS_AiBase` service to run on; empty means the first usable one | — |
 | `maggy/api/max_tokens` | Maximum response tokens | `4096` |
-| `maggy/api/temperature` | Response randomness | `0.7` |
 | `maggy/api/streaming` | Enable SSE streaming | Yes |
 
 #### Chat Behavior
@@ -638,6 +646,12 @@ The existing `ToolInterface` methods map 1:1 to MCP tool definitions, making thi
 | Path | Description | Default |
 |------|-------------|---------|
 | `maggy/api/internal_url` | Internal URL for REST API calls (Docker/proxy setups) | — (uses store base URL) |
+
+#### Debug & Logging
+| Path | Description | Default |
+|------|-------------|---------|
+| `maggy/debug/debug` | Debug log, and full request/response payloads in the usage log | No |
+| `maggy/debug/payload_retention_days` | Days before a daily cron removes stored payloads from the usage log (0 keeps forever); token statistics are never deleted | `30` |
 
 #### Per-Tool Toggles (Not implemented)
 
@@ -719,4 +733,5 @@ Admin types message
 - **Disable unused tools** — if you don't need CMS editing via the assistant, disable `cms_data`.
 - **Use ACL roles** — give catalog managers `assistant_read` only. Reserve `assistant_write` for senior admins.
 - **Audit conversations** — conversations are stored in `maggy_conversation` and `maggy_message` tables. Review periodically.
+- **Usage log** — `maggy_usage_log` always records token counts and skill names for accounting. The full request/response payloads are only stored while Debug Mode is on, and a daily cron removes stored payloads older than `maggy/debug/payload_retention_days` (default 30 days).
 - **Be aware of AI provider data policies** — messages and tool results are processed by the selected AI provider (Anthropic or OpenAI). Review their data retention and usage policies.

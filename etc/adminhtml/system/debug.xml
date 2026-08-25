@@ -6,7 +6,12 @@
         <field id="debug" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Debug Mode</label>
             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-            <comment><![CDATA[Enable to write debug records (API requests, responses) into a debug log.<br/>Errors are always logged.]]></comment>
+            <comment><![CDATA[Enable to write debug records (API requests, responses) into a debug log, and to store full request/response payloads in the usage log.<br/>Errors and token usage are always logged.]]></comment>
+        </field>
+        <field id="payload_retention_days" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Payload Retention (Days)</label>
+            <validate>validate-digits</validate>
+            <comment><![CDATA[Full request/response payloads older than this many days are removed from the usage log by a daily cron. 0 keeps them forever. Token usage statistics are never deleted.]]></comment>
         </field>
     </group>
 </include>

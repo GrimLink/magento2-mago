@@ -3,6 +3,11 @@
     <group id="chat" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
         <label>Chat Settings</label>
         <attribute type="expanded">1</attribute>
+        <field id="language" translate="label comment" type="select" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+            <label>Response Language</label>
+            <source_model>MaggyAssistant\Base\Model\Config\Source\Language</source_model>
+            <comment>Language for assistant responses. "Auto-detect" matches the user's language.</comment>
+        </field>
         <field id="system_prompt" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
             <label>System Prompt</label>
             <comment>The system instruction sent with every conversation. Customize the assistant's behavior.</comment>

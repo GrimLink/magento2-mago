@@ -12,11 +12,13 @@
     var filteredSkills = [];
     var SS_KEY_OPEN = 'maggy_open';
     var SS_KEY_CONV = 'maggy_conv';
+    var SS_KEY_FULL = 'maggy_fullsize';
 
     function saveState() {
         try {
             sessionStorage.setItem(SS_KEY_OPEN, chat.classList.contains('is-open') ? '1' : '0');
             sessionStorage.setItem(SS_KEY_CONV, conversationId ? String(conversationId) : '');
+            sessionStorage.setItem(SS_KEY_FULL, chat.classList.contains('is-fullsize') ? '1' : '0');
         } catch(e) {}
     }
 
@@ -64,8 +66,11 @@
     }
 
     function closePanel() {
-        chat.classList.remove('is-open');
-        document.body.classList.remove('maggy-active');
+        chat.classList.remove('is-open', 'is-fullsize');
+        document.body.classList.remove('maggy-active', 'maggy-fullsize');
+        var expandBtn = qs('#maggy-expand');
+        expandBtn.title = 'Full size';
+        expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
         syncToggleLabel();
         if (showingHistory) hideHistory();
         hideSlashMenu();
@@ -80,6 +85,19 @@
         }
     };
     qs('#maggy-close').onclick = closePanel;
+    qs('#maggy-expand').onclick = function() {
+        var isFullsize = chat.classList.toggle('is-fullsize');
+        document.body.classList.toggle('maggy-fullsize', isFullsize);
+        var expandBtn = qs('#maggy-expand');
+        if (isFullsize) {
+            expandBtn.title = 'Side panel';
+            expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        } else {
+            expandBtn.title = 'Full size';
+            expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        }
+        saveState();
+    };
     qs('#maggy-new').onclick = function() {
         if (showingHistory) hideHistory();
         clearMsgs();
@@ -132,6 +150,7 @@
 
     function selectSlashSkill(skill) {
         input.value = 'Use the ' + skill.name + ' skill to ';
+        autoGrow();
         hideSlashMenu();
         input.focus();
     }
@@ -144,7 +163,13 @@
         if (items[slashIndex]) items[slashIndex].scrollIntoView({block:'nearest'});
     }
 
+    function autoGrow() {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 240) + 'px';
+    }
+
     input.addEventListener('input', function() {
+        autoGrow();
         var v = input.value;
         if (v.charAt(0) === '/') {
             var filter = v.substring(1);
@@ -255,6 +280,7 @@
         clearMsgs();
         lastDateLabel = '';
         conversationId = id;
+        loading.style.display = '';
 
         var fd = new FormData();
         fd.append('form_key', formKey);
@@ -268,12 +294,25 @@
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            (data.messages || []).forEach(function(m) {
+            loading.style.display = 'none';
+            var loaded = data.messages || [];
+            if (!loaded.length) {
+                showGreeting();
+                return;
+            }
+            loaded.forEach(function(m) {
                 if (m.role === 'user' || m.role === 'assistant') {
                     addDateSep(m.created_at);
                     addMsg(m.role, renderMd(m.content || ''), m.created_at);
                 }
             });
+            saveState();
+        })
+        .catch(function() {
+            loading.style.display = 'none';
+            conversationId = null;
+            showGreeting();
+            saveState();
         });
     }
 
@@ -296,21 +335,42 @@
         });
     }
 
+    // Configure marked.js once if available
+    if (window.marked) {
+        var markedRenderer = new marked.Renderer();
+        markedRenderer.link = function(href, title, text) {
+            if (typeof href === 'object' && href !== null) { text = href.text; title = href.title; href = href.href; }
+            var isAdmin = href && (href.indexOf('/admin') !== -1 || href.charAt(0) === '/');
+            var target = isAdmin ? '_self' : '_blank';
+            var titleAttr = title ? ' title="' + title + '"' : '';
+            return '<a href="' + href + '" target="' + target + '" rel="noopener"' + titleAttr + '>' + text + '</a>';
+        };
+        markedRenderer.table = function(token) {
+            // Render using the default logic but wrap in a scrollable div
+            var html = marked.Renderer.prototype.table.call(this, token);
+            return '<div class="maggy-table-wrap">' + html + '</div>';
+        };
+        marked.use({ renderer: markedRenderer, gfm: true, breaks: true });
+    }
+
     function renderMd(t) {
         if (!t) return '';
+        // Use marked.js if available (loaded from CDN)
+        if (window.marked) {
+            return marked.parse(t);
+        }
+        // Fallback: simple regex-based renderer
         var h = esc(t);
         h = h.replace(/```(\w*)\n([\s\S]*?)```/g, function(m,l,c){ return '<pre><code>'+c.trim()+'</code></pre>'; });
         h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
         h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        // Markdown links [text](url) — allow http(s) and relative admin URLs
         h = h.replace(/\[([^\]]+)\]\(((?:https?:\/\/[^ )]+|\/[^ )]+))\)/g, function(m, text, url) {
             url = url.replace(/[\n\r]+/g, '');
             var isAdmin = url.indexOf('/admin') !== -1 || url.charAt(0) === '/';
             var target = isAdmin ? '_self' : '_blank';
             return '<a href="' + url + '" target="' + target + '" rel="noopener">' + text + '</a>';
         });
-        // Bare URLs — auto-link https://... that aren't already wrapped in an <a> tag
         h = h.replace(/(https?:\/\/[^ <\n]+)/g, function(m, url, offset) {
             var before = h.substring(Math.max(0, offset - 6), offset);
             if (before.indexOf('href=') !== -1 || before.indexOf('">') !== -1) return m;
@@ -362,6 +422,33 @@
         return div;
     }
 
+    function clearDoneStatuses(msgEl) {
+        var done = msgEl.querySelectorAll('.maggy-tool-status.is-done');
+        for (var i = 0; i < done.length; i++) done[i].remove();
+    }
+
+    function updateToolStatus(msgEl, toolName, status, message) {
+        if (status === 'running') {
+            var el = document.createElement('div');
+            el.className = 'maggy-tool-status';
+            el.setAttribute('data-tool', toolName);
+            el.innerHTML = '<span class="maggy-tool-status-spinner"></span><span class="maggy-tool-status-text">' + esc(message || ('Running ' + toolName + '...')) + '</span>';
+            var contentEl = msgEl.querySelector('.maggy-message-content');
+            contentEl.after(el);
+            msgs.scrollTop = msgs.scrollHeight;
+        } else if (status === 'done') {
+            var statusEl = msgEl.querySelector('.maggy-tool-status[data-tool="' + toolName + '"]:not(.is-done)');
+            if (statusEl) {
+                var spinner = statusEl.querySelector('.maggy-tool-status-spinner');
+                if (spinner) {
+                    spinner.className = 'maggy-tool-status-check';
+                    spinner.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                }
+                statusEl.classList.add('is-done');
+            }
+        }
+    }
+
     function addToolTag(msgEl, toolName) {
         var tags = msgEl.querySelector('.maggy-tool-tags');
         if (!tags) return;
@@ -398,6 +485,7 @@
         if (!text || busy) return;
         hideSlashMenu();
         input.value = '';
+        autoGrow();
         busy = true;
         loading.style.display = '';
         sendBtn.disabled = true;
@@ -435,12 +523,17 @@
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        clearDoneStatuses(msg);
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='conversation') { conversationId=d.conversation_id; saveState(); }
                     else if (evt==='tool_call') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         addToolTag(msg, d.name);
+                    }
+                    else if (evt==='tool_status') {
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        updateToolStatus(msg, d.name, d.status, d.message);
                     }
                     else if (evt==='confirm') {
                         writeToolDetected = true;
@@ -566,11 +659,16 @@
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        clearDoneStatuses(msg);
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='tool_call') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         addToolTag(msg, d.name);
+                    }
+                    else if (evt==='tool_status') {
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        updateToolStatus(msg, d.name, d.status, d.message);
                     }
                     else if (evt==='done') { busy=false; loading.style.display='none'; sendBtn.disabled=false; }
                     else if (evt==='error') {
@@ -619,12 +717,20 @@
     try {
         var wasOpen = sessionStorage.getItem(SS_KEY_OPEN) === '1';
         var savedConv = sessionStorage.getItem(SS_KEY_CONV);
+        var wasFullsize = sessionStorage.getItem(SS_KEY_FULL) === '1';
         if (wasOpen) {
             if (savedConv) {
                 conversationId = parseInt(savedConv, 10) || null;
                 if (conversationId) {
                     loadConversation(conversationId);
                 }
+            }
+            if (wasFullsize) {
+                chat.classList.add('is-fullsize');
+                document.body.classList.add('maggy-fullsize');
+                var expandBtn = qs('#maggy-expand');
+                expandBtn.title = 'Side panel';
+                expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
             }
             openPanel();
         }

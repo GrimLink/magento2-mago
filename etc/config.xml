@@ -6,11 +6,7 @@
                 <enabled>0</enabled>
             </general>
             <api>
-                <provider>claude</provider>
-                <claude_model>claude-sonnet-4-20250514</claude_model>
-                <openai_model>gpt-4o</openai_model>
                 <max_tokens>4096</max_tokens>
-                <temperature>0.7</temperature>
                 <streaming>1</streaming>
             </api>
             <chat>
@@ -22,7 +18,15 @@
             </chat>
             <debug>
                 <debug>0</debug>
+                <payload_retention_days>30</payload_retention_days>
             </debug>
+            <docs>
+                <enabled>0</enabled>
+                <source_repo>mage-os/mirror-commerce-admin.en</source_repo>
+                <ref>main</ref>
+                <top_k>5</top_k>
+                <cron_expr>0 4 1 * *</cron_expr>
+            </docs>
         </maggy>
     </default>
 </config>

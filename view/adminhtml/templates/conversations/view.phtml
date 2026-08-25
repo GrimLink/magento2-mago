@@ -39,6 +39,23 @@ if (!$conversation) {
     .maggy-conv-body pre code { background: transparent; padding: 0; }
     .maggy-conv-body a { color: <?= $accentColor ?>; text-decoration: none; border-bottom: 1px solid transparent; }
     .maggy-conv-body a:hover { border-bottom-color: <?= $accentColor ?>; }
+    .maggy-conv-body ul, .maggy-conv-body ol { margin: 4px 0 8px; padding-left: 22px; }
+    .maggy-conv-body h2, .maggy-conv-body h3, .maggy-conv-body h4 { margin: 10px 0 4px; font-size: 15px; }
+    /* Table styles */
+    .maggy-conv-body .maggy-table-wrap { display: block; overflow-x: auto; margin: 10px 0; border-radius: 6px; }
+    .maggy-conv-body table { border-collapse: separate !important; border-spacing: 0 !important; width: max-content; min-width: 100%; font-size: 13px; border: 1px solid #e0e0e0; border-radius: 6px; }
+    .maggy-conv-body th, .maggy-conv-body td { border: none !important; border-bottom: 1px solid #e8e8e8 !important; border-right: 1px solid #e8e8e8 !important; padding: 7px 14px !important; white-space: nowrap !important; vertical-align: middle; text-align: left; }
+    .maggy-conv-body th:last-child, .maggy-conv-body td:last-child { border-right: none !important; }
+    .maggy-conv-body tr:last-child td { border-bottom: none !important; }
+    .maggy-conv-body th { background: rgba(0,0,0,0.04) !important; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: #555; }
+    .maggy-conv-body tr:nth-child(even) td { background: #f8f8f8 !important; }
+    .maggy-conv-body tr:hover td { background: #f0f4ff !important; }
+    /* Raw toggle */
+    .maggy-conv-raw-pre { background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: #444; margin: 0; }
+    .maggy-conv-raw-toggle { margin-left: auto; padding: 3px 10px; font-size: 11px; font-weight: 500; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #666; cursor: pointer; }
+    .maggy-conv-raw-toggle:hover { background: #f5f5f5; }
+    .maggy-conv-raw-toggle.is-active { background: #333; color: #fff; border-color: #333; }
+    /* Tool tags */
     .maggy-conv-tool-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
     .maggy-conv-tool-tag { display: inline-flex; align-items: center; gap: 3px; background: #eef1f5; color: #555; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px; }
     .maggy-conv-tool-tag--sales_data { background: #e8f0fe; color: #1a56db; }
@@ -129,8 +146,9 @@ if (!$conversation) {
 </div>
 
 <div class="admin__page-section" style="margin-top: 20px;">
-    <div class="admin__page-section-title">
+    <div class="admin__page-section-title" style="display:flex;align-items:center;">
         <span class="title"><?= __('Messages') ?></span>
+        <button type="button" id="maggy-raw-toggle" class="maggy-conv-raw-toggle"><?= __('Raw') ?></button>
     </div>
     <div class="admin__page-section-content">
         <?php if (empty($messages)): ?>
@@ -171,7 +189,7 @@ if (!$conversation) {
                         <span class="maggy-conv-role-name"><?= $escaper->escapeHtml($assistantName) ?></span>
                         <span class="maggy-conv-time"><?= $escaper->escapeHtml($time) ?></span>
                     </div>
-                    <div class="maggy-conv-body">
+                    <div class="maggy-conv-body" data-md="<?= $escaper->escapeHtmlAttr($content) ?>">
                         <?= /* @noEscape */ $block->renderMarkdown($content) ?>
                     </div>
                     <?php if (!empty($toolCalls)): ?>
@@ -222,6 +240,50 @@ if (!$conversation) {
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+require(['marked'], function(marked) {
+    var Renderer = marked.Renderer;
+    var r = new Renderer();
+    r.link = function(href, title, text) {
+        if (typeof href === 'object' && href !== null) { text = href.text; title = href.title; href = href.href; }
+        var isAdmin = href && (href.indexOf('/admin') !== -1 || href.charAt(0) === '/');
+        var target = isAdmin ? '_self' : '_blank';
+        return '<a href="' + href + '" target="' + target + '" rel="noopener">' + text + '</a>';
+    };
+    r.table = function(token) {
+        var html = Renderer.prototype.table.call(this, token);
+        return '<div class="maggy-table-wrap">' + html + '</div>';
+    };
+    marked.use({ renderer: r, gfm: true, breaks: true });
+
+    // Re-render all assistant bodies with marked.js
+    document.querySelectorAll('.maggy-conv-body[data-md]').forEach(function(el) {
+        el.innerHTML = marked.parse(el.getAttribute('data-md'));
+    });
+
+    // Raw / Rendered toggle
+    var rawActive = false;
+    var btn = document.getElementById('maggy-raw-toggle');
+    if (btn) {
+        btn.addEventListener('click', function() {
+            rawActive = !rawActive;
+            btn.classList.toggle('is-active', rawActive);
+            btn.textContent = rawActive ? 'Rendered' : 'Raw';
+            document.querySelectorAll('.maggy-conv-body[data-md]').forEach(function(el) {
+                if (rawActive) {
+                    el.dataset.rendered = el.innerHTML;
+                    var raw = el.getAttribute('data-md')
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    el.innerHTML = '<pre class="maggy-conv-raw-pre">' + raw + '</pre>';
+                } else {
+                    el.innerHTML = el.dataset.rendered || marked.parse(el.getAttribute('data-md'));
+                }
+            });
+        });
+    }
+});
+</script>
 
 <?php
 $apiCalls = $block->getApiCalls();
