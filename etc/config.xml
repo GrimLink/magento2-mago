@@ -12,8 +12,8 @@
             <chat>
                 <system_prompt><![CDATA[]]></system_prompt>
                 <max_tool_iterations>10</max_tool_iterations>
-                <assistant_name>Maggy</assistant_name>
-                <accent_color>#E8710A</accent_color>
+                <assistant_name>Mago</assistant_name>
+                <accent_color>#F26322</accent_color>
                 <text_color>#FFFFFF</text_color>
             </chat>
             <debug>

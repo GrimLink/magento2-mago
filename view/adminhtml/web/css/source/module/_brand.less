@@ -1,0 +1,50 @@
+// Mago brand foundation for the admin pages (dashboard, skills, conversations).
+//
+// These pages live inside Magento's own admin chrome — grids, form fields and
+// modals are Magento UI components — so they take the brand through typography
+// and the orange accent only. Accent colours come from PHP config; only the
+// typography is set here.
+//
+// Inter ships self-hosted with the Mage-OS admin theme and Open Sans with stock
+// Magento, so this stack costs no extra request and no external font host.
+
+@mago-font: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+@mago-tracking: -0.02em;
+
+@mago-sunset: #FF7A33;
+@mago-base: #F26322;
+@mago-deep: #E65000;
+@mago-obsidian: #2A2624;
+
+// Brand typography on the module's own admin surfaces
+.maggy-dashboard,
+.maggy-skills,
+.maggy-conv-messages {
+    font-family: @mago-font;
+    letter-spacing: @mago-tracking;
+}
+
+// Headings and the numbers people actually look at carry the brand weight
+.maggy-dashboard h2,
+.maggy-dashboard h3,
+.maggy-skills h2,
+.maggy-stat-card-value,
+.maggy-conv-role-name,
+.maggy-skill-name {
+    font-family: @mago-font;
+    font-weight: 700;
+    letter-spacing: @mago-tracking;
+}
+
+// Stat labels: wider tracking reads as a label rather than cramped body text
+.maggy-stat-card-label {
+    font-family: @mago-font;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+}
+
+// Write-access badges use the brand's Deep Orange rather than a generic amber
+.maggy-skill-badge--write {
+    background: rgba(230, 80, 0, 0.10);
+    color: @mago-deep;
+}
