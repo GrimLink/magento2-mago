@@ -23,6 +23,7 @@ interface RepositoryInterface
     public const XML_PATH_STREAMING = 'maggy/api/streaming';
     public const XML_PATH_SYSTEM_PROMPT = 'maggy/chat/system_prompt';
     public const XML_PATH_MAX_TOOL_ITERATIONS = 'maggy/chat/max_tool_iterations';
+    public const XML_PATH_MAX_RESPONSE_TOKENS = 'maggy/tools/max_response_tokens';
     public const XML_PATH_ACCENT_COLOR = 'maggy/chat/accent_color';
     public const XML_PATH_TEXT_COLOR = 'maggy/chat/text_color';
     public const XML_PATH_ASSISTANT_NAME = 'maggy/chat/assistant_name';
@@ -104,6 +105,11 @@ interface RepositoryInterface
      * @return int
      */
     public function getMaxToolIterations(): int;
+
+    /**
+     * @return int
+     */
+    public function getMaxResponseTokens(): int;
 
     /**
      * @return string

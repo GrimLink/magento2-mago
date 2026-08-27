@@ -16,6 +16,9 @@
                 <accent_color>#F26322</accent_color>
                 <text_color>#FFFFFF</text_color>
             </chat>
+            <tools>
+                <max_response_tokens>4000</max_response_tokens>
+            </tools>
             <debug>
                 <debug>0</debug>
                 <payload_retention_days>30</payload_retention_days>

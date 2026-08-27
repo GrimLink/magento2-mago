@@ -95,6 +95,11 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
         return (int)($this->getStoreValue(self::XML_PATH_MAX_TOOL_ITERATIONS) ?: 10);
     }
 
+    public function getMaxResponseTokens(): int
+    {
+        return (int)($this->getStoreValue(self::XML_PATH_MAX_RESPONSE_TOKENS) ?: 4000);
+    }
+
     public function getAccentColor(): string
     {
         return $this->getStoreValue(self::XML_PATH_ACCENT_COLOR) ?: '#F26322';

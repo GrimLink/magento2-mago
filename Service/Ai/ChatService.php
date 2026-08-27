@@ -17,6 +17,8 @@ use MaggyAssistant\Base\Service\Usage\UsageLogger;
 
 class ChatService implements ChatServiceInterface
 {
+    private const BYTES_PER_TOKEN_ESTIMATE = 4;
+
     public function __construct(
         private readonly ConfigRepository $configRepository,
         private readonly Client $client,
@@ -81,7 +83,7 @@ class ChatService implements ChatServiceInterface
                 $messages[] = [
                     'role' => 'tool',
                     'tool_call_id' => $toolCall['id'],
-                    'content' => json_encode($result),
+                    'content' => json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 ];
 
                 $this->injectToolInstructions($toolCall['name'], $messages, $instructedTools);
@@ -168,7 +170,7 @@ class ChatService implements ChatServiceInterface
                 $messages[] = [
                     'role' => 'tool',
                     'tool_call_id' => $toolCall['id'],
-                    'content' => json_encode($result),
+                    'content' => json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 ];
 
                 $this->injectToolInstructions($toolCall['name'], $messages, $instructedTools);
@@ -286,7 +288,7 @@ class ChatService implements ChatServiceInterface
             if ($this->configRepository->isDebugEnabled()) {
                 $this->debugLogger->addLog('Tool Result', ['tool' => $toolCall['name'], 'result' => $result]);
             }
-            return $result;
+            return $this->capToolResult($result, $toolCall['name']);
         } catch (\Throwable $e) {
             $this->errorLogger->addLog('Tool Error', [
                 'tool' => $toolCall['name'],
@@ -294,6 +296,42 @@ class ChatService implements ChatServiceInterface
             ]);
             return ['error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Cap tool output so one large result cannot crowd out the conversation context
+     *
+     * @param array<string, mixed> $result
+     * @param string $toolName
+     * @return array<string, mixed>
+     */
+    private function capToolResult(array $result, string $toolName): array
+    {
+        $maxBytes = $this->configRepository->getMaxResponseTokens() * self::BYTES_PER_TOKEN_ESTIMATE;
+        $json = json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($json === false || strlen($json) <= $maxBytes) {
+            return $result;
+        }
+
+        if ($this->configRepository->isDebugEnabled()) {
+            $this->debugLogger->addLog('Tool Result truncated', [
+                'tool' => $toolName,
+                'bytes' => strlen($json),
+                'max_bytes' => $maxBytes,
+            ]);
+        }
+
+        $output = mb_strcut($json, 0, $maxBytes);
+
+        return [
+            '_truncated' => true,
+            'output' => $output,
+            'total_bytes' => strlen($json),
+            'returned_bytes' => strlen($output),
+            'note' => 'Tool output exceeded the configured limit and was truncated. The output field holds the '
+                . 'beginning of the JSON result and may stop mid-value. Do not retry the same call; ask the user '
+                . 'to narrow the query (filters, pagination, fewer fields) or use a more specific action.',
+        ];
     }
 
     /**
