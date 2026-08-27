@@ -9,11 +9,9 @@ namespace MaggyAssistant\Base\Controller\Adminhtml\Chat;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\App\CsrfAwareActionInterface;
-use Magento\Framework\App\Request\InvalidRequestException;
-use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Response\Http as HttpResponse;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Serialize\Serializer\Json;
 use MaggyAssistant\Base\Api\ChatServiceInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
@@ -22,8 +20,10 @@ use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 use MaggyAssistant\Base\Service\Ai\Client;
 
-class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
+class Stream extends Action implements HttpPostActionInterface
 {
+    use FormKeyJsonValidation;
+
     public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_read';
 
     public function __construct(
@@ -34,27 +34,10 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
         private readonly Client $client,
         private readonly Json $json,
         private readonly ErrorLogger $errorLogger,
-        private readonly DebugLogger $debugLogger
+        private readonly DebugLogger $debugLogger,
+        private readonly FormKey $formKey
     ) {
         parent::__construct($context);
-    }
-
-    public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
-    {
-        return null;
-    }
-
-    public function validateForCsrf(RequestInterface $request): ?bool
-    {
-        return true;
-    }
-
-    /**
-     * Skip admin secret key validation for AJAX streaming endpoint
-     */
-    public function _processUrlKeys(): bool
-    {
-        return true;
     }
 
     public function execute(): ResultInterface|HttpResponse
@@ -118,6 +101,9 @@ class Stream extends Action implements HttpPostActionInterface, CsrfAwareActionI
             if (!$conversationId) {
                 $title = mb_substr($message, 0, 50);
                 $conversationId = $this->conversationRepository->create($adminUserId, $title);
+            } else {
+                // Reject posting into another admin's conversation
+                $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
             }
 
             $this->conversationRepository->addMessage($conversationId, 'user', $message);

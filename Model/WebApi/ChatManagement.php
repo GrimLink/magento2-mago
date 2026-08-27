@@ -34,6 +34,9 @@ class ChatManagement implements ChatManagementInterface
             if (!$conversationId) {
                 $title = mb_substr($message, 0, 50);
                 $conversationId = $this->conversationRepository->create($adminUserId, $title);
+            } else {
+                // Reject posting into another admin's conversation
+                $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
             }
 
             $this->conversationRepository->addMessage($conversationId, 'user', $message);
@@ -79,10 +82,9 @@ class ChatManagement implements ChatManagementInterface
     public function getConversation(int $conversationId): string
     {
         try {
-            $this->requireAdminUserId();
-            $conversation = $this->conversationRepository->getById($conversationId);
-            $messages = $this->conversationRepository->getMessages($conversationId);
-            $conversation['messages'] = $messages;
+            $adminUserId = $this->requireAdminUserId();
+            $conversation = $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
+            $conversation['messages'] = $this->conversationRepository->getMessages($conversationId);
             return $this->json->serialize($conversation);
         } catch (\Throwable $e) {
             return $this->json->serialize(['error' => $e->getMessage()]);
@@ -92,8 +94,8 @@ class ChatManagement implements ChatManagementInterface
     public function deleteConversation(int $conversationId): string
     {
         try {
-            $this->requireAdminUserId();
-            $this->conversationRepository->delete($conversationId);
+            $adminUserId = $this->requireAdminUserId();
+            $this->conversationRepository->delete($conversationId, $adminUserId);
             return $this->json->serialize(['success' => true]);
         } catch (\Throwable $e) {
             return $this->json->serialize(['error' => $e->getMessage()]);
@@ -104,7 +106,7 @@ class ChatManagement implements ChatManagementInterface
     {
         try {
             $adminUserId = $this->requireAdminUserId();
-            $message = $this->conversationRepository->getMessageById($messageId);
+            $message = $this->conversationRepository->getMessageForUser($messageId, $adminUserId);
             if (empty($message['pending_confirmation'])) {
                 return $this->json->serialize(['error' => 'No pending confirmation for this message']);
             }
@@ -118,7 +120,7 @@ class ChatManagement implements ChatManagementInterface
             $chatService = $this->chatService;
             $results = $chatService->executeConfirmedTools($toolCalls, $adminUserId);
 
-            $this->conversationRepository->resolveConfirmation($messageId, true);
+            $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId);
 
             // Add tool results as messages and continue conversation
             $conversationId = (int)$message['conversation_id'];
@@ -156,10 +158,10 @@ class ChatManagement implements ChatManagementInterface
     public function rejectAction(int $messageId): string
     {
         try {
-            $this->requireAdminUserId();
-            $this->conversationRepository->resolveConfirmation($messageId, false);
+            $adminUserId = $this->requireAdminUserId();
+            $message = $this->conversationRepository->getMessageForUser($messageId, $adminUserId);
+            $this->conversationRepository->resolveConfirmation($messageId, false, $adminUserId);
 
-            $message = $this->conversationRepository->getMessageById($messageId);
             $conversationId = (int)$message['conversation_id'];
 
             $this->conversationRepository->addMessage(

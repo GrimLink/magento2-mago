@@ -15,7 +15,7 @@ use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
 
 class Delete extends Action implements HttpPostActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_read';
+    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_write';
 
     public function __construct(
         Context $context,
@@ -36,7 +36,13 @@ class Delete extends Action implements HttpPostActionInterface
                 return $result->setData(['error' => 'Conversation ID is required']);
             }
 
-            $this->conversationRepository->delete($conversationId);
+            $user = $this->_auth->getUser();
+            $adminUserId = $user ? (int)$user->getId() : 0;
+            if (!$adminUserId) {
+                return $result->setData(['error' => 'Not authorized']);
+            }
+
+            $this->conversationRepository->delete($conversationId, $adminUserId);
 
             return $result->setData(['success' => true]);
         } catch (\Throwable $e) {

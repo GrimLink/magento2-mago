@@ -36,7 +36,13 @@ class Load extends Action implements HttpPostActionInterface
                 return $result->setData(['error' => 'Conversation ID is required']);
             }
 
-            $conversation = $this->conversationRepository->getById($conversationId);
+            $user = $this->_auth->getUser();
+            $adminUserId = $user ? (int)$user->getId() : 0;
+            if (!$adminUserId) {
+                return $result->setData(['error' => 'Not authorized']);
+            }
+
+            $conversation = $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
             $messages = $this->conversationRepository->getMessages($conversationId);
 
             return $result->setData([
