@@ -28,7 +28,8 @@ class InternalApiClient
         private readonly ConfigRepositoryInterface $configRepository,
         private readonly Json $json,
         private readonly DebugLogger $debugLogger,
-        private readonly ErrorLogger $errorLogger
+        private readonly ErrorLogger $errorLogger,
+        private readonly CleartextTokenWarning $cleartextTokenWarning
     ) {
     }
 
@@ -132,6 +133,7 @@ class InternalApiClient
     private function request(string $method, string $url, ?array $body, int $adminUserId): array
     {
         $token = $this->getToken($adminUserId);
+        $this->cleartextTokenWarning->warnIfNeeded($url);
 
         $this->debugLogger->addLog('InternalAPI Request', [
             'method' => $method,
