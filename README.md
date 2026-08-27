@@ -50,6 +50,8 @@ Examples:
 - DDEV: `https://ddev-<project>-web:443`
 - Leave empty to use the store's base URL (works for most setups)
 
+These calls verify the TLS certificate by default. If the internal URL points at a host whose certificate cannot match (loopback addresses, container hostnames, self-signed certificates), set `Verify TLS Certificate` to No. Keep it enabled in production.
+
 ## Built-in Skills
 
 | Skill area | Tools | Access |

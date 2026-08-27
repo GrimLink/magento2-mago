@@ -653,6 +653,7 @@ The existing `ToolInterface` methods map 1:1 to MCP tool definitions, making thi
 | Path | Description | Default |
 |------|-------------|---------|
 | `maggy/api/internal_url` | Internal URL for REST API calls (Docker/proxy setups) | — (uses store base URL) |
+| `maggy/api/internal_ssl_verify` | Verify the TLS certificate on internal REST calls (disable when the certificate cannot match the internal URL host) | `1` |
 
 #### Debug & Logging
 | Path | Description | Default |

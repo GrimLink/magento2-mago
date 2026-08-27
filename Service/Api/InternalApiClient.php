@@ -26,6 +26,7 @@ class InternalApiClient
         private readonly UserTokenParametersFactory $tokenParametersFactory,
         private readonly StoreManagerInterface $storeManager,
         private readonly ConfigRepositoryInterface $configRepository,
+        private readonly InternalRequestOptions $requestOptions,
         private readonly Json $json,
         private readonly DebugLogger $debugLogger,
         private readonly ErrorLogger $errorLogger
@@ -38,22 +39,22 @@ class InternalApiClient
         if ($params) {
             $url .= '?' . http_build_query($params);
         }
-        return $this->request('GET', $url, null, $adminUserId);
+        return $this->request(InternalRequestOptions::METHOD_GET, $url, null, $adminUserId);
     }
 
     public function post(string $endpoint, array $body, int $adminUserId): array
     {
-        return $this->request('POST', $this->buildUrl($endpoint), $body, $adminUserId);
+        return $this->request(InternalRequestOptions::METHOD_POST, $this->buildUrl($endpoint), $body, $adminUserId);
     }
 
     public function put(string $endpoint, array $body, int $adminUserId): array
     {
-        return $this->request('PUT', $this->buildUrl($endpoint), $body, $adminUserId);
+        return $this->request(InternalRequestOptions::METHOD_PUT, $this->buildUrl($endpoint), $body, $adminUserId);
     }
 
     public function delete(string $endpoint, int $adminUserId): array
     {
-        return $this->request('DELETE', $this->buildUrl($endpoint), null, $adminUserId);
+        return $this->request(InternalRequestOptions::METHOD_DELETE, $this->buildUrl($endpoint), null, $adminUserId);
     }
 
     /**
@@ -140,49 +141,14 @@ class InternalApiClient
             'body' => $body ? $this->json->serialize($body) : null,
         ]);
 
-        // When curling to a loopback IP/container, nginx needs the real hostname
-        $urlHost = parse_url($url, PHP_URL_HOST);
-        $storeHost = parse_url(
-            $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB),
-            PHP_URL_HOST
-        ) ?: 'localhost';
-        $needsHostHeader = in_array($urlHost, ['127.0.0.1', 'localhost', 'app'], true);
-
         $ch = curl_init();
-        $headers = [
-            'Authorization: Bearer ' . $token,
-            'Content-Type: application/json',
-            'Accept: application/json',
-        ];
-        if ($needsHostHeader) {
-            $headers[] = 'Host: ' . $storeHost;
-        }
-
-        $curlOptions = [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0,
-        ];
-
-        switch ($method) {
-            case 'POST':
-                $curlOptions[CURLOPT_POST] = true;
-                $curlOptions[CURLOPT_POSTFIELDS] = $this->json->serialize($body ?? []);
-                break;
-            case 'PUT':
-                $curlOptions[CURLOPT_CUSTOMREQUEST] = 'PUT';
-                $curlOptions[CURLOPT_POSTFIELDS] = $this->json->serialize($body ?? []);
-                break;
-            case 'DELETE':
-                $curlOptions[CURLOPT_CUSTOMREQUEST] = 'DELETE';
-                break;
-        }
-
-        curl_setopt_array($ch, $curlOptions);
+        curl_setopt_array($ch, $this->requestOptions->build(
+            $method,
+            $url,
+            $body,
+            $token,
+            $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB)
+        ));
         $responseBody = curl_exec($ch);
         $statusCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
