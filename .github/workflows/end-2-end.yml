@@ -15,9 +15,9 @@ jobs:
       matrix:
         include:
           - PHP_VERSION: php83-fpm
-            MAGEOS_VERSION: 2.3.0
-          - PHP_VERSION: php85-fpm
             MAGEOS_VERSION: 3.3.0
+          - PHP_VERSION: php85-fpm
+            MAGEOS_VERSION: 3.4.0
     runs-on: ubuntu-latest
     env:
       PHP_VERSION: ${{ matrix.PHP_VERSION }}

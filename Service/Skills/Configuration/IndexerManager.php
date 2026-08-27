@@ -75,7 +75,8 @@ class IndexerManager implements ToolInterface
 
     public function isReadOnlyAction(array $input): bool
     {
-        return $this->isReadOnly();
+        // status only reads indexer state; reindex/reindex_all/set_mode mutate. Unknown actions fail closed to write.
+        return ($input['action'] ?? '') === 'status';
     }
 
     public function getRequiredAcl(): string

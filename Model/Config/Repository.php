@@ -97,7 +97,7 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
 
     public function getAccentColor(): string
     {
-        return $this->getStoreValue(self::XML_PATH_ACCENT_COLOR) ?: '#E8710A';
+        return $this->getStoreValue(self::XML_PATH_ACCENT_COLOR) ?: '#F26322';
     }
 
     public function getTextColor(): string
@@ -107,7 +107,7 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
 
     public function getAssistantName(): string
     {
-        return $this->getStoreValue(self::XML_PATH_ASSISTANT_NAME) ?: 'Maggy';
+        return $this->getStoreValue(self::XML_PATH_ASSISTANT_NAME) ?: 'Mago';
     }
 
     public function getLanguage(): string
