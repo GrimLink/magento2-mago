@@ -16,6 +16,9 @@ use Magento\Framework\Serialize\Serializer\Json;
 use MagoAssistant\Mago\Api\ChatServiceInterface;
 use MagoAssistant\Mago\Api\ConversationRepositoryInterface;
 use MagoAssistant\Mago\Logger\ErrorLogger;
+use MagoAssistant\Mago\Service\Conversation\NavigationNoteInjector;
+use MagoAssistant\Mago\Service\Form\PageContextHolder;
+use MagoAssistant\Mago\Service\Form\PageContextNormalizer;
 
 class Confirm extends Action implements HttpPostActionInterface
 {
@@ -29,7 +32,10 @@ class Confirm extends Action implements HttpPostActionInterface
         private readonly ConversationRepositoryInterface $conversationRepository,
         private readonly Json $json,
         private readonly ErrorLogger $errorLogger,
-        private readonly FormKey $formKey
+        private readonly FormKey $formKey,
+        private readonly PageContextNormalizer $pageContextNormalizer,
+        private readonly PageContextHolder $pageContextHolder,
+        private readonly NavigationNoteInjector $navigationNoteInjector
     ) {
         parent::__construct($context);
     }
@@ -53,6 +59,10 @@ class Confirm extends Action implements HttpPostActionInterface
             $rawBody = $this->getRequest()->getContent();
             $postData = $this->json->unserialize($rawBody);
             $messageId = (int)($postData['message_id'] ?? 0);
+
+            $rawPageContext = $postData['page_context'] ?? null;
+            $pageContext = $this->pageContextNormalizer->normalize($rawPageContext);
+            $this->pageContextHolder->set($pageContext, $this->pageContextNormalizer->isDenied($rawPageContext));
 
             if (!$messageId) {
                 $this->sendSse('error', ['error' => 'message_id is required']);
@@ -108,7 +118,7 @@ class Confirm extends Action implements HttpPostActionInterface
             }
 
             // Stream follow-up AI response
-            $messages = $this->conversationRepository->getMessages($conversationId);
+            $messages = $this->navigationNoteInjector->annotate($this->conversationRepository->getMessages($conversationId));
 
             // Collect tool response IDs to validate tool_call chains
             $toolResponseIds = [];

@@ -14,6 +14,302 @@
     var SS_KEY_OPEN = 'mago_open';
     var SS_KEY_CONV = 'mago_conv';
     var SS_KEY_FULL = 'mago_fullsize';
+    var SS_KEY_NAVIGATE_INTENT = 'mago_navigate_intent';
+    var DIRECTIVE_TYPE_FORM_WRITE = 'form_write';
+    var DIRECTIVE_TYPE_FORM_NAVIGATE = 'form_navigate';
+
+    // A form_navigate directive (task 009) is only good for the one navigation it was issued for;
+    // one minute is comfortably more than a real page load takes and short enough that nothing
+    // left behind by a crashed tab or an abandoned confirmation can plausibly fire later. The form
+    // itself is waited for separately, bounded by NAVIGATE_INTENT_FORM_TIMEOUT_MS below, since a UI
+    // component form registers well after the page's own load event.
+    var NAVIGATE_INTENT_TTL_MS = 60000;
+    var NAVIGATE_INTENT_FORM_TIMEOUT_MS = 8000;
+    var NAVIGATE_STATUS_CLASS = 'mago-navigate-status';
+
+    // send() is synchronous and cannot await a module load, so the bridge is requested once at
+    // startup and held here; a reference that is still null when send() runs means "no form",
+    // never an exception. A stored navigate intent (task 009) is only ever consumed here, once the
+    // bridge that can actually wait for the target form exists.
+    var formBridge = null;
+    require(['MagoAssistant_Mago/js/form-bridge'], function(bridge) {
+        formBridge = bridge;
+        applyStoredNavigateIntent();
+    });
+
+    // Every request the panel posts carries what form-bridge saw at that moment, so the backend
+    // can resolve "this page"/"this field" in the administrator's message. No detection happens
+    // here: a page without a form (or before the bridge has loaded) simply omits page_context. A
+    // denied form (task 003) is the one exception to "omit when there is nothing to report": its
+    // snapshot still carries no field, namespace or entity data, but the denied flag itself is
+    // still sent, which is what lets the backend explain the refusal instead of claiming no form
+    // is open at all.
+    function buildPageContext() {
+        if (!formBridge) return null;
+        var snapshot = formBridge.snapshot();
+        if (!snapshot.hasForm && !snapshot.denied) return null;
+        snapshot.route = window.location.pathname;
+        return snapshot;
+    }
+
+    // A tool result can carry a client_directive payload that the server forwards untouched as a
+    // form_apply event; this is the only place that dispatches on its shape. An unknown type or a
+    // non-object payload is dropped rather than applied, and never breaks the surrounding message.
+    function isPlainObject(value) {
+        return !!value && typeof value === 'object' && !Array.isArray(value);
+    }
+
+    // apply() itself waits on a real signal (its form's provider component, task 009) before
+    // writing a single field, so it reports its outcome through a callback rather than a return
+    // value; onOutcome is always invoked exactly once, with null for a directive this dispatches on
+    // nothing (an unknown type, or a form_navigate, whose outcome belongs to the page it navigates
+    // to rather than this one).
+    function applyFormDirective(directive, onOutcome) {
+        if (!isPlainObject(directive) || !formBridge) {
+            onOutcome(null);
+
+            return;
+        }
+
+        if (directive.type === DIRECTIVE_TYPE_FORM_WRITE) {
+            if (typeof formBridge.apply === 'function') {
+                formBridge.apply(directive, onOutcome);
+            } else {
+                onOutcome(null);
+            }
+
+            return;
+        }
+
+        if (directive.type === DIRECTIVE_TYPE_FORM_NAVIGATE && directive.url) {
+            storeNavigateIntent(directive);
+            showNavigateStatus(t('Opening %1...', formatTargetDescription(directive.target)));
+            window.location.href = directive.url;
+        }
+
+        onOutcome(null);
+    }
+
+    // The browser leaves for the target page the moment form_navigate arrives, but a product edit
+    // page takes a few seconds to answer, and the target page then waits for its form to register
+    // before anything is staged. Without this the panel simply goes quiet for that whole stretch.
+    // The status is a message of its own, with the same spinner a running tool shows, and locks
+    // the input for as long as it is up; on the page being left it also stays the last thing in
+    // the panel when the model's reply and the "done" event land after it.
+    function showNavigateStatus(text) {
+        hideNavigateStatus();
+        var el = document.createElement('div');
+        el.className = 'mago-message is-assistant ' + NAVIGATE_STATUS_CLASS;
+        el.innerHTML = '<div class="mago-message-role">' + esc(assistantName) + '</div>'
+            + '<div class="mago-tool-status"><span class="mago-tool-status-spinner"></span>'
+            + '<span class="mago-tool-status-text">' + esc(text) + '</span></div>';
+        msgs.insertBefore(el, loading);
+        msgs.scrollTop = msgs.scrollHeight;
+        lockInput();
+    }
+
+    function hideNavigateStatus() {
+        var el = navigateStatusElement();
+        if (!el) return;
+        el.remove();
+        unlockInput();
+    }
+
+    function navigateStatusElement() {
+        return msgs.querySelector('.' + NAVIGATE_STATUS_CLASS);
+    }
+
+    function keepNavigateStatusLast() {
+        var el = navigateStatusElement();
+        if (!el) return;
+        msgs.insertBefore(el, loading);
+        msgs.scrollTop = msgs.scrollHeight;
+        lockInput();
+    }
+
+    // The navigate status shows a spinner of its own, so the panel's own one stays hidden for as
+    // long as the status holds the lock.
+    function lockInput() {
+        setBusy(true);
+        loading.style.display = 'none';
+    }
+
+    // Every place a turn ends releases the input through here, so the end of the turn that started
+    // a navigation does not re-enable it underneath the status the navigation is still showing.
+    // The status itself is what releases the input, once the target page has staged its fields or
+    // given up waiting for the form.
+    function releaseInput() {
+        loading.style.display = 'none';
+        if (navigateStatusElement()) return;
+        unlockInput();
+    }
+
+    function unlockInput() {
+        setBusy(false);
+    }
+
+    // Only the target and the approved changes are worth carrying across the navigation this
+    // directive is about to trigger; everything else (the field labels, the previous values) is
+    // re-derived live from whatever form actually loads, the same way an ordinary confirmation
+    // prompt already does, rather than trusted from before the navigation happened.
+    function storeNavigateIntent(directive) {
+        try {
+            sessionStorage.setItem(SS_KEY_NAVIGATE_INTENT, JSON.stringify({
+                target: directive.target,
+                changes: directive.changes || [],
+                expiresAt: Date.now() + NAVIGATE_INTENT_TTL_MS
+            }));
+        } catch (e) {}
+    }
+
+    // Reading and clearing happen together, deliberately: whatever this returns is the only chance
+    // the intent ever gets. A page that finds one here has already consumed it, so a later reload,
+    // a back button, or simply not having a matching form never hands the same intent out twice.
+    function takeStoredNavigateIntent() {
+        var raw;
+        try {
+            raw = sessionStorage.getItem(SS_KEY_NAVIGATE_INTENT);
+            sessionStorage.removeItem(SS_KEY_NAVIGATE_INTENT);
+        } catch (e) {
+            return null;
+        }
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function isExpiredNavigateIntent(intent) {
+        return typeof intent.expiresAt !== 'number' || Date.now() > intent.expiresAt;
+    }
+
+    // Every sentence shown to the administrator goes through here. The English source is the key,
+    // Block\Adminhtml\ChatPanel publishes the translations, and %1, %2 are substituted in order.
+    function t(sentence) {
+        var translations = (config && config.i18n) || {};
+        var text = translations[sentence] || sentence;
+        var values = Array.prototype.slice.call(arguments, 1);
+
+        return text.replace(/%(\d+)/g, function (match, index) {
+            var value = values[parseInt(index, 10) - 1];
+            return typeof value === 'undefined' ? match : String(value);
+        });
+    }
+
+    var ENTITY_LABELS = {cms_page: 'CMS page', cms_block: 'CMS block'};
+
+    // entityType and entityId come from the model's own tool input (or from the URL), not from
+    // anything this panel controls, and the result is rendered through marked into innerHTML, so
+    // they are escaped here like every other value on the card.
+    function entityLabel(entityType) {
+        if (!entityType) return 'item';
+        return ENTITY_LABELS[entityType] ? t(ENTITY_LABELS[entityType]) : escapeForMarkdown(String(entityType).replace(/_/g, ' '));
+    }
+
+    function describeEntity(entityType, entityId) {
+        return entityId
+            ? t('%1 #%2', entityLabel(entityType), escapeForMarkdown(entityId))
+            : t('a new %1', entityLabel(entityType));
+    }
+
+    function fieldCountText(count) {
+        return count === 1 ? t('%1 field', count) : t('%1 fields', count);
+    }
+
+    function formatNavigateTimeoutMessage(target) {
+        return t('Navigated to %1, but its form did not load in time. Nothing was changed. Ask me again now that the page is open.', formatTargetDescription(target));
+    }
+
+    // Runs once per page load (from the require() callback above, once form-bridge itself is
+    // ready). A stored intent only ever names the page the assistant sent the administrator to; it
+    // is proven against whatever form actually shows up here, not trusted, by replaying it as an
+    // ordinary form_write directive through the exact same apply()/isSameTarget guard task 008
+    // already built for a directive that arrives while its form is already open. A wrong-entity
+    // landing is refused the same way, not applied and then explained away.
+    function applyStoredNavigateIntent() {
+        var intent = takeStoredNavigateIntent();
+        if (!intent || !intent.target || !intent.target.entity_type) return;
+        if (isExpiredNavigateIntent(intent)) return;
+        if (!formBridge || typeof formBridge.whenFormReady !== 'function') return;
+
+        var entityType = intent.target.entity_type;
+
+        showNavigateStatus(t('Waiting for the form on %1...', formatTargetDescription(intent.target)));
+
+        formBridge.whenFormReady(entityType, NAVIGATE_INTENT_FORM_TIMEOUT_MS, function (found) {
+            if (!found) {
+                hideNavigateStatus();
+                addMsg('assistant', renderMd(formatNavigateTimeoutMessage(intent.target)));
+                return;
+            }
+
+            formBridge.apply({
+                type: DIRECTIVE_TYPE_FORM_WRITE,
+                target: {
+                    namespace: entityType + '_form',
+                    entity_type: entityType,
+                    entity_id: intent.target.entity_id || '',
+                    store_id: intent.target.store_id || '',
+                    is_new: intent.target.is_new === true
+                },
+                changes: intent.changes
+            }, function (result) {
+                hideNavigateStatus();
+                reportApplyOutcome(result);
+            });
+        });
+    }
+
+    // The model's own reply is generated before the browser has applied anything (Confirm.php
+    // streams the follow-up turn as soon as the tool result exists, not after form_apply runs), so
+    // it can never know which fields actually took the value. This is the panel's own report,
+    // appended as a separate message once the bridge has finished, never a second server round trip.
+    // A directive whose target no longer matches the form now open (task 008: the administrator
+    // navigated to a different entity, store view or form between proposal and confirmation) is
+    // named by what it was meant for, so the administrator understands why nothing happened rather
+    // than assuming the assistant silently did nothing.
+    function formatTargetDescription(target) {
+        var entityType = target && target.entity_type;
+        if (!target || !target.entity_id) return t('a new, unsaved %1', entityLabel(entityType));
+        return describeEntity(entityType, target.entity_id);
+    }
+
+    function formatRefusalMessage(target) {
+        return t('That change was meant for %1, but a different form is open now. Nothing was changed. Go back to that page and ask me again.', formatTargetDescription(target));
+    }
+
+    function failedLabels(result) {
+        return result.failed.map(function (f) { return escapeForMarkdown(f.label); }).join(', ');
+    }
+
+    function formatApplyOutcomeMessage(result) {
+        if (result.refused) return formatRefusalMessage(result.target);
+
+        var total = result.applied.length + result.failed.length;
+        var text;
+
+        if (!total) return null;
+        if (!result.applied.length) return t('Could not stage %1. Nothing was changed.', failedLabels(result));
+
+        text = t('Staged %1 of %2 %3. Not saved yet: click Save on the page to keep %4.',
+            result.applied.length, total, fieldCountText(total).replace(/^\d+ /, ''),
+            total === 1 ? t('this change') : t('these changes'));
+
+        if (result.failed.length) {
+            text += ' ' + t('Could not set: %1.', failedLabels(result));
+        }
+
+        return text;
+    }
+
+    function reportApplyOutcome(result) {
+        if (!result) return;
+        var text = formatApplyOutcomeMessage(result);
+        if (!text) return;
+        addMsg('assistant', renderMd(text));
+    }
 
     function saveState() {
         try {
@@ -41,9 +337,15 @@
     }
 
     function clearMsgs() {
+        var hadNavigateStatus = !!navigateStatusElement();
         var nodes = msgs.querySelectorAll('.mago-message, .mago-date-sep');
         for (var i = 0; i < nodes.length; i++) nodes[i].remove();
         loading.style.display = 'none';
+
+        // Starting a new chat or loading another conversation throws the navigate status away with
+        // everything else, and the lock it holds on the input has to go with it, or the panel is
+        // left unable to send anything.
+        if (hadNavigateStatus) unlockInput();
     }
 
     // The header subtitle names the conversation being viewed; empty on a fresh chat.
@@ -671,6 +973,131 @@
         msgs.scrollTop = msgs.scrollHeight;
     }
 
+    // The old value is deliberately not part of the tool input (task 006): looking it up here,
+    // through form-bridge, shows what is on the form right now rather than replaying a value the
+    // model may have seen several turns ago. A path form-bridge cannot find is shown as-is, which
+    // is itself informative: it means the target has moved since the model proposed the write.
+    function findLiveField(path) {
+        if (!formBridge) return null;
+        var snapshot = formBridge.snapshot();
+        if (!snapshot.hasForm) return null;
+        var match = null;
+        (snapshot.fields || []).forEach(function(field) {
+            if (field.path === path) match = field;
+        });
+        return match;
+    }
+
+    // Field labels and values come straight out of the open form, which means straight out of the
+    // database: a product description an import wrote is rendered here through marked, into
+    // innerHTML. Backticks are not an escape (a value containing one closes the code span and the
+    // rest is raw HTML), so everything markdown or HTML could act on is turned into an entity, and
+    // the value is shown in a <code> element marked passes through untouched.
+    function escapeForMarkdown(text) {
+        return String(text === null || typeof text === 'undefined' ? '' : text).replace(/[&<>"'`*_\[\]~\\]/g, function (ch) {
+            return '&#' + ch.charCodeAt(0) + ';';
+        });
+    }
+
+    function codeSpan(text) {
+        return '<code>' + escapeForMarkdown(text) + '</code>';
+    }
+
+    // A description can be hundreds of characters; the card is a review, not the value itself.
+    var MAX_CONFIRM_VALUE_PREVIEW = 80;
+
+    function previewValue(value) {
+        var text = value === null || typeof value === 'undefined' ? '' : String(value);
+        return text.length > MAX_CONFIRM_VALUE_PREVIEW ? text.slice(0, MAX_CONFIRM_VALUE_PREVIEW) + '...' : text;
+    }
+
+    function formatFieldChangeLine(change) {
+        var field = findLiveField(change.path);
+        if (!field) return escapeForMarkdown(change.path) + ': ' + codeSpan(previewValue(change.value));
+        var previous = field.redacted ? t('(hidden)') : codeSpan(previewValue(field.value));
+        return escapeForMarkdown(field.label) + ': ' + previous + ' → ' + codeSpan(previewValue(change.value));
+    }
+
+    // A translation pass can touch ten to thirty fields (task 010); thirty full "Label: old → new"
+    // lines is a wall of text, not a review. Showing the first few and summarizing the rest keeps
+    // the prompt something an administrator can actually read before confirming.
+    var MAX_CONFIRM_FIELD_LINES = 10;
+
+    function liveForm() {
+        var snapshot = formBridge ? formBridge.snapshot() : null;
+        return snapshot && snapshot.hasForm ? snapshot : null;
+    }
+
+    function isNavigatingWrite(input, live) {
+        if (!input.entity_type) return false;
+        if (!live) return true;
+        return input.entity_type !== live.entityType || (input.entity_id || '') !== live.entityId;
+    }
+
+    function describeLiveForm(live) {
+        var text = describeEntity(live.entityType, live.entityId);
+        if (live.storeId) text += ' (' + t('store view %1', escapeForMarkdown(live.storeId)) + ')';
+        return text;
+    }
+
+    // The heading says where the values go: the form on screen, another entity, or a New form,
+    // in which case the administrator is also told the browser will leave this page, and that
+    // unsaved edits here will be lost when the open form has any.
+    function formatWriteFieldsHeading(input, changes) {
+        var live = liveForm();
+        var count = fieldCountText(changes.length);
+        var notes;
+
+        if (!isNavigatingWrite(input, live)) {
+            return t('Stage %1 on %2:', count, live ? describeLiveForm(live) : t('the form on screen'));
+        }
+
+        notes = [t('You will leave this page.')];
+        if (live && formBridge && typeof formBridge.hasUnsavedChanges === 'function' && formBridge.hasUnsavedChanges()) {
+            notes.push(t('Unsaved edits on %1 will be lost.', describeLiveForm(live)));
+        }
+
+        return t('Open %1 and stage %2 there:', describeEntity(input.entity_type, input.entity_id), count)
+            + '\n\n**' + notes.join(' ') + '**\n';
+    }
+
+    function formatWriteFieldsConfirmMessage(tool) {
+        var input = tool.input || {};
+        var changes = input.changes || [];
+        var visibleChanges = changes.slice(0, MAX_CONFIRM_FIELD_LINES);
+        var remaining = changes.length - visibleChanges.length;
+        var lines = visibleChanges.map(formatFieldChangeLine).map(function(l) { return '- ' + l; });
+
+        if (remaining > 0) {
+            lines.push('- ' + (remaining === 1 ? t('...and %1 more field.', remaining) : t('...and %1 more fields.', remaining)));
+        }
+
+        return formatWriteFieldsHeading(input, changes) + '\n' + lines.join('\n')
+            + '\n\n' + t('Nothing is saved until you click Save on the page.');
+    }
+
+    function formatToolConfirmMessage(tool) {
+        if (tool.name === 'page_form' && tool.input && tool.input.action === 'write_fields') {
+            return formatWriteFieldsConfirmMessage(tool);
+        }
+        var line = '**' + escapeForMarkdown(tool.name) + '**';
+        if (tool.input) {
+            var params = Object.keys(tool.input).map(function(k) {
+                var value = tool.input[k];
+                if (value !== null && typeof value === 'object') { value = JSON.stringify(value); }
+                return escapeForMarkdown(k) + ': ' + codeSpan(value);
+            });
+            if (params.length) line += ': ' + params.join(', ');
+        }
+        return line;
+    }
+
+    function formatConfirmMessage(tools) {
+        if (!tools || !tools.length) return t('I want to perform an action. Allow this?');
+        var parts = tools.map(formatToolConfirmMessage);
+        return t('I want to perform the following action:') + '\n\n' + parts.join('\n') + '\n\n' + t('Allow this?');
+    }
+
     function showGreeting() {
         chat.classList.add('is-empty');
         setSubtitle('');
@@ -705,7 +1132,7 @@
         fetch(config.streamUrl, {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
-            body: JSON.stringify({message:text, conversation_id:conversationId, form_key:formKey}),
+            body: JSON.stringify({message:text, conversation_id:conversationId, form_key:formKey, page_context:buildPageContext()}),
             credentials: 'same-origin'
         }).then(function(r) {
             if (!r.ok) {
@@ -722,6 +1149,24 @@
             var buf = '', evt = '';
             var gotDone = false;
             var writeToolDetected = false;
+            var applyResult = null;
+            var applyPending = false;
+            var doneReached = false;
+
+            // apply() now waits on a real signal (its form's provider component, task 009) before
+            // writing anything, so its outcome can arrive after the "done" event that already ended
+            // the turn. Whichever of the two happens second is what reports it, so the outcome
+            // message still lands after the model's own reply either way, exactly as it did when
+            // apply() was synchronous.
+            function handleApplyOutcome(result) {
+                applyPending = false;
+                applyResult = result;
+
+                if (doneReached) {
+                    reportApplyOutcome(applyResult);
+                    applyResult = null;
+                }
+            }
 
             function processLine(ln) {
                 ln = ln.trim();
@@ -741,22 +1186,29 @@
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         updateToolStatus(msg, d.name, d.status, d.message);
                     }
+                    else if (evt==='form_apply') { applyPending = true; applyFormDirective(d, handleApplyOutcome); }
                     else if (evt==='confirm') {
                         writeToolDetected = true;
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
-                        setBusy(false);
+                        releaseInput();
                         showConfirmButtons(msg, conversationId, d.tools || []);
                     }
                     else if (evt==='done') {
                         gotDone = true;
                         if(d.conversation_id) conversationId=d.conversation_id;
-                        saveState(); setBusy(false);
+                        saveState(); releaseInput();
                         if (d.pending_confirmation && msg && !writeToolDetected) {
                             showConfirmButtons(msg, d.message_id || conversationId, []);
                         }
                         if (!d.pending_confirmation && writeToolDetected) {
                             writeToolDetected = false;
                         }
+                        doneReached = true;
+                        if (!applyPending) {
+                            reportApplyOutcome(applyResult);
+                            applyResult = null;
+                        }
+                        keepNavigateStatusLast();
                     }
                     else if (evt==='error') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
@@ -770,14 +1222,14 @@
                 var lines = buf.split('\n'); buf = res.done ? '' : lines.pop();
                 lines.forEach(processLine);
                 if (res.done || gotDone) {
-                    setBusy(false);
+                    releaseInput();
                     return;
                 }
                 return reader.read().then(read);
             }
             return reader.read().then(read);
         }).catch(function(e) {
-            setBusy(false);
+            releaseInput();
             if (!msg) { msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
             showError(msg, 'Connection error: ' + e.message);
         });
@@ -926,7 +1378,7 @@
             run.card = null;
         }
 
-        var body = {message_id: messageId, form_key: formKey};
+        var body = {message_id: messageId, form_key: formKey, page_context: buildPageContext()};
         if (run && run.selected) {
             body.tool_call_ids = run.selected;
         }
@@ -940,7 +1392,7 @@
             var ct = r.headers.get('content-type') || '';
             if (ct.indexOf('text/event-stream') === -1) {
                 return r.json().then(function(d) {
-                    setBusy(false);
+                    releaseInput();
                     finishRun(d.error ? 'failed' : 'done');
                     if (d.error) showError(addMsg('assistant', ''), d.error);
                 });
@@ -950,6 +1402,23 @@
             var buf = '', evt = '';
             var failed = false;
             var activeStep = null;
+
+            var applyResult = null;
+            var applyPending = false;
+            var doneReached = false;
+
+            // See send()'s own copy of this same helper: apply() waits on a real signal (its form's
+            // provider component, task 009) before writing anything, so its outcome can arrive after
+            // the "done" event that already ended the turn.
+            function handleApplyOutcome(result) {
+                applyPending = false;
+                applyResult = result;
+
+                if (doneReached) {
+                    reportApplyOutcome(applyResult);
+                    applyResult = null;
+                }
+            }
 
             function processLine(ln) {
                 ln = ln.trim();
@@ -984,13 +1453,20 @@
                             updateToolStatus(msg, d.name, d.status, d.message);
                         }
                     }
+                    else if (evt==='form_apply') { applyPending = true; applyFormDirective(d, handleApplyOutcome); }
                     else if (evt==='done') {
                         if (d.conversation_id) conversationId=d.conversation_id;
-                        saveState(); setBusy(false);
+                        saveState(); releaseInput();
                         finishRun(failed ? 'failed' : 'done');
+                        doneReached = true;
+                        if (!applyPending) {
+                            reportApplyOutcome(applyResult);
+                            applyResult = null;
+                        }
                         if (d.pending_confirmation && msg) {
                             showConfirmButtons(msg, d.message_id || conversationId, []);
                         }
+                        keepNavigateStatusLast();
                     }
                     else if (evt==='error') {
                         failed = true;
@@ -1008,7 +1484,7 @@
                         var lines = buf.split('\n');
                         lines.forEach(processLine);
                     }
-                    setBusy(false);
+                    releaseInput();
                     finishRun(failed ? 'failed' : 'done');
                     return;
                 }
@@ -1019,7 +1495,7 @@
             }
             return reader.read().then(read);
         }).catch(function(e) {
-            setBusy(false);
+            releaseInput();
             finishRun('failed');
             showError(addMsg('assistant', ''), 'Error confirming action: ' + e.message);
         });
@@ -1032,7 +1508,7 @@
             body: JSON.stringify({message_id: messageId, form_key: formKey}),
             credentials: 'same-origin'
         }).then(function(r) { return r.json(); }).then(function(d) {
-            addMsg('assistant', renderMd('Action rejected. No changes were made.'));
+            addMsg('assistant', renderMd(t('Action rejected. No changes were made.')));
         }).catch(function(e) {
             showError(addMsg('assistant', ''), e.message);
         });
