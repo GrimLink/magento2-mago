@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace MaggyAssistant\Base\Model\WebApi;
 
 use Magento\Authorization\Model\UserContextInterface;
+use Magento\Framework\Exception\AuthorizationException;
 use Magento\Framework\Serialize\Serializer\Json;
 use MaggyAssistant\Base\Api\ChatServiceInterface;
 use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
@@ -28,7 +29,7 @@ class ChatManagement implements ChatManagementInterface
     public function sendMessage(string $message, ?int $conversationId = null): string
     {
         try {
-            $adminUserId = (int)$this->userContext->getUserId();
+            $adminUserId = $this->requireAdminUserId();
 
             if (!$conversationId) {
                 $title = mb_substr($message, 0, 50);
@@ -67,7 +68,7 @@ class ChatManagement implements ChatManagementInterface
     public function getConversations(): string
     {
         try {
-            $adminUserId = (int)$this->userContext->getUserId();
+            $adminUserId = $this->requireAdminUserId();
             $conversations = $this->conversationRepository->getListByUser($adminUserId);
             return $this->json->serialize(['conversations' => $conversations]);
         } catch (\Throwable $e) {
@@ -78,6 +79,7 @@ class ChatManagement implements ChatManagementInterface
     public function getConversation(int $conversationId): string
     {
         try {
+            $this->requireAdminUserId();
             $conversation = $this->conversationRepository->getById($conversationId);
             $messages = $this->conversationRepository->getMessages($conversationId);
             $conversation['messages'] = $messages;
@@ -90,6 +92,7 @@ class ChatManagement implements ChatManagementInterface
     public function deleteConversation(int $conversationId): string
     {
         try {
+            $this->requireAdminUserId();
             $this->conversationRepository->delete($conversationId);
             return $this->json->serialize(['success' => true]);
         } catch (\Throwable $e) {
@@ -100,6 +103,7 @@ class ChatManagement implements ChatManagementInterface
     public function confirmAction(int $messageId): string
     {
         try {
+            $adminUserId = $this->requireAdminUserId();
             $message = $this->conversationRepository->getMessageById($messageId);
             if (empty($message['pending_confirmation'])) {
                 return $this->json->serialize(['error' => 'No pending confirmation for this message']);
@@ -112,7 +116,6 @@ class ChatManagement implements ChatManagementInterface
 
             /** @var ChatService $chatService */
             $chatService = $this->chatService;
-            $adminUserId = (int)$this->userContext->getUserId();
             $results = $chatService->executeConfirmedTools($toolCalls, $adminUserId);
 
             $this->conversationRepository->resolveConfirmation($messageId, true);
@@ -153,6 +156,7 @@ class ChatManagement implements ChatManagementInterface
     public function rejectAction(int $messageId): string
     {
         try {
+            $this->requireAdminUserId();
             $this->conversationRepository->resolveConfirmation($messageId, false);
 
             $message = $this->conversationRepository->getMessageById($messageId);
@@ -168,6 +172,24 @@ class ChatManagement implements ChatManagementInterface
         } catch (\Throwable $e) {
             return $this->json->serialize(['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Non-admin user types (integration tokens) get ids from other tables that can
+     * collide with admin_user ids, so they must not select per-user skill permissions
+     * or own conversations. These endpoints therefore require an admin token.
+     *
+     * @return int
+     * @throws AuthorizationException
+     */
+    private function requireAdminUserId(): int
+    {
+        $adminUserId = (int)$this->userContext->getUserId();
+        if ((int)$this->userContext->getUserType() !== UserContextInterface::USER_TYPE_ADMIN || !$adminUserId) {
+            throw new AuthorizationException(__('This endpoint requires an admin user token.'));
+        }
+
+        return $adminUserId;
     }
 
     private function formatMessagesForAi(array $messages): array

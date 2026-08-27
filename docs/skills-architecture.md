@@ -361,6 +361,8 @@ Enforcement happens at three points, all keyed on the acting admin user id, whic
 2. **Action filtering** — for a user with only a `read` grant, a mixed skill (e.g. `cms_data`) stays available but its advertised `action` enum is filtered to its read-only actions.
 3. **Execution** — `ToolRegistry::isCallAllowed($tool, $input, $adminUserId)` re-checks every invocation per action (`isReadOnlyAction($input)`), including tool calls executed via the Confirm flow. A missing user id routes through the ACL fallback rather than allowing everything.
 
+Per-user rows only apply to genuine admin users. Integration-token ids live in a different table than `admin_user`, so a colliding id must never select another admin's permission rows or conversations. The REST endpoints (`Model/WebApi/ChatManagement.php`) therefore require an admin user token: any other user type (`USER_TYPE_INTEGRATION`, customer, guest) receives an authorization error before any conversation or tool work happens.
+
 `getAllTools()` / `getToolByName()` remain unfiltered — they serve the Skills admin UI and JIT instruction lookup, not tool access.
 
 ---
