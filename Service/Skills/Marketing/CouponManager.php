@@ -20,7 +20,7 @@ class CouponManager extends AbstractSkill
         return 'Manage cart price rules and coupon codes: list, create, and deactivate discount rules.';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return 'Magento_SalesRule::quote';
     }

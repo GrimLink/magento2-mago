@@ -79,19 +79,22 @@ class IndexerManager implements ToolInterface
         return ($input['action'] ?? '') === 'status';
     }
 
-    public function getRequiredAcl(): string
-    {
-        return 'MaggyAssistant_Base::assistant_write';
-    }
-
     public function getInstructions(): string
     {
         return '';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
-        return 'Magento_Indexer::changeMode';
+        // Mirrors module-indexer acl.xml: index (read, the Index Management grid),
+        // invalidate (closest native resource to triggering a rebuild; Magento has
+        // no dedicated reindex resource), changeMode for set_mode. Unknown actions
+        // fail closed to the mode-change resource.
+        return match ($input['action'] ?? '') {
+            'status' => 'Magento_Indexer::index',
+            'reindex', 'reindex_all' => 'Magento_Indexer::invalidate',
+            default => 'Magento_Indexer::changeMode',
+        };
     }
 
     private function getStatus(): array

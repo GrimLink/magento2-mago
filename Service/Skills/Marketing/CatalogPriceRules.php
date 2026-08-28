@@ -20,7 +20,7 @@ class CatalogPriceRules extends AbstractSkill
         return 'Manage catalog price rules: automatic discounts applied to product prices without coupon codes.';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return 'Magento_CatalogRule::promo_catalog';
     }

@@ -20,14 +20,9 @@ class ReviewManager extends AbstractSkill
         return 'Manage product reviews: list pending/approved, approve, reject, get stats.';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return 'Magento_Review::reviews_all';
-    }
-
-    public function getRequiredAcl(): string
-    {
-        return 'MaggyAssistant_Base::assistant_write';
     }
 
     protected function getBaseInstructions(): string

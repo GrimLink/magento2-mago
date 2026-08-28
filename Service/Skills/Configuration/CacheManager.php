@@ -71,19 +71,21 @@ class CacheManager implements ToolInterface
         return ($input['action'] ?? '') === 'status';
     }
 
-    public function getRequiredAcl(): string
-    {
-        return 'MaggyAssistant_Base::assistant_write';
-    }
-
     public function getInstructions(): string
     {
         return '';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
-        return 'Magento_Backend::cache';
+        // Mirrors the native Cache controllers: viewing the grid needs the parent
+        // resource, FlushAll needs flush_cache_storage, MassRefresh needs
+        // refresh_cache_type. Unknown actions fail closed to the flush resource.
+        return match ($input['action'] ?? '') {
+            'status' => 'Magento_Backend::cache',
+            'flush_type' => 'Magento_Backend::refresh_cache_type',
+            default => 'Magento_Backend::flush_cache_storage',
+        };
     }
 
     private function getStatus(): array

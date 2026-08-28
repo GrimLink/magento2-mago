@@ -20,7 +20,7 @@ class OrderManager extends AbstractSkill
         return 'Manage orders: add comments, update status, create shipments with tracking, create invoices, process refunds, and cancel orders.';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return 'Magento_Sales::sales_order';
     }

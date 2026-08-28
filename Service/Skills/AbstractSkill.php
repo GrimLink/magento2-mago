@@ -109,11 +109,6 @@ abstract class AbstractSkill implements ToolInterface
         return $this->isReadOnly();
     }
 
-    public function getRequiredAcl(): string
-    {
-        return 'MaggyAssistant_Base::assistant_read';
-    }
-
     public function getInstructions(): string
     {
         $parts = [];
@@ -130,7 +125,7 @@ abstract class AbstractSkill implements ToolInterface
         return implode("\n\n", $parts);
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return '';
     }
