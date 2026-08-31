@@ -47,6 +47,20 @@ body.maggy-active .page-wrapper {
     width: calc(100% - 8.8rem - var(--maggy-panel-width, 440px)) !important;
 }
 
+// Full-screen Page Builder stage push when panel is open
+//
+// It's position:fixed outside .page-wrapper, so the rule above misses it and its
+// "Close Full Screen" button ends up stuck under the panel. Mirror the same offset.
+body.maggy-active .pagebuilder-stage-wrapper.stage-full-screen {
+    right: var(--maggy-panel-width, 440px);
+    width: auto;
+
+    .pagebuilder-header {
+        right: var(--maggy-panel-width, 440px);
+        width: calc(100% - 150px - var(--maggy-panel-width, 440px));
+    }
+}
+
 // The Mage-OS admin theme reserves a scrollbar gutter on <html> at all times.
 // A fixed panel stops at the edge of that gutter, which leaves an empty strip
 // down the right side whenever the page does not actually scroll. With the
