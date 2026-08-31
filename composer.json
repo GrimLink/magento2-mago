@@ -16,8 +16,6 @@
         "magento/module-config": "*",
         "magento/module-store": "*",
         "magento/module-cron": "*",
-        "symfony/ai-anthropic-platform": "^0.12",
-        "symfony/ai-open-ai-platform": "^0.12"
     },
     "suggest": {
         "maggy-assistant/magento2-issue-tracker": "Add-on for reporting issues to GitHub, Jira, and other project trackers",
