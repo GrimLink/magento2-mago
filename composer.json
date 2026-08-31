@@ -15,7 +15,7 @@
         "magento/module-cms": "*",
         "magento/module-config": "*",
         "magento/module-store": "*",
-        "magento/module-cron": "*",
+        "magento/module-cron": "*"
     },
     "suggest": {
         "maggy-assistant/magento2-issue-tracker": "Add-on for reporting issues to GitHub, Jira, and other project trackers",
