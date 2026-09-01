@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="PHP_CodeSniffer" xsi:noNamespaceSchemaLocation="phpcs.xsd">
+    <description>Maggy Assistant configuration for CodeSniffer.</description>
+
+    <rule ref="Magento2">
+        <exclude name="Magento2.Annotation.MethodAnnotationStructure.NoCommentBlock"/>
+        <exclude name="Magento2.PHP.FinalImplementation.FoundFinal"/>
+    </rule>
+
+    <exclude-pattern>registration.php</exclude-pattern>
+
+    <!-- SSE endpoints require echo/exit by design -->
+    <rule ref="Magento2.Security.LanguageConstruct.DirectOutput">
+        <exclude-pattern>Controller/Adminhtml/Chat/Stream.php</exclude-pattern>
+        <exclude-pattern>Controller/Adminhtml/Chat/Confirm.php</exclude-pattern>
+    </rule>
+    <rule ref="Magento2.Security.LanguageConstruct.ExitUsage">
+        <exclude-pattern>Controller/Adminhtml/Chat/Stream.php</exclude-pattern>
+        <exclude-pattern>Controller/Adminhtml/Chat/Confirm.php</exclude-pattern>
+    </rule>
+
+    <rule ref="Generic.PHP.RequireStrictTypes">
+        <severity>9</severity>
+        <exclude-pattern>*.phtml</exclude-pattern>
+    </rule>
+
+    <rule ref="./Test/Phpcs/MaggyAssistant/Sniffs/Legal/CopyrightNoticeSniff.php">
+        <severity>9</severity>
+        <exclude-pattern>*.phtml</exclude-pattern>
+    </rule>
+</ruleset>

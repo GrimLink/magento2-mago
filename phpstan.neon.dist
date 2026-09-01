@@ -1,0 +1,11 @@
+parameters:
+    level: 4
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        - '#^Call to an undefined method .*Interface::.*\(\)\.$#'
+    paths:
+        - .
+    excludePaths:
+        - Test
+        - vendor
+    checkMissingIterableValueType: false
