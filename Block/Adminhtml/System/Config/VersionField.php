@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * Copyright © Maggy Assistant
+ */
 declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Block\Adminhtml\System\Config;

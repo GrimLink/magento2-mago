@@ -68,7 +68,7 @@ $backUrl = $block->getBackUrl();
                                     </span>
                                 </td>
                                 <td class="data-grid-td">
-                                    <select name="permissions[<?= $userId ?>]" class="admin__control-select">
+                                    <select name="permissions[<?= (int)$userId ?>]" class="admin__control-select">
                                         <option value=""<?= $current === '' ? ' selected' : '' ?>>
                                             <?= $block->escapeHtml(__('Default (ACL)')) ?>
                                         </option>

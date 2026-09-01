@@ -37,8 +37,8 @@ if (!$conversation) {
     .maggy-conv-body pre { background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 6px 0; }
     .maggy-conv-body code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
     .maggy-conv-body pre code { background: transparent; padding: 0; }
-    .maggy-conv-body a { color: <?= $accentColor ?>; text-decoration: none; border-bottom: 1px solid transparent; }
-    .maggy-conv-body a:hover { border-bottom-color: <?= $accentColor ?>; }
+    .maggy-conv-body a { color: <?= /* @noEscape */ $accentColor ?>; text-decoration: none; border-bottom: 1px solid transparent; }
+    .maggy-conv-body a:hover { border-bottom-color: <?= /* @noEscape */ $accentColor ?>; }
     .maggy-conv-body ul, .maggy-conv-body ol { margin: 4px 0 8px; padding-left: 22px; }
     .maggy-conv-body h2, .maggy-conv-body h3, .maggy-conv-body h4 { margin: 10px 0 4px; font-size: 15px; }
     /* Table styles */
@@ -76,7 +76,7 @@ if (!$conversation) {
 
 <div class="admin__page-section order-view-account-information">
     <div class="admin__page-section-title">
-        <span class="title"><?= __('Conversation Information') ?></span>
+        <span class="title"><?= $escaper->escapeHtml(__('Conversation Information')) ?></span>
     </div>
     <div class="admin__page-section-content">
         <div class="admin__page-section-item-content">
@@ -84,19 +84,19 @@ if (!$conversation) {
                 <div style="flex:1;min-width:300px;">
                     <table class="admin__table-secondary">
                         <tr>
-                            <th><?= __('User') ?></th>
+                            <th><?= $escaper->escapeHtml(__('User')) ?></th>
                             <td><?= $escaper->escapeHtml($adminFirstName) ?></td>
                         </tr>
                         <tr>
-                            <th><?= __('Created') ?></th>
+                            <th><?= $escaper->escapeHtml(__('Created')) ?></th>
                             <td><?= $escaper->escapeHtml($block->formatDateTime($conversation['created_at'] ?? '')) ?></td>
                         </tr>
                         <tr>
-                            <th><?= __('Updated') ?></th>
+                            <th><?= $escaper->escapeHtml(__('Updated')) ?></th>
                             <td><?= $escaper->escapeHtml($block->formatDateTime($conversation['updated_at'] ?? '')) ?></td>
                         </tr>
                         <tr>
-                            <th><?= __('Messages') ?></th>
+                            <th><?= $escaper->escapeHtml(__('Messages')) ?></th>
                             <td><?= (int)count($messages) ?></td>
                         </tr>
                     </table>
@@ -105,24 +105,24 @@ if (!$conversation) {
                     <table class="admin__table-secondary">
                         <?php if (!empty($usage['model'])): ?>
                         <tr>
-                            <th><?= __('Model') ?></th>
+                            <th><?= $escaper->escapeHtml(__('Model')) ?></th>
                             <td><?= $escaper->escapeHtml($usage['model'] ?? '') ?></td>
                         </tr>
                         <tr>
-                            <th><?= __('Tokens') ?></th>
-                            <td><?= number_format((int)($usage['total_tokens'] ?? 0)) ?> <span style="color:#999;font-size:11px">(<?= number_format((int)($usage['input_tokens'] ?? 0)) ?> in / <?= number_format((int)($usage['output_tokens'] ?? 0)) ?> out)</span></td>
+                            <th><?= $escaper->escapeHtml(__('Tokens')) ?></th>
+                            <td><?= /* @noEscape */ number_format((int)($usage['total_tokens'] ?? 0)) ?> <span style="color:#999;font-size:11px">(<?= /* @noEscape */ number_format((int)($usage['input_tokens'] ?? 0)) ?> in / <?= /* @noEscape */ number_format((int)($usage['output_tokens'] ?? 0)) ?> out)</span></td>
                         </tr>
                         <tr>
-                            <th><?= __('Est. Cost') ?></th>
+                            <th><?= $escaper->escapeHtml(__('Est. Cost')) ?></th>
                             <td><?= $escaper->escapeHtml($block->getEstimatedCost()) ?></td>
                         </tr>
                         <tr>
-                            <th><?= __('API Calls') ?></th>
+                            <th><?= $escaper->escapeHtml(__('API Calls')) ?></th>
                             <td><?= (int)($usage['api_calls'] ?? 0) ?></td>
                         </tr>
                         <?php if (!empty($skillsUsed)): ?>
                         <tr>
-                            <th><?= __('Skills') ?></th>
+                            <th><?= $escaper->escapeHtml(__('Skills')) ?></th>
                             <td>
                                 <div class="maggy-conv-tool-tags">
                                     <?php foreach ($skillsUsed as $skillName): ?>
@@ -134,8 +134,8 @@ if (!$conversation) {
                         <?php endif; ?>
                         <?php else: ?>
                         <tr>
-                            <th><?= __('Usage') ?></th>
-                            <td><?= __('No usage data available') ?></td>
+                            <th><?= $escaper->escapeHtml(__('Usage')) ?></th>
+                            <td><?= $escaper->escapeHtml(__('No usage data available')) ?></td>
                         </tr>
                         <?php endif; ?>
                     </table>
@@ -147,12 +147,12 @@ if (!$conversation) {
 
 <div class="admin__page-section" style="margin-top: 20px;">
     <div class="admin__page-section-title" style="display:flex;align-items:center;">
-        <span class="title"><?= __('Messages') ?></span>
-        <button type="button" id="maggy-raw-toggle" class="maggy-conv-raw-toggle"><?= __('Raw') ?></button>
+        <span class="title"><?= $escaper->escapeHtml(__('Messages')) ?></span>
+        <button type="button" id="maggy-raw-toggle" class="maggy-conv-raw-toggle"><?= $escaper->escapeHtml(__('Raw')) ?></button>
     </div>
     <div class="admin__page-section-content">
         <?php if (empty($messages)): ?>
-            <p class="admin__field-note" style="padding: 20px;"><?= __('No messages in this conversation.') ?></p>
+            <p class="admin__field-note" style="padding: 20px;"><?= $escaper->escapeHtml(__('No messages in this conversation.')) ?></p>
         <?php else: ?>
             <ul class="maggy-conv-messages">
             <?php
@@ -198,10 +198,10 @@ if (!$conversation) {
                             $toolToggleId++;
                             $arguments = $toolCall['input'] ?? $toolCall['function']['arguments'] ?? $toolCall['arguments'] ?? null;
                             if ($arguments): ?>
-                                <button type="button" class="maggy-conv-tool-toggle" onclick="document.getElementById('tool-input-<?= $toolToggleId ?>').classList.toggle('is-open')">
+                                <button type="button" class="maggy-conv-tool-toggle" onclick="document.getElementById('tool-input-<?= (int)$toolToggleId ?>').classList.toggle('is-open')">
                                     <?= $escaper->escapeHtml($toolCall['name'] ?? $toolCall['function']['name'] ?? '') ?> input
                                 </button>
-                                <div id="tool-input-<?= $toolToggleId ?>" class="maggy-conv-tool-data">
+                                <div id="tool-input-<?= (int)$toolToggleId ?>" class="maggy-conv-tool-data">
                                     <pre><?= $escaper->escapeHtml($block->formatJson($arguments)) ?></pre>
                                 </div>
                             <?php endif; ?>
@@ -217,10 +217,10 @@ if (!$conversation) {
                         <span class="maggy-conv-time"><?= $escaper->escapeHtml($time) ?></span>
                     </div>
                     <?php $toolToggleId++; ?>
-                    <button type="button" class="maggy-conv-tool-toggle" onclick="document.getElementById('tool-result-<?= $toolToggleId ?>').classList.toggle('is-open')">
+                    <button type="button" class="maggy-conv-tool-toggle" onclick="document.getElementById('tool-result-<?= (int)$toolToggleId ?>').classList.toggle('is-open')">
                         Show result
                     </button>
-                    <div id="tool-result-<?= $toolToggleId ?>" class="maggy-conv-tool-data">
+                    <div id="tool-result-<?= (int)$toolToggleId ?>" class="maggy-conv-tool-data">
                         <pre><?= $escaper->escapeHtml($block->formatJson($content)) ?></pre>
                     </div>
                 </li>
@@ -291,29 +291,29 @@ if (!empty($apiCalls)):
 ?>
 <div class="admin__page-section" style="margin-top: 20px;">
     <div class="admin__page-section-title">
-        <span class="title"><?= __('API Calls') ?> (<?= count($apiCalls) ?>)</span>
+        <span class="title"><?= $escaper->escapeHtml(__('API Calls')) ?> (<?= /* @noEscape */ (int)count($apiCalls) ?>)</span>
     </div>
     <div class="admin__page-section-content" style="padding: 0;">
         <table class="admin__table-secondary" style="width:100%;">
             <thead>
                 <tr>
-                    <th style="padding:10px 15px;font-size:12px;"><?= __('#') ?></th>
-                    <th style="padding:10px 15px;font-size:12px;"><?= __('Time') ?></th>
-                    <th style="padding:10px 15px;font-size:12px;"><?= __('Model') ?></th>
-                    <th style="padding:10px 15px;font-size:12px;"><?= __('Tokens') ?></th>
-                    <th style="padding:10px 15px;font-size:12px;"><?= __('Skills') ?></th>
-                    <th style="padding:10px 15px;font-size:12px;"><?= __('Payloads') ?></th>
+                    <th style="padding:10px 15px;font-size:12px;"><?= $escaper->escapeHtml(__('#')) ?></th>
+                    <th style="padding:10px 15px;font-size:12px;"><?= $escaper->escapeHtml(__('Time')) ?></th>
+                    <th style="padding:10px 15px;font-size:12px;"><?= $escaper->escapeHtml(__('Model')) ?></th>
+                    <th style="padding:10px 15px;font-size:12px;"><?= $escaper->escapeHtml(__('Tokens')) ?></th>
+                    <th style="padding:10px 15px;font-size:12px;"><?= $escaper->escapeHtml(__('Skills')) ?></th>
+                    <th style="padding:10px 15px;font-size:12px;"><?= $escaper->escapeHtml(__('Payloads')) ?></th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($apiCalls as $idx => $call): ?>
                 <tr>
-                    <td style="padding:8px 15px;font-size:12px;"><?= $idx + 1 ?></td>
+                    <td style="padding:8px 15px;font-size:12px;"><?= /* @noEscape */ (int)($idx + 1) ?></td>
                     <td style="padding:8px 15px;font-size:12px;"><?= $escaper->escapeHtml($block->formatDateTime($call['created_at'])) ?></td>
                     <td style="padding:8px 15px;font-size:12px;"><?= $escaper->escapeHtml($call['model'] ?? '') ?></td>
                     <td style="padding:8px 15px;font-size:12px;">
-                        <?= number_format((int)($call['total_tokens'] ?? 0)) ?>
-                        <span style="color:#999;font-size:10px;">(<?= number_format((int)($call['input_tokens'] ?? 0)) ?>in/<?= number_format((int)($call['output_tokens'] ?? 0)) ?>out)</span>
+                        <?= /* @noEscape */ number_format((int)($call['total_tokens'] ?? 0)) ?>
+                        <span style="color:#999;font-size:10px;">(<?= /* @noEscape */ number_format((int)($call['input_tokens'] ?? 0)) ?>in/<?= /* @noEscape */ number_format((int)($call['output_tokens'] ?? 0)) ?>out)</span>
                     </td>
                     <td style="padding:8px 15px;font-size:12px;">
                         <?php if (!empty($call['skill_names'])): ?>
@@ -325,12 +325,12 @@ if (!empty($apiCalls)):
                     <td style="padding:8px 15px;font-size:12px;">
                         <?php if (!empty($call['request_payload']) || !empty($call['response_payload'])): ?>
                             <button type="button" class="maggy-conv-tool-toggle" onclick="maggyOpenPayloadModal(<?= (int)$call['entity_id'] ?>)">
-                                <?= __('View') ?>
+                                <?= $escaper->escapeHtml(__('View')) ?>
                             </button>
                             <script type="text/json" id="maggy-payload-req-<?= (int)$call['entity_id'] ?>"><?= /* @noEscape */ $block->formatJson($call['request_payload'] ?? '') ?></script>
                             <script type="text/json" id="maggy-payload-res-<?= (int)$call['entity_id'] ?>"><?= /* @noEscape */ $block->formatJson($call['response_payload'] ?? '') ?></script>
                         <?php else: ?>
-                            <span style="color:#ccc;font-size:11px;"><?= __('Not recorded') ?></span>
+                            <span style="color:#ccc;font-size:11px;"><?= $escaper->escapeHtml(__('Not recorded')) ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -343,11 +343,11 @@ if (!empty($apiCalls)):
 <div id="maggy-payload-modal" style="display:none;">
     <div style="display:flex;gap:16px;align-items:stretch;">
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-            <h4 style="margin:0 0 8px;font-size:13px;font-weight:600;color:#333;"><?= __('Request') ?></h4>
+            <h4 style="margin:0 0 8px;font-size:13px;font-weight:600;color:#333;"><?= $escaper->escapeHtml(__('Request')) ?></h4>
             <pre id="maggy-payload-modal-req" style="flex:1;max-height:70vh;overflow:auto;background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:4px;font-size:11px;margin:0;white-space:pre-wrap;word-break:break-word;min-height:40px;"></pre>
         </div>
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-            <h4 style="margin:0 0 8px;font-size:13px;font-weight:600;color:#333;"><?= __('Response') ?></h4>
+            <h4 style="margin:0 0 8px;font-size:13px;font-weight:600;color:#333;"><?= $escaper->escapeHtml(__('Response')) ?></h4>
             <pre id="maggy-payload-modal-res" style="flex:1;max-height:70vh;overflow:auto;background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:4px;font-size:11px;margin:0;white-space:pre-wrap;word-break:break-word;min-height:40px;"></pre>
         </div>
     </div>

@@ -34,11 +34,11 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
 
 <style>
 :root {
-    --maggy-accent: <?= $accentColor ?>;
-    --maggy-accent-hover: <?= $accentColorHover ?>;
-    --maggy-accent-light: <?= $accentColorLight ?>;
-    --maggy-accent-rgb: <?= $accentRgb ?>;
-    --maggy-accent-text: <?= $accentText ?>;
+    --maggy-accent: <?= /* @noEscape */ $accentColor ?>;
+    --maggy-accent-hover: <?= /* @noEscape */ $accentColorHover ?>;
+    --maggy-accent-light: <?= /* @noEscape */ $accentColorLight ?>;
+    --maggy-accent-rgb: <?= /* @noEscape */ $accentRgb ?>;
+    --maggy-accent-text: <?= /* @noEscape */ $accentText ?>;
     --maggy-panel-width: 440px;
 
     /* Mago brand palette — see brand-guidelines.md */

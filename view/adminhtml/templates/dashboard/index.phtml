@@ -32,22 +32,22 @@ $dashboardUrl = $block->getUrl('maggy/statistics/index');
         cursor: pointer; font-size: 13px; color: #555; text-decoration: none;
     }
     .maggy-period-btn.active, .maggy-period-btn:hover {
-        background: <?= $accentColor ?>; color: #fff; border-color: <?= $accentColor ?>;
+        background: <?= /* @noEscape */ $accentColor ?>; color: #fff; border-color: <?= /* @noEscape */ $accentColor ?>;
     }
     .maggy-stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
     .maggy-stat-card {
         background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 20px;
         text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
-    .maggy-stat-card-value { font-size: 28px; font-weight: 700; color: <?= $accentColor ?>; margin-bottom: 4px; }
+    .maggy-stat-card-value { font-size: 28px; font-weight: 700; color: <?= /* @noEscape */ $accentColor ?>; margin-bottom: 4px; }
     .maggy-stat-card-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
     .maggy-section { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
     .maggy-section h3 { margin: 0 0 16px; font-size: 16px; color: #333; }
     .maggy-chart-area { position: relative; height: 160px; }
     .maggy-chart-area svg { width: 100%; height: 100%; }
-    .maggy-chart-area-fill { fill: rgba(<?= $accentRgb ?>, 0.08); }
-    .maggy-chart-area-line { fill: none; stroke: <?= $accentColor ?>; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
-    .maggy-chart-area-dot { fill: <?= $accentColor ?>; stroke: #fff; stroke-width: 2; cursor: pointer; transition: r 0.15s; }
+    .maggy-chart-area-fill { fill: rgba(<?= /* @noEscape */ $accentRgb ?>, 0.08); }
+    .maggy-chart-area-line { fill: none; stroke: <?= /* @noEscape */ $accentColor ?>; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+    .maggy-chart-area-dot { fill: <?= /* @noEscape */ $accentColor ?>; stroke: #fff; stroke-width: 2; cursor: pointer; transition: r 0.15s; }
     .maggy-chart-area-tooltip {
         display: none; position: absolute; background: #333; color: #fff; padding: 4px 8px;
         border-radius: 3px; font-size: 11px; white-space: nowrap; z-index: 10;
@@ -158,20 +158,20 @@ $dashboardUrl = $block->getUrl('maggy/statistics/index');
             $areaPath = $linePath . ' L' . end($points)['x'] . ',' . ($padT + $chartH) . ' L' . $points[0]['x'] . ',' . ($padT + $chartH) . ' Z';
             ?>
             <div class="maggy-chart-area">
-                <svg viewBox="0 0 <?= $svgW ?> <?= $svgH ?>" preserveAspectRatio="none">
+                <svg viewBox="0 0 <?= /* @noEscape */ (int)$svgW ?> <?= /* @noEscape */ (int)$svgH ?>" preserveAspectRatio="none">
                     <?php for ($g = 0; $g <= 4; $g++): ?>
-                        <line class="maggy-chart-area-grid" x1="<?= $padL ?>" y1="<?= $padT + ($chartH / 4) * $g ?>" x2="<?= $svgW - $padR ?>" y2="<?= $padT + ($chartH / 4) * $g ?>" />
+                        <line class="maggy-chart-area-grid" x1="<?= /* @noEscape */ (int)$padL ?>" y1="<?= /* @noEscape */ (float)($padT + ($chartH / 4) * $g) ?>" x2="<?= /* @noEscape */ (int)($svgW - $padR) ?>" y2="<?= /* @noEscape */ (float)($padT + ($chartH / 4) * $g) ?>" />
                     <?php endfor; ?>
-                    <path class="maggy-chart-area-fill" d="<?= $areaPath ?>" />
-                    <path class="maggy-chart-area-line" d="<?= $linePath ?>" />
+                    <path class="maggy-chart-area-fill" d="<?= /* @noEscape */ $areaPath ?>" />
+                    <path class="maggy-chart-area-line" d="<?= /* @noEscape */ $linePath ?>" />
                     <?php foreach ($points as $i => $p): ?>
-                        <circle class="maggy-chart-area-dot" cx="<?= $p['x'] ?>" cy="<?= $p['y'] ?>" r="3" data-tt="mm-tt-<?= $i ?>"
+                        <circle class="maggy-chart-area-dot" cx="<?= /* @noEscape */ (float)$p['x'] ?>" cy="<?= /* @noEscape */ (float)$p['y'] ?>" r="3" data-tt="mm-tt-<?= /* @noEscape */ (int)$i ?>"
                                 onmouseenter="document.getElementById(this.dataset.tt).classList.add('is-visible');this.setAttribute('r','5')"
                                 onmouseleave="document.getElementById(this.dataset.tt).classList.remove('is-visible');this.setAttribute('r','3')" />
                     <?php endforeach; ?>
                 </svg>
                 <?php foreach ($points as $i => $p): ?>
-                    <div class="maggy-chart-area-tooltip" style="left:<?= ($p['x'] / $svgW) * 100 ?>%;top:<?= ($p['y'] / $svgH) * 100 ?>%;" id="mm-tt-<?= $i ?>">
+                    <div class="maggy-chart-area-tooltip" style="left:<?= /* @noEscape */ ($p['x'] / $svgW) * 100 ?>%;top:<?= /* @noEscape */ ($p['y'] / $svgH) * 100 ?>%;" id="mm-tt-<?= /* @noEscape */ (int)$i ?>">
                         <?= $escaper->escapeHtml($p['day']['date']) ?>: <?= (int)$p['day']['requests'] ?> req, <?= $escaper->escapeHtml($block->formatTokens((int)$p['day']['tokens'])) ?> tokens
                     </div>
                 <?php endforeach; ?>
