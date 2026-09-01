@@ -45,13 +45,6 @@ interface ToolInterface
     public function isReadOnly(): bool;
 
     /**
-     * ACL resource required to use this tool
-     *
-     * @return string
-     */
-    public function getRequiredAcl(): string;
-
-    /**
      * Detailed instructions injected only when this tool is called (JIT).
      * Return empty string if no extra instructions needed.
      *
@@ -70,13 +63,16 @@ interface ToolInterface
     public function isReadOnlyAction(array $input): bool;
 
     /**
-     * Native Magento ACL resource required to use this tool.
-     * Return empty string if no additional Magento ACL check is needed
-     * beyond the MaggyAssistant ACL from getRequiredAcl().
+     * Native Magento ACL resource required for a specific invocation.
+     * Mixed tools return the resource matching the action in $input; an empty
+     * $input (or an unknown action) must resolve to the most restrictive
+     * resource the tool uses (fail closed). Return empty string if no
+     * Magento ACL check is needed beyond the assistant skill permissions.
      *
      * Examples: 'Magento_Backend::cache', 'Magento_Indexer::changeMode'
      *
+     * @param array $input The tool call input parameters
      * @return string
      */
-    public function getMagentoAcl(): string;
+    public function getMagentoAcl(array $input = []): string;
 }

@@ -111,17 +111,12 @@ class ContentGenerator implements ToolInterface
         return $this->isReadOnly();
     }
 
-    public function getRequiredAcl(): string
-    {
-        return 'MaggyAssistant_Base::assistant_write';
-    }
-
     public function getInstructions(): string
     {
         return '';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return 'Magento_Catalog::products';
     }

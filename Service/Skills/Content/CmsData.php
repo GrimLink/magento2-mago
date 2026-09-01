@@ -19,9 +19,4 @@ class CmsData extends AbstractSkill
     {
         return 'Manage CMS pages and blocks.';
     }
-
-    public function getRequiredAcl(): string
-    {
-        return 'MaggyAssistant_Base::assistant_write';
-    }
 }

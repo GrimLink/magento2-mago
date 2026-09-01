@@ -58,9 +58,8 @@ interface ToolInterface
     public function execute(array $params): array;
     public function isReadOnly(): bool;
     public function isReadOnlyAction(array $input): bool;
-    public function getRequiredAcl(): string;
     public function getInstructions(): string;
-    public function getMagentoAcl(): string;
+    public function getMagentoAcl(array $input = []): string;
 }
 ```
 
@@ -72,9 +71,8 @@ interface ToolInterface
 | `execute(array $params)` | Runs the tool logic against Magento, returns structured data |
 | `isReadOnly()` | `true` = all actions are read-only; `false` = tool has at least one write action |
 | `isReadOnlyAction(array $input)` | Checks if a specific invocation is read-only based on input parameters. For tools with mixed read/write sub-actions (e.g. `cms_data`), this checks the actual action. |
-| `getRequiredAcl()` | MaggyAssistant ACL resource string (e.g. `assistant_read` or `assistant_write`) |
 | `getInstructions()` | Detailed usage instructions injected only when the tool is invoked (JIT). Keeps the base prompt lean. |
-| `getMagentoAcl()` | Native Magento ACL resource (e.g. `Magento_Backend::cache`). Checked in addition to `getRequiredAcl()`. Return empty string if not needed. |
+| `getMagentoAcl(array $input)` | Native Magento ACL resource for a specific invocation (e.g. `Magento_Backend::cache` for a cache `status` read, `Magento_Backend::flush_cache_storage` for `flush`). Mixed tools return the resource matching the action in `$input`; empty or unknown input must resolve to the most restrictive resource (fail closed). Checked in addition to the assistant skill permissions. Return empty string if not needed. |
 
 #### Just-in-Time Instructions
 
@@ -337,7 +335,7 @@ Magento_Backend::admin
 
 ### How It Works
 
-1. **Every tool declares its required ACL** via `getRequiredAcl()`.
+1. **Every tool is gated by the assistant resources** (`assistant_read` for read actions, `assistant_write` for write actions), enforced per invocation by the tool path; tools with a native Magento counterpart additionally declare a per-action resource via `getMagentoAcl(array $input)`.
 2. **Read tools** require `assistant_read` — analytics queries, config reading.
 3. **Write tools** require `assistant_write` — config changes, CMS updates, content generation.
 4. **ACL is checked before execution**, not just at the API level. Even if the AI requests a tool, it won't execute if the admin user's role lacks the required resource.
@@ -431,19 +429,15 @@ class ServerStatus implements ToolInterface
         return $this->isReadOnly();
     }
 
-    public function getRequiredAcl(): string
-    {
-        return 'Vendor_HostingIntegration::server_status';
-    }
-
     public function getInstructions(): string
     {
         return ''; // Return detailed instructions here if needed (injected JIT)
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
-        return ''; // Return e.g. 'Magento_Backend::cache' for native ACL checks
+        return ''; // Return e.g. 'Magento_Backend::cache' for native ACL checks;
+                   // mixed tools can switch on $input['action'] per invocation
     }
 }
 ```

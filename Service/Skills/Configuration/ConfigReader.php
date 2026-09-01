@@ -88,17 +88,12 @@ class ConfigReader implements ToolInterface
         return $this->isReadOnly();
     }
 
-    public function getRequiredAcl(): string
-    {
-        return 'MaggyAssistant_Base::assistant_read';
-    }
-
     public function getInstructions(): string
     {
         return '';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return 'Magento_Config::config';
     }

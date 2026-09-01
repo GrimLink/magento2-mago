@@ -20,7 +20,7 @@ class CronStatus extends AbstractSkill
         return 'Monitor Magento cron jobs: check running, scheduled, and failed jobs, and perform health checks.';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return '';
     }

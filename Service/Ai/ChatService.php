@@ -264,7 +264,7 @@ class ChatService implements ChatServiceInterface
         }
 
         // Check Magento-native ACL if the tool requires it
-        $magentoAcl = $tool->getMagentoAcl();
+        $magentoAcl = $tool->getMagentoAcl($toolCall['input'] ?? []);
         if ($magentoAcl && !$this->authorization->isAllowed($magentoAcl)) {
             return ['error' => sprintf(
                 'Access denied: you do not have the required Magento permission (%s) to use the %s tool',

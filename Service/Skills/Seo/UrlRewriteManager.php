@@ -20,7 +20,7 @@ class UrlRewriteManager extends AbstractSkill
         return 'Manage URL rewrites and redirects: search existing rewrites, create redirects, and delete custom rewrites.';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return 'Magento_UrlRewrite::urlrewrite';
     }
