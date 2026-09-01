@@ -11,42 +11,36 @@ concurrency:
 jobs:
   phpstan:
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - PHP_VERSION: php83-fpm
-            MAGENTO_VERSION: 2.4.7-p4
-          - PHP_VERSION: php84-fpm
-            MAGENTO_VERSION: 2.4.8
-          - PHP_VERSION: php83-fpm
-            MAGENTO_VERSION: 3.3.0
           - PHP_VERSION: php85-fpm
-            MAGENTO_VERSION: 3.4.0
+            MAGENTO_VERSION: 2.4.9
 
-    name: PHP ${{ matrix.PHP_VERSION }} ${{ matrix.MAGENTO_VERSION }}
+    name: Magento ${{ matrix.MAGENTO_VERSION }} - ${{ matrix.PHP_VERSION }}
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start Mage-OS container
-        run: docker run --detach --name mage-os ghcr.io/controlaltdelete-nl/magento2-in-a-box/magento-project-community-edition:${{ matrix.PHP_VERSION }}-magento${{ matrix.MAGEOS_VERSION }}
+      - name: Start Magento container
+        run: docker run --detach --name magento ghcr.io/controlaltdelete-nl/magento2-in-a-box/magento-project-community-edition:${{ matrix.PHP_VERSION }}-magento${{ matrix.MAGENTO_VERSION }}
 
       - name: Install AI base module
         run: |
-          docker exec mage-os composer config repositories.mage-os-ai-base vcs https://github.com/mage-os-lab/module-ai-base
-          docker exec mage-os ./retry "composer require --no-update mage-os/module-ai-base:'dev-main as 1.0.0'"
-          docker exec mage-os ./retry "composer require --no-update symfony/ai-lm-studio-platform"
+          docker exec magento composer config repositories.mage-os-ai-base vcs https://github.com/mage-os-lab/module-ai-base
+          docker exec magento ./retry "composer require --no-update mage-os/module-ai-base:'dev-main as 1.0.0'"
+          docker exec magento ./retry "composer require --no-update symfony/ai-lm-studio-platform"
 
       - name: Upload module into container
         run: |
           sed -i '/version/d' ./composer.json
-          docker cp $(pwd) mage-os:/data/extensions/
-          docker exec mage-os ./install-composer-package maggy-assistant/magento2-base:@dev
+          docker cp $(pwd) magento:/data/extensions/
+          docker exec magento ./install-composer-package maggy-assistant/magento2-base:@dev
 
       - name: Activate extension
         run: |
-          docker exec mage-os ./retry "php bin/magento module:enable MageOS_AiBase MaggyAssistant_Base"
-          docker exec mage-os ./retry "php bin/magento setup:di:compile"
+          docker exec magento ./retry "php bin/magento module:enable MageOS_AiBase MaggyAssistant_Base && php bin/magento setup:di:compile && php bin/magento setup:upgrade --keep-generated"
 
       - name: Run PHPStan
-        run: docker exec mage-os /bin/bash -c "./vendor/bin/phpstan analyse --no-progress -c /data/extensions/*/phpstan.neon.dist /data/extensions"
+        run: docker exec magento /bin/bash -c "./vendor/bin/phpstan analyse --no-progress -c /data/extensions/*/phpstan.neon.dist /data/extensions"

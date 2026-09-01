@@ -1,11 +1,14 @@
 parameters:
     level: 4
     reportUnmatchedIgnoredErrors: false
-    ignoreErrors:
-        - '#^Call to an undefined method .*Interface::.*\(\)\.$#'
+    treatPhpDocTypesAsCertain: false
     paths:
         - .
     excludePaths:
-        - Test
-        - vendor
-    checkMissingIterableValueType: false
+        - Test/*
+    ignoreErrors:
+        - '#^Call to an undefined method .*Interface::.*\(\)\.$#'
+        - '#^Call to an undefined method Magento\\Framework\\View\\Result\\Page::setActiveMenu\(\)\.$#'
+        - '#^Call to an undefined method Magento\\Framework\\Data\\Form\\Element\\AbstractElement::unsScope\(\)\.$#'
+        - '#^Call to an undefined method Magento\\Framework\\Data\\Collection\\AbstractDb::addAttributeToFilter\(\)\.$#'
+        - identifier: missingType.iterableValue
