@@ -8,8 +8,8 @@ export default class ChatPanel {
   async openOnDashboard(page: Page) {
     const adminPath = process.env.ADMIN_PATH || 'admin';
 
-    /* Wait for stylesheets, not just markup. Until the CSS applies the toggle is not the
-       fixed tab on the right edge but an unstyled button underneath the admin menu. */
+    /* Wait for stylesheets, not just markup. Until the CSS applies the toggle sits in the
+       header as an unstyled button rather than the icon next to search. */
     await page.goto('/' + adminPath + '/admin/dashboard', {waitUntil: 'load'});
 
     await this.open(page);

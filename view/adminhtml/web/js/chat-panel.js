@@ -44,14 +44,16 @@
         loading.style.display = 'none';
     }
 
-    // The tab stays visible alongside the open panel, so its tooltip has to
-    // follow the state it will actually put the panel in when clicked.
+    // The header icon is the only way in or out of the panel, so its tooltip,
+    // aria state and active style all have to follow whatever it will do next.
     function syncToggleLabel() {
         var open = chat.classList.contains('is-open');
         var label = open ? toggle.getAttribute('data-label-close') : toggle.getAttribute('data-label-open');
         if (label) {
             toggle.title = label;
         }
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.classList.toggle('is-active', open);
     }
 
     function openPanel() {
