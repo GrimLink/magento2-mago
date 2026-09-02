@@ -12,14 +12,32 @@ jobs:
   compute_matrix:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.supported-version.outputs.matrix }}
+      matrix: ${{ steps.merged.outputs.matrix }}
     steps:
       - uses: graycoreio/github-actions-magento2/supported-version@v8.10.0
-        id: supported-version
+        id: mage_os
         with:
           kind: latest
           project: mage-os
           include_services: false
+
+      - uses: graycoreio/github-actions-magento2/supported-version@v8.10.0
+        id: magento_open_source
+        with:
+          kind: latest
+          project: magento-open-source
+          include_services: false
+
+      # The action covers one project per run, so both results are concatenated into a single
+      # `magento` dimension whose include entries carry that entry's php and composer version.
+      - name: Merge both projects into one matrix
+        id: merged
+        env:
+          MAGE_OS: ${{ steps.mage_os.outputs.matrix }}
+          MAGENTO_OPEN_SOURCE: ${{ steps.magento_open_source.outputs.matrix }}
+        run: |
+          echo "matrix=$(jq -cn --argjson a "$MAGE_OS" --argjson b "$MAGENTO_OPEN_SOURCE" \
+            '{magento: ($a.magento + $b.magento), include: ($a.include + $b.include)}')" >> "$GITHUB_OUTPUT"
 
   unit-test:
     needs: compute_matrix
@@ -37,6 +55,8 @@ jobs:
           tools: composer:v${{ matrix.composer }}
           mode: extension
           magento_version: ${{ matrix.magento }}
+          # mirror.mage-os.org, the action's default, carries magento/* but no mage-os/* at all.
+          magento_repository: ${{ startsWith(matrix.magento, 'mage-os/') && 'https://repo.mage-os.org/' || 'https://mirror.mage-os.org/' }}
 
       # MageOS_AiBase has no tagged release yet, so it comes off Packagist's dev-main under an
       # inline alias, same workaround Test/End-2-end's CI already needs. Drop the alias once it
