@@ -152,4 +152,19 @@ class FakeConfigRepository implements RepositoryInterface
     {
         return 0;
     }
+
+    public function getPayloadRetentionDays(): int
+    {
+        return 0;
+    }
+
+    public function getAiServiceId(): string
+    {
+        return '';
+    }
+
+    public function getMaxResponseTokens(): int
+    {
+        return 0;
+    }
 }

@@ -1,0 +1,74 @@
+name: Unit Tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compute_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.supported-version.outputs.matrix }}
+    steps:
+      - uses: graycoreio/github-actions-magento2/supported-version@v8.10.0
+        id: supported-version
+        with:
+          kind: latest
+          project: mage-os
+          include_services: false
+
+  unit-test:
+    needs: compute_matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.compute_matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: graycoreio/github-actions-magento2/setup-magento@v8.10.0
+        id: setup-magento
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v${{ matrix.composer }}
+          mode: extension
+          magento_version: ${{ matrix.magento }}
+
+      # MageOS_AiBase has no tagged release yet, so it comes off Packagist's dev-main under an
+      # inline alias, same workaround Test/End-2-end's CI already needs. Drop the alias once it
+      # is tagged.
+      - name: Add the extension and its unreleased AI base dependency
+        working-directory: ${{ steps.setup-magento.outputs.path }}
+        run: |
+          composer config repositories.local path "$GITHUB_WORKSPACE"
+          composer require --no-install "maggy-assistant/magento2-base:@dev" "mage-os/module-ai-base:dev-main as 1.0.0"
+
+      - uses: graycoreio/github-actions-magento2/cache-magento@v8.10.0
+        with:
+          working-directory: ${{ steps.setup-magento.outputs.path }}
+          composer_cache_key: unit-tests | ${{ matrix.magento }}
+
+      - name: Composer install
+        working-directory: ${{ steps.setup-magento.outputs.path }}
+        run: composer install
+        env:
+          COMPOSER_MIRROR_PATH_REPOS: 1
+
+      - name: Register the extension's unit tests
+        working-directory: ${{ steps.setup-magento.outputs.path }}
+        run: |
+          cat > /tmp/testsuite.xml << 'EOF'
+                  <testsuite name="MaggyAssistant_Base_Unit_Tests">
+                      <directory>../../../vendor/maggy-assistant/magento2-base/Test/Unit</directory>
+                  </testsuite>
+          EOF
+          sed -i '/<testsuites>/r /tmp/testsuite.xml' dev/tests/unit/phpunit.xml.dist
+          sed -i '/<extensions>/,/<\/extensions>/d' dev/tests/unit/phpunit.xml.dist
+
+      - name: Run unit tests
+        working-directory: ${{ steps.setup-magento.outputs.path }}
+        run: vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist --testsuite MaggyAssistant_Base_Unit_Tests
