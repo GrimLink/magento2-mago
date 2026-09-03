@@ -19,24 +19,40 @@
 //   Obsidian #2A2624 · Void #373330
 //   Type: Inter (self-hosted by the admin theme), letter-spacing -0.02em
 //
-// The panel is light: white surfaces with warm neutrals, so it sits calmly next
-// to Magento's admin instead of punching a dark hole in it. Obsidian carries the
-// brand as ink; the orange gradient anchors the header, the send button and the
-// user's own messages. Accent colours come from PHP config via the CSS custom
-// properties in panel.phtml, so the admin colour picker keeps working; the
-// fallbacks below are the brand defaults.
+// The panel is neutral chrome with one orange: white surfaces, warm hairlines,
+// Void (#373330) as ink. Orange appears only where it means something — the
+// mark, the user's own bubble, links, the active step — so answers read as
+// readable things rather than a wall of chat. Accent colours come from PHP
+// config via the CSS custom properties in panel.phtml, so the admin colour
+// picker keeps working; the fallbacks below are the brand defaults.
 
-// Reusable: the open-source tech grid from the logo, as a CSS overlay
-.mago-tech-grid() {
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.09) 1px, transparent 1px);
-    background-size: 32px 32px;
+// Reusable: a bordered card, the surface every structured thing in the panel sits on
+.mago-card() {
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    border-radius: 12px;
+}
+
+// Reusable: small uppercase label ("TRY ONE", table headers)
+.mago-eyebrow() {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mago-ink-muted, #9A918B);
 }
 
 // Page wrapper push when panel is open
 body.maggy-active .page-wrapper {
-    width: calc(100% - 8.8rem - var(--maggy-panel-width, 360px)) !important;
+    width: calc(100% - 8.8rem - var(--maggy-panel-width, 440px)) !important;
+}
+
+// The Mage-OS admin theme reserves a scrollbar gutter on <html> at all times.
+// A fixed panel stops at the edge of that gutter, which leaves an empty strip
+// down the right side whenever the page does not actually scroll. With the
+// panel open the gutter is dropped so the panel sits flush with the viewport.
+html:has(body.maggy-active) {
+    scrollbar-gutter: auto;
 }
 
 // The themes float the header actions to the right, which drops the toggle onto
@@ -103,14 +119,15 @@ body.maggy-active .page-wrapper {
     position: fixed;
     right: 0;
     top: 0;
-    width: 360px;
+    width: var(--maggy-panel-width, 440px);
     height: 100vh;
     background: var(--mago-panel, #FFFFFF);
-    color: var(--mago-ink, #2A2624);
+    color: var(--mago-ink, #373330);
     font-family: var(--mago-font);
-    letter-spacing: var(--mago-tracking, -0.02em);
-    border-left: none;
-    box-shadow: -6px 0 28px rgba(42, 38, 36, 0.14);
+    font-size: 13px;
+    letter-spacing: var(--mago-tracking, -0.01em);
+    border-left: 1px solid var(--mago-hairline, #E9E5E1);
+    box-shadow: -12px 0 32px rgba(55, 51, 48, 0.06);
     z-index: 901;
     display: flex;
     flex-direction: column;
@@ -125,7 +142,7 @@ body.maggy-active .page-wrapper {
     // Slim, warm scrollbars so the panel keeps its light, airy feel
     * {
         scrollbar-width: thin;
-        scrollbar-color: rgba(42, 38, 36, 0.20) transparent;
+        scrollbar-color: rgba(55, 51, 48, 0.18) transparent;
     }
 
     ::-webkit-scrollbar {
@@ -138,85 +155,140 @@ body.maggy-active .page-wrapper {
     }
 
     ::-webkit-scrollbar-thumb {
-        background: rgba(42, 38, 36, 0.16);
+        background: rgba(55, 51, 48, 0.14);
         border-radius: 4px;
 
         &:hover {
-            background: rgba(42, 38, 36, 0.28);
+            background: rgba(55, 51, 48, 0.26);
         }
+    }
+
+    button {
+        font-family: var(--mago-font);
     }
 }
 
-// Header — the brand lockup surface: orange gradient + tech grid
+// Shared spinner ring: the working pill, the active tool step, the thinking row
+.maggy-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(var(--maggy-accent-rgb, 255, 122, 51), 0.25);
+    border-top-color: var(--maggy-accent, #FF7A33);
+    border-radius: 50%;
+    animation: maggy-spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes maggy-spin {
+    to { transform: rotate(360deg); }
+}
+
+// Header — white, hairline below; the mark is the only colour
 .maggy-header {
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 13px 16px;
-    background: linear-gradient(135deg, var(--mago-sunset, #FF7A33), var(--mago-deep, #E65000));
-    color: var(--maggy-accent-text, #FFFFFF);
+    gap: 12px;
+    min-height: 60px;
+    padding: 12px 16px 12px 20px;
+    background: var(--mago-panel, #FFFFFF);
+    border-bottom: 1px solid var(--mago-hairline, #E9E5E1);
     flex-shrink: 0;
-
-    // Grid overlay sits above the gradient, below the content
-    &:before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        .mago-tech-grid();
-        pointer-events: none;
-    }
-
-    > * {
-        position: relative;
-    }
 }
 
 .maggy-header-left {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
 }
 
 .maggy-mascot {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    background: rgba(255, 255, 255, 0.18);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
-    color: #FFFFFF;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--maggy-accent, #FF7A33), var(--mago-deep, #E65000));
+    color: var(--maggy-accent-text, #FFFFFF);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+.maggy-header-text {
+    min-width: 0;
+}
+
+.maggy-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .maggy-title {
     font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--mago-ink, #373330);
+    white-space: nowrap;
+}
+
+.maggy-subtitle {
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--mago-ink-muted, #9A918B);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:empty {
+        display: none;
+    }
+}
+
+// "Working" pill — visible while a request streams
+.maggy-working-pill {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px 3px 7px;
+    border-radius: 999px;
+    background: var(--maggy-accent-light, #FFE9DC);
+    color: var(--mago-deep, #E65000);
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: var(--mago-tracking, -0.02em);
+    letter-spacing: 0;
+    white-space: nowrap;
+
+    .maggy-chat-panel.is-busy & {
+        display: inline-flex;
+    }
 }
 
 .maggy-header-actions {
     display: flex;
-    gap: 6px;
+    gap: 2px;
+    flex-shrink: 0;
 }
 
 .maggy-btn-icon {
+    width: 30px;
+    height: 30px;
     background: transparent;
     border: none;
-    color: var(--maggy-accent-text, #FFFFFF);
+    color: var(--mago-ink-muted, #9A918B);
     cursor: pointer;
-    padding: 5px;
-    border-radius: 6px;
+    padding: 0;
+    border-radius: 8px;
     display: flex;
     align-items: center;
-    opacity: 0.9;
-    transition: opacity 0.15s, background 0.15s;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
 
     &:hover {
-        opacity: 1;
-        background: rgba(255, 255, 255, 0.22);
+        color: var(--mago-ink, #373330);
+        background: var(--mago-surface, #F7F5F3);
     }
 }
 
@@ -224,95 +296,204 @@ body.maggy-active .page-wrapper {
 .maggy-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 18px 16px;
+    padding: 20px 20px 12px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
 }
 
+// Welcome state — only while the conversation is empty
+.maggy-welcome {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    padding-top: 12px;
+
+    .maggy-chat-panel.is-empty & {
+        display: flex;
+    }
+}
+
+.maggy-welcome-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--maggy-accent, #FF7A33), var(--mago-deep, #E65000));
+    color: var(--maggy-accent-text, #FFFFFF);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.maggy-welcome-title {
+    margin: 0 0 10px;
+    font-family: var(--mago-font);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    color: var(--mago-ink, #373330);
+}
+
+.maggy-welcome-text {
+    margin: 0 0 28px;
+    max-width: 320px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--mago-ink-soft, #6B645F);
+}
+
+.maggy-welcome-label {
+    .mago-eyebrow();
+    margin-bottom: 10px;
+}
+
+.maggy-starters {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.maggy-starter {
+    .mago-card();
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    text-align: left;
+    color: var(--mago-ink, #373330);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+
+    &:hover {
+        border-color: rgba(var(--maggy-accent-rgb, 255, 122, 51), 0.5);
+        background: #FFFBF9;
+    }
+}
+
+.maggy-starter-icon {
+    display: flex;
+    color: var(--maggy-accent, #FF7A33);
+    flex-shrink: 0;
+}
+
+.maggy-starter-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.maggy-starter-chevron {
+    color: var(--mago-ink-muted, #9A918B);
+    flex-shrink: 0;
+}
+
+// Keyboard hint pinned to the bottom of the welcome state
+.maggy-welcome-hint {
+    margin-top: auto;
+    padding-top: 24px;
+    font-size: 12px;
+    color: var(--mago-ink-muted, #9A918B);
+
+    kbd {
+        display: inline-block;
+        min-width: 18px;
+        padding: 1px 5px;
+        border: 1px solid var(--mago-hairline, #E9E5E1);
+        border-radius: 5px;
+        background: var(--mago-surface, #F7F5F3);
+        font-family: var(--mago-font);
+        font-size: 11px;
+        font-weight: 600;
+        text-align: center;
+        color: var(--mago-ink-soft, #6B645F);
+    }
+}
+
+// Messages: the user's question is a tinted bubble, the answer is plain text
 .maggy-message {
-    max-width: 90%;
-    padding: 11px 14px;
-    border-radius: 14px;
     font-size: 13px;
     line-height: 1.6;
     word-wrap: break-word;
 
     &.is-user {
         align-self: flex-end;
-        background: linear-gradient(140deg, var(--mago-sunset, #FF7A33), var(--mago-deep, #E65000));
-        color: var(--maggy-accent-text, #FFFFFF);
-        border-bottom-right-radius: 5px;
-        box-shadow: 0 2px 10px rgba(242, 99, 34, 0.20);
+        max-width: 85%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: var(--maggy-accent-light, #FFE9DC);
+        color: var(--mago-ink, #373330);
     }
 
     &.is-assistant {
-        align-self: flex-start;
-        background: var(--mago-surface, #F6F3F0);
-        color: var(--mago-ink, #2A2624);
-        border-bottom-left-radius: 5px;
+        align-self: stretch;
+        max-width: 100%;
+        color: var(--mago-ink, #373330);
     }
-}
-
-.maggy-message-role {
-    font-size: 10px;
-    font-weight: 600;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-    color: var(--mago-ink-muted, #8A817B);
-}
-
-.maggy-message.is-user .maggy-message-role {
-    color: rgba(255, 255, 255, 0.75);
 }
 
 .maggy-message-content {
     p {
-        margin: 0 0 8px;
+        margin: 0 0 10px;
         &:last-child {
             margin-bottom: 0;
         }
     }
 
+    strong {
+        font-weight: 600;
+        color: var(--mago-ink, #373330);
+    }
+
     pre {
-        background: var(--mago-panel, #FFFFFF);
-        color: var(--mago-ink, #2A2624);
-        border: 1px solid var(--mago-hairline, rgba(42, 38, 36, 0.10));
+        .mago-card();
+        background: var(--mago-surface, #F7F5F3);
+        color: var(--mago-ink, #373330);
         padding: 10px 12px;
-        border-radius: 9px;
+        border-radius: 10px;
         overflow-x: auto;
         font-size: 12px;
         line-height: 1.5;
-        margin: 8px 0;
+        margin: 10px 0;
     }
 
     code {
-        background: rgba(42, 38, 36, 0.07);
-        padding: 2px 5px;
-        border-radius: 4px;
+        background: var(--mago-surface, #F7F5F3);
+        border: 1px solid var(--mago-hairline, #E9E5E1);
+        padding: 1px 5px;
+        border-radius: 5px;
         font-size: 12px;
     }
 
     pre code {
         background: transparent;
+        border: none;
         padding: 0;
     }
 
     ul, ol {
-        margin: 4px 0;
+        margin: 6px 0;
         padding-left: 20px;
+    }
+
+    li {
+        margin: 2px 0;
     }
 
     a {
         text-decoration: none;
-        font-weight: 500;
+        font-weight: 600;
         cursor: pointer;
-        border-bottom: 1px solid currentColor;
-        padding-bottom: 1px;
+        color: var(--mago-deep, #E65000);
 
         &:hover {
-            border-bottom-color: transparent;
+            text-decoration: underline;
         }
 
         &::before {
@@ -328,45 +509,53 @@ body.maggy-active .page-wrapper {
         }
     }
 
-    h2, h3, h4 {
-        margin: 10px 0 4px;
+    h1, h2, h3, h4 {
+        margin: 14px 0 6px;
+        font-family: var(--mago-font);
         font-size: 14px;
         font-weight: 600;
-        letter-spacing: var(--mago-tracking, -0.02em);
+        letter-spacing: -0.015em;
+        color: var(--mago-ink, #373330);
+
+        &:first-child {
+            margin-top: 0;
+        }
+    }
+
+    hr {
+        border: none;
+        border-top: 1px solid var(--mago-hairline, #E9E5E1);
+        margin: 12px 0;
+    }
+
+    // Tables become the bordered data card from the design
+    .maggy-table-wrap {
+        .mago-card();
+        display: block;
+        overflow-x: auto;
+        margin: 12px 0;
+        -webkit-overflow-scrolling: touch;
     }
 
     table {
-        border-collapse: separate !important;
+        border-collapse: collapse !important;
         border-spacing: 0 !important;
         width: max-content;
         min-width: 100%;
         margin: 0;
         font-size: 12px;
-        border: 1px solid #e0e0e0 !important;
-        border-radius: 6px;
-    }
-
-    .maggy-table-wrap {
-        display: block;
-        overflow-x: auto;
-        margin: 10px 0;
-        border-radius: 6px;
-        -webkit-overflow-scrolling: touch;
+        border: none !important;
     }
 
     th, td {
         border: none !important;
-        border-bottom: 1px solid #e8e8e8 !important;
-        border-right: 1px solid #e8e8e8 !important;
-        padding: 7px 12px !important;
+        border-bottom: 1px solid var(--mago-hairline, #E9E5E1) !important;
+        padding: 9px 14px !important;
         text-align: left;
         white-space: nowrap !important;
         word-break: keep-all !important;
         vertical-align: middle;
-
-        &:last-child {
-            border-right: none !important;
-        }
+        background: transparent !important;
     }
 
     tr:last-child td {
@@ -374,118 +563,180 @@ body.maggy-active .page-wrapper {
     }
 
     th {
-        background: rgba(var(--maggy-accent-rgb, 232, 113, 10), 0.12) !important;
-        font-weight: 600;
-        color: #333;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
+        .mago-eyebrow();
+        background: var(--mago-surface, #F7F5F3) !important;
+    }
+
+    td {
+        color: var(--mago-ink, #373330);
     }
 
     tr:hover td {
-        background: rgba(var(--maggy-accent-rgb, 232, 113, 10), 0.04) !important;
-    }
-
-    tr:nth-child(even) td {
-        background: #f8f8f8 !important;
-    }
-
-    tr:nth-child(even):hover td {
-        background: rgba(var(--maggy-accent-rgb, 232, 113, 10), 0.06) !important;
+        background: #FFFBF9 !important;
     }
 }
 
-// Link colors per message type
-.maggy-message.is-assistant .maggy-message-content a {
-    color: var(--mago-deep, #E65000);
-    border-bottom-color: rgba(230, 80, 0, 0.35);
-
-    &:hover {
-        border-bottom-color: var(--mago-deep, #E65000);
-    }
-}
-
+// Links inside the user's own bubble stay ink-coloured
 .maggy-message.is-user .maggy-message-content a {
-    color: inherit;
-    border-bottom-color: rgba(255, 255, 255, 0.5);
-
-    &:hover {
-        border-bottom-color: inherit;
-    }
+    color: var(--mago-ink, #373330);
 }
 
-// Confirmation buttons
+// Confirmation buttons: primary is Void ink, like the design's "Open all" button
 .maggy-confirm-actions {
     display: flex;
     gap: 8px;
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid var(--mago-hairline, rgba(42, 38, 36, 0.10));
+    border-top: 1px solid var(--mago-hairline, #E9E5E1);
 }
 
 .maggy-btn {
-    padding: 7px 16px;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
     font-family: var(--mago-font);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: var(--mago-tracking, -0.02em);
+    letter-spacing: 0;
     cursor: pointer;
     border: 1px solid transparent;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 
     &--confirm {
-        background: #2E7D32;
+        background: var(--mago-void, #373330);
         color: #FFFFFF;
-        &:hover { background: #276B2A; }
+        &:hover { background: var(--mago-obsidian, #2A2624); }
     }
 
     &--reject {
         background: transparent;
-        color: #C5221F;
-        border-color: rgba(197, 34, 31, 0.35);
-        &:hover { background: rgba(197, 34, 31, 0.06); }
+        color: var(--mago-ink-soft, #6B645F);
+        border-color: var(--mago-hairline, #E9E5E1);
+        &:hover { color: var(--mago-ink, #373330); border-color: var(--mago-ink-muted, #9A918B); }
     }
 }
 
-// Loading / typing indicator
-.maggy-loading {
-    padding: 8px 16px;
+// Thinking row — shown between the question and the first streamed token
+.maggy-thinking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mago-deep, #E65000);
+}
+
+// Tool trace: done steps go quiet, the active step carries the orange
+.maggy-tool-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mago-deep, #E65000);
+
+    & + & {
+        margin-top: 2px;
+    }
+
+    .maggy-message-content + & {
+        margin-top: 10px;
+    }
+}
+
+.maggy-tool-status-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(var(--maggy-accent-rgb, 255, 122, 51), 0.25);
+    border-top-color: var(--maggy-accent, #FF7A33);
+    border-radius: 50%;
+    animation: maggy-spin 0.8s linear infinite;
     flex-shrink: 0;
 }
 
-.maggy-typing {
+.maggy-tool-status-check {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    color: var(--mago-ink-muted, #9A918B);
     display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.maggy-tool-status-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.maggy-tool-status.is-done {
+    color: var(--mago-ink-soft, #6B645F);
+    font-weight: 400;
+}
+
+// Tool tags — small neutral chips above the answer
+.maggy-tool-tags {
+    display: flex;
+    flex-wrap: wrap;
     gap: 4px;
-    padding: 10px 14px;
-    background: var(--mago-surface, #F6F3F0);
-    border-radius: 14px;
-    width: fit-content;
 
-    span {
-        width: 6px;
-        height: 6px;
-        background: var(--mago-deep, #E65000);
-        border-radius: 50%;
-        animation: maggy-bounce 1.4s infinite ease-in-out;
-
-        &:nth-child(2) { animation-delay: 0.2s; }
-        &:nth-child(3) { animation-delay: 0.4s; }
+    &:not(:empty) {
+        margin-bottom: 8px;
     }
 }
 
-@keyframes maggy-bounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1); }
+.maggy-tool-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--mago-surface, #F7F5F3);
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    color: var(--mago-ink-soft, #6B645F);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+
+    svg {
+        width: 10px;
+        height: 10px;
+        color: var(--maggy-accent, #FF7A33);
+    }
 }
 
-// Input area
+// Date separator
+.maggy-date-sep {
+    text-align: center;
+    padding: 2px 0;
+
+    span {
+        .mago-eyebrow();
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: var(--mago-surface, #F7F5F3);
+    }
+}
+
+// Message timestamp
+.maggy-msg-time {
+    font-size: 10px;
+    color: var(--mago-ink-muted, #9A918B);
+    margin-top: 6px;
+}
+
+.maggy-message.is-user .maggy-msg-time {
+    text-align: right;
+}
+
+// Input area — bordered field with a square send button
 .maggy-input-wrapper {
     display: flex;
     align-items: flex-end;
-    padding: 12px;
+    padding: 12px 20px 20px;
     background: var(--mago-panel, #FFFFFF);
-    border-top: 1px solid var(--mago-hairline, rgba(42, 38, 36, 0.10));
     gap: 8px;
     flex-shrink: 0;
     position: relative;
@@ -493,54 +744,65 @@ body.maggy-active .page-wrapper {
 
 .maggy-input {
     flex: 1;
-    background: var(--mago-surface, #F6F3F0);
-    color: var(--mago-ink, #2A2624);
-    border: 1px solid transparent;
+    box-sizing: border-box;
+    background: var(--mago-panel, #FFFFFF);
+    color: var(--mago-ink, #373330);
+    border: 1px solid var(--mago-hairline, #E9E5E1);
     border-radius: 10px;
-    padding: 10px 12px;
+    // 10 + 18 + 10 + 2px border = 40px, the exact height of the send button,
+    // so a single line sits flush with it instead of a pixel or two short.
+    padding: 10px 14px;
     font-family: var(--mago-font);
     font-size: 13px;
-    letter-spacing: var(--mago-tracking, -0.02em);
-    line-height: 1.4;
+    letter-spacing: var(--mago-tracking, -0.01em);
+    line-height: 18px;
     resize: none;
-    min-height: 38px;
+    overflow-y: hidden;
+    height: 40px;
+    min-height: 40px;
     max-height: 240px;
     outline: none;
-    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    box-shadow: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
 
     &::placeholder {
-        color: var(--mago-ink-muted, #8A817B);
+        color: var(--mago-ink-muted, #9A918B);
     }
 
     &:focus {
-        background: var(--mago-panel, #FFFFFF);
-        border-color: var(--mago-sunset, #FF7A33);
-        box-shadow: 0 0 0 3px rgba(255, 122, 51, 0.16);
+        border-color: var(--maggy-accent, #FF7A33);
+        box-shadow: 0 0 0 3px rgba(var(--maggy-accent-rgb, 255, 122, 51), 0.16);
     }
 }
 
 .maggy-send-btn {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 10px;
-    background: linear-gradient(140deg, var(--mago-sunset, #FF7A33), var(--mago-deep, #E65000));
-    color: #FFFFFF;
+    background: var(--maggy-accent, #FF7A33);
+    color: var(--maggy-accent-text, #FFFFFF);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(242, 99, 34, 0.26);
-    transition: box-shadow 0.15s, opacity 0.15s;
+    box-shadow: 0 2px 8px rgba(var(--maggy-accent-rgb, 255, 122, 51), 0.35);
+    transition: background 0.15s, box-shadow 0.15s, color 0.15s;
 
     &:hover {
-        box-shadow: 0 2px 14px rgba(242, 99, 34, 0.44);
+        background: var(--maggy-accent-hover, #E65000);
+    }
+
+    // Empty input or a request in flight: the button goes quiet
+    &.is-idle,
+    &:disabled {
+        background: var(--mago-surface, #F7F5F3);
+        color: var(--mago-ink-muted, #9A918B);
+        box-shadow: none;
     }
 
     &:disabled {
-        opacity: 0.4;
-        box-shadow: none;
         cursor: not-allowed;
     }
 }
@@ -549,20 +811,23 @@ body.maggy-active .page-wrapper {
 .maggy-history-list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .maggy-history-item {
+    .mago-card();
     display: flex;
     align-items: center;
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 12px 14px;
     cursor: pointer;
-    transition: background 0.15s;
-    border-bottom: 1px solid var(--mago-hairline, rgba(42, 38, 36, 0.10));
+    transition: border-color 0.15s, background 0.15s;
 
     &:hover {
-        background: var(--mago-surface, #F6F3F0);
+        border-color: rgba(var(--maggy-accent-rgb, 255, 122, 51), 0.5);
+        background: #FFFBF9;
     }
 }
 
@@ -573,12 +838,12 @@ body.maggy-active .page-wrapper {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--mago-ink, #2A2624);
+    color: var(--mago-ink, #373330);
 }
 
 .maggy-history-item-date {
     font-size: 11px;
-    color: var(--mago-ink-muted, #8A817B);
+    color: var(--mago-ink-muted, #9A918B);
     flex-shrink: 0;
     margin-left: 8px;
 }
@@ -590,8 +855,8 @@ body.maggy-active .page-wrapper {
     border: none;
     cursor: pointer;
     padding: 4px;
-    border-radius: 5px;
-    color: var(--mago-ink-muted, #8A817B);
+    border-radius: 6px;
+    color: var(--mago-ink-muted, #9A918B);
     display: flex;
     align-items: center;
 
@@ -605,122 +870,17 @@ body.maggy-active .page-wrapper {
     }
 }
 
-// Date separator
-.maggy-date-sep {
-    text-align: center;
-    padding: 4px 0;
-    margin: 4px 0;
-
-    span {
-        background: var(--mago-surface, #F6F3F0);
-        color: var(--mago-ink-muted, #8A817B);
-        font-size: 11px;
-        font-weight: 500;
-        padding: 3px 12px;
-        border-radius: 10px;
-    }
-}
-
-// Message timestamp
-.maggy-msg-time {
-    font-size: 10px;
-    color: var(--mago-ink-muted, #8A817B);
-    margin-top: 5px;
-    text-align: right;
-}
-
-.maggy-message.is-user .maggy-msg-time {
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.maggy-message.is-assistant .maggy-msg-time {
-    text-align: left;
-}
-
-// Tool tags
-.maggy-tool-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 7px;
-}
-
-.maggy-tool-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    background: rgba(242, 99, 34, 0.10);
-    color: var(--mago-deep, #E65000);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 10px;
-    white-space: nowrap;
-
-    svg {
-        width: 10px;
-        height: 10px;
-        opacity: 0.8;
-    }
-}
-
-// Tool status indicator
-.maggy-tool-status {
-    font-size: 12px;
-    color: #888;
-    padding: 4px 0;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.maggy-tool-status-spinner {
-    width: 12px;
-    height: 12px;
-    border: 2px solid #ddd;
-    border-top-color: var(--maggy-accent, #E8710A);
-    border-radius: 50%;
-    animation: maggy-spin 0.8s linear infinite;
-    flex-shrink: 0;
-}
-
-.maggy-tool-status-check {
-    width: 12px;
-    height: 12px;
-    flex-shrink: 0;
-    color: #79a12d;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.maggy-tool-status-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.maggy-tool-status.is-done {
-    color: #79a12d;
-}
-
-@keyframes maggy-spin {
-    to { transform: rotate(360deg); }
-}
-
-// Slash command menu
+// Slash command menu — a card floating above the input
 .maggy-slash-menu {
+    .mago-card();
     position: absolute;
-    bottom: 100%;
-    left: 0;
-    right: 0;
-    background: var(--mago-panel, #FFFFFF);
-    border: 1px solid var(--mago-hairline, rgba(42, 38, 36, 0.10));
-    border-bottom: none;
-    border-radius: 12px 12px 0 0;
-    box-shadow: 0 -6px 24px rgba(42, 38, 36, 0.12);
-    max-height: 240px;
+    bottom: calc(100% - 8px);
+    left: 20px;
+    right: 20px;
+    box-shadow: 0 10px 30px rgba(55, 51, 48, 0.12);
+    max-height: 260px;
     overflow-y: auto;
+    padding: 4px;
     display: none;
     z-index: 10;
 
@@ -732,14 +892,15 @@ body.maggy-active .page-wrapper {
 .maggy-slash-item {
     display: flex;
     align-items: center;
-    padding: 9px 12px;
+    padding: 9px 10px;
+    border-radius: 8px;
     cursor: pointer;
     transition: background 0.1s;
     gap: 10px;
 
     &:hover,
     &.is-active {
-        background: var(--mago-surface, #F6F3F0);
+        background: var(--mago-surface, #F7F5F3);
     }
 }
 
@@ -751,8 +912,8 @@ body.maggy-active .page-wrapper {
 }
 
 .maggy-slash-item-desc {
-    font-size: 11px;
-    color: var(--mago-ink-muted, #8A817B);
+    font-size: 12px;
+    color: var(--mago-ink-muted, #9A918B);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -762,17 +923,17 @@ body.maggy-active .page-wrapper {
 .maggy-slash-item-badge {
     font-size: 10px;
     font-weight: 600;
-    padding: 1px 6px;
-    border-radius: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
     flex-shrink: 0;
 
     &--read {
-        background: rgba(46, 125, 50, 0.10);
-        color: #2E7D32;
+        background: var(--mago-surface, #F7F5F3);
+        color: var(--mago-ink-soft, #6B645F);
     }
 
     &--write {
-        background: rgba(230, 80, 0, 0.10);
+        background: var(--maggy-accent-light, #FFE9DC);
         color: var(--mago-deep, #E65000);
     }
 }
@@ -780,23 +941,36 @@ body.maggy-active .page-wrapper {
 // Full-size mode
 .maggy-chat-panel.is-fullsize {
     width: 100vw;
+    border-left: none;
     box-shadow: none;
 
-    .maggy-messages {
-        max-width: 960px;
-        margin: 0 auto;
-        width: 100%;
-        padding: 24px 32px;
+    .maggy-header {
+        padding-left: 32px;
+        padding-right: 28px;
     }
 
-    .maggy-message {
-        max-width: 100%;
+    .maggy-messages {
+        max-width: 760px;
+        margin: 0 auto;
+        width: 100%;
+        padding: 32px;
+    }
+
+    .maggy-message.is-user {
+        max-width: 70%;
     }
 
     .maggy-input-wrapper {
-        max-width: 960px;
+        max-width: 760px;
         margin: 0 auto;
         width: 100%;
+        padding-left: 32px;
+        padding-right: 32px;
+    }
+
+    .maggy-slash-menu {
+        left: 32px;
+        right: 32px;
     }
 }
 

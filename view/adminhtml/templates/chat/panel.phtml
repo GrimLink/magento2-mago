@@ -7,13 +7,15 @@ if (!$block->isVisible()) {
 $accentColorRaw = $block->getAccentColor();
 $textColorRaw = $block->getTextColor();
 // Sanitize: only allow valid hex colors
-$accentColor = preg_match('/^#[0-9a-fA-F]{6}$/', $accentColorRaw) ? $accentColorRaw : '#F26322';
+$accentColor = preg_match('/^#[0-9a-fA-F]{6}$/', $accentColorRaw) ? $accentColorRaw : '#FF7A33';
 $accentText = preg_match('/^#[0-9a-fA-F]{6}$/', $textColorRaw) ? $textColorRaw : '#FFFFFF';
 // Compute derived colors from accent
 $hex = ltrim($accentColor, '#');
 $r = hexdec(substr($hex, 0, 2));
 $g = hexdec(substr($hex, 2, 2));
 $b = hexdec(substr($hex, 4, 2));
+// Tint: the accent at ~15% over white. Carries the user's own messages and the
+// "working" pill, so the panel stays light whatever accent is configured.
 $accentColorLight = sprintf('#%02x%02x%02x', (int)(255 - (255 - $r) * 0.15), (int)(255 - (255 - $g) * 0.15), (int)(255 - (255 - $b) * 0.15));
 $accentRgb = "$r,$g,$b";
 // Hover: lighten dark colors, darken light colors
@@ -23,6 +25,11 @@ if ($luminance < 0.3) {
 } else {
     $accentColorHover = sprintf('#%02x%02x%02x', (int)($r * 0.8), (int)($g * 0.8), (int)($b * 0.8));
 }
+$assistantName = $block->getAssistantName();
+$adminName = $block->getAdminFirstName();
+// The welcome screen offers the first few skills as one-click starters.
+$skills = json_decode($block->getSkillsJson(), true) ?: [];
+$starterSkills = array_slice(array_values($skills), 0, 3);
 ?>
 
 <style>
@@ -32,76 +39,119 @@ if ($luminance < 0.3) {
     --maggy-accent-light: <?= $accentColorLight ?>;
     --maggy-accent-rgb: <?= $accentRgb ?>;
     --maggy-accent-text: <?= $accentText ?>;
-    --maggy-panel-width: 360px;
+    --maggy-panel-width: 440px;
 
     /* Mago brand palette — see brand-guidelines.md */
     --mago-sunset: #FF7A33;
     --mago-deep: #E65000;
     --mago-obsidian: #2A2624;
     --mago-void: #373330;
+    --mago-tint: #FFE9DC;
 
-    /* Light panel surfaces. Obsidian carries the brand as ink rather than
-       background; the neutrals are warm so they stay in the brand family. */
+    /* Light panel surfaces: white panel, warm hairlines, Void as ink. The
+       accent only appears as the mark, the user's bubble, links and the
+       active step — everything else is neutral chrome. */
     --mago-panel: #FFFFFF;
-    --mago-surface: #F6F3F0;
-    --mago-hairline: rgba(42, 38, 36, 0.10);
-    --mago-ink: #2A2624;
-    --mago-ink-muted: #8A817B;
+    --mago-surface: #F7F5F3;
+    --mago-hairline: #E9E5E1;
+    --mago-ink: #373330;
+    --mago-ink-soft: #6B645F;
+    --mago-ink-muted: #9A918B;
 
     /* Inter ships self-hosted with the admin theme and Open Sans with stock
        Magento, so this stack loads nothing extra on either. */
     --mago-font: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --mago-tracking: -0.02em;
+    --mago-tracking: -0.01em;
 }
 </style>
 
-<div id="maggy-chat" class="maggy-chat-panel">
+<div id="maggy-chat" class="maggy-chat-panel is-empty">
     <div class="maggy-header">
         <div class="maggy-header-left">
             <div class="maggy-mascot">
                 <!-- Mago mark: the central Spark (AI) above the geometric M (Magento foundation) -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="34 30 188 188" fill="currentColor" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="34 30 188 188" fill="currentColor" aria-hidden="true">
                     <polygon points="128,40 160,72 128,104 96,72" opacity="0.55"/>
                     <polygon points="44,208 96,104 128,136 160,104 212,208 152,208 128,160 104,208"/>
                 </svg>
             </div>
-            <span class="maggy-title"><?= $escaper->escapeHtml($block->getAssistantName()) ?></span>
+            <div class="maggy-header-text">
+                <div class="maggy-title-row">
+                    <span class="maggy-title"><?= $escaper->escapeHtml($assistantName) ?></span>
+                    <span class="maggy-working-pill" aria-live="polite">
+                        <span class="maggy-spinner"></span><?= $escaper->escapeHtml(__('Working')) ?>
+                    </span>
+                </div>
+                <div id="maggy-subtitle" class="maggy-subtitle"></div>
+            </div>
         </div>
         <div class="maggy-header-actions">
-            <button type="button" id="maggy-history" class="maggy-btn-icon" title="Chat History">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <button type="button" id="maggy-history" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Chat History')) ?>">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
             </button>
-            <button type="button" id="maggy-new" class="maggy-btn-icon" title="New Chat">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <button type="button" id="maggy-new" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('New Chat')) ?>">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-            <button type="button" id="maggy-expand" class="maggy-btn-icon" title="Full size">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            <button type="button" id="maggy-expand" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Full size')) ?>">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             </button>
-            <button type="button" id="maggy-close" class="maggy-btn-icon" title="Close">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <button type="button" id="maggy-close" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Close')) ?>">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
     </div>
     <div id="maggy-history-list" class="maggy-history-list" style="display:none;"></div>
     <div id="maggy-messages" class="maggy-messages">
-        <div id="maggy-loading" class="maggy-message is-assistant" style="display:none;">
-            <div class="maggy-message-role"><?= $escaper->escapeHtml($block->getAssistantName()) ?></div>
-            <div class="maggy-typing"><span></span><span></span><span></span></div>
+        <!-- Welcome state: shown while the conversation is empty, hidden via .is-empty as soon as a message lands -->
+        <div id="maggy-welcome" class="maggy-welcome">
+            <div class="maggy-welcome-mark">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="34 30 188 188" fill="currentColor" aria-hidden="true">
+                    <polygon points="128,40 160,72 128,104 96,72" opacity="0.55"/>
+                    <polygon points="44,208 96,104 128,136 160,104 212,208 152,208 128,160 104,208"/>
+                </svg>
+            </div>
+            <h2 class="maggy-welcome-title">
+                <?= $escaper->escapeHtml($adminName !== '' ? __('Hi %1, what needs doing?', $adminName) : __('What needs doing?')) ?>
+            </h2>
+            <p class="maggy-welcome-text">
+                <?= $escaper->escapeHtml(__('Ask about your catalog, orders or settings. I read anything, and I ask before I change something.')) ?>
+            </p>
+            <?php if ($starterSkills): ?>
+                <div class="maggy-welcome-label"><?= $escaper->escapeHtml(__('Try one')) ?></div>
+                <div class="maggy-starters">
+                    <?php foreach ($starterSkills as $skill): ?>
+                        <button type="button" class="maggy-starter" data-skill="<?= $escaper->escapeHtmlAttr($skill['name'] ?? '') ?>">
+                            <span class="maggy-starter-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/></svg>
+                            </span>
+                            <span class="maggy-starter-text"><?= $escaper->escapeHtml($skill['description'] ?? $skill['name'] ?? '') ?></span>
+                            <svg class="maggy-starter-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+            <div class="maggy-welcome-hint">
+                <kbd>/</kbd> <?= $escaper->escapeHtml(__('for skills')) ?>
+            </div>
+        </div>
+        <div id="maggy-loading" class="maggy-thinking" style="display:none;">
+            <span class="maggy-spinner"></span>
+            <span><?= $escaper->escapeHtml(__('Thinking…')) ?></span>
         </div>
     </div>
     <div id="maggy-input-area" class="maggy-input-wrapper">
         <div id="maggy-slash-menu" class="maggy-slash-menu"></div>
-        <textarea id="maggy-input" class="maggy-input" placeholder="Type / for skills, or ask anything..." rows="1"></textarea>
-        <button type="button" id="maggy-send" class="maggy-send-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        <textarea id="maggy-input" class="maggy-input" placeholder="<?= $escaper->escapeHtmlAttr(__('Ask anything…')) ?>" rows="1"></textarea>
+        <button type="button" id="maggy-send" class="maggy-send-btn is-idle" title="<?= $escaper->escapeHtmlAttr(__('Send')) ?>">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="13 5 20 12 13 19"/></svg>
         </button>
     </div>
 </div>
 
 <script>
 window.MAGGY_CONFIG = <?= /* @noEscape */ $block->getJsConfig() ?>;
-window.MAGGY_CONFIG.adminUser = '<?= $escaper->escapeJs($block->getAdminFirstName()) ?>';
-window.MAGGY_CONFIG.assistantName = '<?= $escaper->escapeJs($block->getAssistantName()) ?>';
+window.MAGGY_CONFIG.adminUser = '<?= $escaper->escapeJs($adminName) ?>';
+window.MAGGY_CONFIG.assistantName = '<?= $escaper->escapeJs($assistantName) ?>';
 window.MAGGY_CONFIG.formKey = '<?= $escaper->escapeJs($block->getFormKey()) ?>';
 window.MAGGY_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
 </script>

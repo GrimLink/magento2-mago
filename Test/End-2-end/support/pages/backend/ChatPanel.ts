@@ -44,6 +44,10 @@ export default class ChatPanel {
     return page.locator('#maggy-chat');
   }
 
+  welcome(page: Page): Locator {
+    return page.locator('#maggy-welcome');
+  }
+
   input(page: Page): Locator {
     return page.locator('#maggy-input');
   }

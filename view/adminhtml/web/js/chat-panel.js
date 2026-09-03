@@ -1,7 +1,5 @@
 (function() {
     var config = window.MAGGY_CONFIG;
-    var adminUser = config.adminUser;
-    var assistantName = config.assistantName;
     var formKey = config.formKey;
     var skills = config.skills;
     var conversationId = null;
@@ -40,14 +38,23 @@
     }
 
     function clearMsgs() {
-        while (msgs.firstChild) {
-            if (msgs.firstChild === loading) break;
-            msgs.removeChild(msgs.firstChild);
-        }
-        while (loading.nextSibling) {
-            msgs.removeChild(loading.nextSibling);
-        }
+        var nodes = msgs.querySelectorAll('.maggy-message, .maggy-date-sep');
+        for (var i = 0; i < nodes.length; i++) nodes[i].remove();
         loading.style.display = 'none';
+    }
+
+    // The header subtitle names the conversation being viewed; empty on a fresh chat.
+    function setSubtitle(text) {
+        var el = qs('#maggy-subtitle');
+        if (el) el.textContent = text || '';
+    }
+
+    // Busy drives the "Working" pill in the header and the send button state.
+    function setBusy(state) {
+        busy = state;
+        chat.classList.toggle('is-busy', state);
+        loading.style.display = state ? '' : 'none';
+        sendBtn.disabled = state;
     }
 
     // The header icon is the only way in or out of the panel, so its tooltip,
@@ -172,13 +179,20 @@
     }
 
     function autoGrow() {
+        var MAX = 240;
+        // border-box: scrollHeight excludes the border, so add it back or the
+        // field ends up 2px short and shows a scrollbar on a single line.
+        var border = input.offsetHeight - input.clientHeight;
         input.style.height = 'auto';
-        input.style.height = Math.min(input.scrollHeight, 240) + 'px';
+        var full = input.scrollHeight + border;
+        input.style.height = Math.min(full, MAX) + 'px';
+        input.style.overflowY = full > MAX ? 'auto' : 'hidden';
     }
 
     input.addEventListener('input', function() {
         autoGrow();
         var v = input.value;
+        sendBtn.classList.toggle('is-idle', !v.trim());
         if (v.charAt(0) === '/') {
             var filter = v.substring(1);
             showSlashMenu(filter);
@@ -262,7 +276,7 @@
                     + '</button>';
 
                 item.querySelector('.maggy-history-item-title').onclick = function() {
-                    loadConversation(conv.entity_id);
+                    loadConversation(conv.entity_id, conv.title);
                 };
                 item.querySelector('.maggy-history-item-delete').onclick = function(e) {
                     e.stopPropagation();
@@ -283,11 +297,13 @@
         inputArea.style.display = '';
     }
 
-    function loadConversation(id) {
+    function loadConversation(id, title) {
         hideHistory();
         clearMsgs();
         lastDateLabel = '';
         conversationId = id;
+        chat.classList.remove('is-empty');
+        setSubtitle(title || '');
         loading.style.display = '';
 
         var fd = new FormData();
@@ -418,13 +434,12 @@
 
     function addMsg(role, html, timestamp) {
         var cls = role === 'user' ? 'is-user' : 'is-assistant';
-        var label = role === 'user' ? (adminUser || 'You') : assistantName;
         var timeHtml = timestamp ? '<div class="maggy-msg-time">' + esc(formatTime(timestamp)) + '</div>' : '';
         var div = document.createElement('div');
         div.className = 'maggy-message ' + cls;
-        div.innerHTML = '<div class="maggy-message-role">' + label + '</div>'
-            + '<div class="maggy-tool-tags"></div>'
+        div.innerHTML = '<div class="maggy-tool-tags"></div>'
             + '<div class="maggy-message-content">' + html + '</div>' + timeHtml;
+        chat.classList.remove('is-empty');
         msgs.insertBefore(div, loading);
         msgs.scrollTop = msgs.scrollHeight;
         return div;
@@ -484,8 +499,20 @@
     }
 
     function showGreeting() {
-        var name = adminUser || 'there';
-        addMsg('assistant', renderMd("Hi " + name + "! How can I help you with your store today? Type / to see available skills."));
+        chat.classList.add('is-empty');
+        setSubtitle('');
+    }
+
+    // Welcome starters drop the skill into the input so the slash menu takes over.
+    var starters = chat.querySelectorAll('.maggy-starter');
+    for (var si = 0; si < starters.length; si++) {
+        starters[si].onclick = function() {
+            var name = this.getAttribute('data-skill');
+            if (!name) return;
+            input.value = '/' + name + ' ';
+            input.dispatchEvent(new Event('input'));
+            input.focus();
+        };
     }
 
     function send() {
@@ -493,10 +520,9 @@
         if (!text || busy) return;
         hideSlashMenu();
         input.value = '';
+        sendBtn.classList.add('is-idle');
         autoGrow();
-        busy = true;
-        loading.style.display = '';
-        sendBtn.disabled = true;
+        setBusy(true);
         addMsg('user', renderMd(text));
 
         var msg = null;
@@ -548,13 +574,13 @@
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         var desc = formatConfirmMessage(d.tools || []);
                         content.innerHTML = renderMd(desc);
-                        busy=false; loading.style.display='none'; sendBtn.disabled=false;
+                        setBusy(false);
                         showConfirmButtons(msg, conversationId);
                     }
                     else if (evt==='done') {
                         gotDone = true;
                         if(d.conversation_id) conversationId=d.conversation_id;
-                        saveState(); busy=false; loading.style.display='none'; sendBtn.disabled=false;
+                        saveState(); setBusy(false);
                         if (d.pending_confirmation && msg && !writeToolDetected) {
                             showConfirmButtons(msg, d.message_id || conversationId);
                         }
@@ -574,14 +600,14 @@
                 var lines = buf.split('\n'); buf = res.done ? '' : lines.pop();
                 lines.forEach(processLine);
                 if (res.done || gotDone) {
-                    busy=false; loading.style.display='none'; sendBtn.disabled=false;
+                    setBusy(false);
                     return;
                 }
                 return reader.read().then(read);
             }
             return reader.read().then(read);
         }).catch(function(e) {
-            busy=false; loading.style.display='none'; sendBtn.disabled=false;
+            setBusy(false);
             if (!msg) { msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
             content.innerHTML='<em>Connection error: '+esc(e.message)+'</em>';
         });
@@ -638,9 +664,7 @@
     }
 
     function handleConfirm(messageId) {
-        busy = true;
-        loading.style.display = '';
-        sendBtn.disabled = true;
+        setBusy(true);
         var msg = null, content = null, full = '';
 
         fetch(config.confirmUrl, {
@@ -652,7 +676,7 @@
             var ct = r.headers.get('content-type') || '';
             if (ct.indexOf('text/event-stream') === -1) {
                 return r.json().then(function(d) {
-                    busy=false; loading.style.display='none'; sendBtn.disabled=false;
+                    setBusy(false);
                     if (d.error) addMsg('assistant', renderMd('Error: ' + d.error));
                 });
             }
@@ -678,7 +702,7 @@
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         updateToolStatus(msg, d.name, d.status, d.message);
                     }
-                    else if (evt==='done') { busy=false; loading.style.display='none'; sendBtn.disabled=false; }
+                    else if (evt==='done') { setBusy(false); }
                     else if (evt==='error') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         full+='\n\nError: '+(d.error||'Unknown'); content.innerHTML=renderMd(full);
@@ -693,7 +717,7 @@
                         var lines = buf.split('\n');
                         lines.forEach(processLine);
                     }
-                    busy=false; loading.style.display='none'; sendBtn.disabled=false;
+                    setBusy(false);
                     return;
                 }
                 buf += dec.decode(res.value, {stream:true});
@@ -703,7 +727,7 @@
             }
             return reader.read().then(read);
         }).catch(function(e) {
-            busy=false; loading.style.display='none'; sendBtn.disabled=false;
+            setBusy(false);
             addMsg('assistant', renderMd('Error confirming action: ' + e.message));
         });
     }

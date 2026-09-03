@@ -10,13 +10,26 @@ import {lookupProduct, streamFailure} from 'Fixtures/scenarios';
 const chatPanel = new ChatPanel();
 const chatMock = new ChatMock();
 
-test('Greets the admin user when the panel is opened', async ({page}) => {
+test('Greets the admin user with the welcome screen when the panel is opened', async ({page}) => {
   await chatMock.install(page, lookupProduct);
 
   await chatPanel.openOnDashboard(page);
 
-  await expect(chatPanel.assistantMessages(page)).toHaveCount(1);
-  await expect(chatPanel.lastAssistantMessage(page)).toContainText('How can I help you with your store today?');
+  await expect(chatPanel.panel(page)).toHaveClass(/is-empty/);
+  await expect(chatPanel.welcome(page)).toBeVisible();
+  await expect(chatPanel.welcome(page)).toContainText('what needs doing?');
+  await expect(chatPanel.assistantMessages(page)).toHaveCount(0);
+});
+
+test('Replaces the welcome screen with the conversation once a question is asked', async ({page}) => {
+  await chatMock.install(page, lookupProduct);
+
+  await chatPanel.openOnDashboard(page);
+  await chatPanel.ask(page, 'Which products contain candle?');
+
+  await expect(chatPanel.panel(page)).not.toHaveClass(/is-empty/);
+  await expect(chatPanel.welcome(page)).toBeHidden();
+  await expect(chatPanel.userMessages(page)).toHaveCount(1);
 });
 
 test('Keeps the conversation when the panel is closed and reopened', async ({page}) => {
@@ -24,13 +37,13 @@ test('Keeps the conversation when the panel is closed and reopened', async ({pag
 
   await chatPanel.openOnDashboard(page);
   await chatPanel.ask(page, 'Which products contain candle?');
-  await expect(chatPanel.assistantMessages(page)).toHaveCount(2);
+  await expect(chatPanel.assistantMessages(page)).toHaveCount(1);
 
   await chatPanel.close(page);
   await chatPanel.open(page);
 
   await expect(chatPanel.panel(page)).toHaveClass(/is-open/);
-  await expect(chatPanel.assistantMessages(page)).toHaveCount(2);
+  await expect(chatPanel.assistantMessages(page)).toHaveCount(1);
 });
 
 test('Filters skills in the slash menu and fills the input on selection', async ({page}) => {
