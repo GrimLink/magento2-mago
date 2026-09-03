@@ -19,4 +19,10 @@ class CmsData extends AbstractSkill
     {
         return 'Manage CMS pages and blocks.';
     }
+
+    protected function getBaseInstructions(): string
+    {
+        return 'store_id only applies to create_page and create_block. Updating a page or block keeps its existing '
+            . 'store view assignment; store_id is ignored there.';
+    }
 }

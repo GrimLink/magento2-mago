@@ -1,7 +1,7 @@
 # Skills Architecture
 
 > **Status:** Draft — `MaggyAssistant_Base` v1.0.0
-> **Last updated:** 2026-07-26
+> **Last updated:** 2026-09-03
 
 ## Table of Contents
 
@@ -116,11 +116,12 @@ MaggyAssistant\Base\Service\Ai\ChatService
 
 Orchestrates the conversation loop:
 
-1. Send messages + tool definitions to the AI provider
-2. If the AI requests a **read-only** tool → execute automatically, append result, loop
-3. If the AI requests a **write** tool → pause, return `pending_confirmation: true`
-4. On user confirmation → execute the write tool via `executeConfirmedTools()`
-5. Loop continues until the AI produces a final text response or `max_tool_iterations` is reached
+1. Prepend the system prompt and the current store scope summary (see [Store Scope Awareness](#store-scope-awareness))
+2. Send messages + tool definitions to the AI provider
+3. If the AI requests a **read-only** tool → execute automatically, append result, loop
+4. If the AI requests a **write** tool → pause, return `pending_confirmation: true`
+5. On user confirmation → execute the write tool via `executeConfirmedTools()`
+6. Loop continues until the AI produces a final text response or `max_tool_iterations` is reached
 
 ```
 ┌──────────┐     messages + tools      ┌──────────────┐
@@ -159,6 +160,30 @@ Tool output is truncated by the `ChatService` to prevent context window exhausti
 | Execution timeout (planned) | 5 seconds (read), 10 seconds (write) | `maggy/tools/execution_timeout` |
 
 When a tool result exceeds the limit, the result sent to the LLM is replaced by an envelope: `_truncated: true`, an `output` field with the first part of the JSON (cut multibyte-safe, may stop mid-value), `total_bytes`/`returned_bytes`, and a `note` instructing the model not to retry the same call but to narrow the query. The cap applies to all three execution paths (plain, streaming, confirmed writes); the debug log still records the full result before truncation.
+
+### Store Scope Awareness
+
+```
+MaggyAssistant\Base\Service\Store\StoreScopeContext
+```
+
+Magento configuration and content live on three levels — default (global), website and store view — and a deeper level overrides the one above it. Before this existed the assistant silently acted on whatever scope a tool defaulted to (issue #38): config went to the default scope, CMS pages created through the internal REST API landed on the default store view only, and product content was saved globally.
+
+`StoreScopeContext` reads the website / store group / store view layout from the `StoreManager` and serves two purposes:
+
+1. **Per-request verification.** `ChatService` appends a `[Store scope]` section to the system prompt of **every** request. It lists every website, store group and store view with id, code and name, flags the defaults, and states the scope rules: work out which scope the request targets, ask before a scope-sensitive write when the user did not name a scope and the change could differ per store view, default reads to the default scope, and always state the scope used. On a single-store-view installation the section tells the assistant to use the default scope and never ask. The section is rebuilt on every request, so a store view added mid-conversation is picked up on the next message; a failure to load the stores is logged and the chat continues without the section.
+2. **Tool-side validation.** Scope-sensitive tools take the same object to validate the scope they were handed and to describe it back to the user, so a guessed or stale id never reaches Magento:
+
+| Tool | Scope handling |
+|------|----------------|
+| `config_reader` | Validates `scope`/`scope_id` against existing websites and store views. A default-scope read on a multi-store installation also returns `overrides`: every website or store view whose effective value differs from what it inherits (a website override is reported once, not per store view), plus a `note` telling the model to mention them. |
+| `config_writer` | Validates `scope`/`scope_id` before writing; the result and message carry a `scope_label` such as `store view "Luma" (id 2, code "luma")`. Its instructions tell the model to ask which scope the user means when the setting could differ per store view. |
+| `cms_data` (`create_page`, `create_block`) | New `store_id` parameter: `0` (default) creates the entity for **all store views**, a store view id restricts it to that view. Implemented by running the internal REST call under `/rest/{store code}/V1/` (`all` for 0), because `PageInterface`/`BlockInterface` expose no store field. Previously new pages and blocks were tied to the default store view. |
+| `content_generator` | New `store_id` parameter: `0` reads and saves the default (global) values, a store view id reads and saves a store-view-specific version, e.g. a translation. The same id must be used for the generate call and the save call. Earlier versions saved at the admin's current store view (the default store view) instead of globally, so a default-scope save also returns `overridden_in`: store views that still carry their own value and therefore do not show the new text. |
+
+`InternalApiClient::get()/post()/put()/delete()` accept an optional store code for this; without one they keep calling `/rest/V1/`, which Magento serves in its default store view.
+
+**For tool authors:** inject `StoreScopeContext` when a tool reads or writes anything that Magento stores per scope. Use `validateScope()` for config-style `scope`/`scope_id` pairs, `getRestStoreCode()` when the write goes through the internal REST API, and `describeScope()`/`describeStoreTarget()` to put a human-readable scope label in the result so the assistant can repeat it to the user.
 
 ### Resource Links (Planned frontend rendering)
 
@@ -223,8 +248,8 @@ The module ships with 10 tools grouped into 4 skill areas:
 
 | Tool | Class | Read-only | Description |
 |------|-------|-----------|-------------|
-| `config_reader` | `Service\Skills\Configuration\ConfigReader` | Yes | Reads Magento system configuration by path and scope. Blocks sensitive paths (keys, secrets, passwords, tokens, payment config). |
-| `config_writer` | `Service\Skills\Configuration\ConfigWriter` | No | Writes Magento system configuration. Same blocked-path protections. Requires user confirmation. |
+| `config_reader` | `Service\Skills\Configuration\ConfigReader` | Yes | Reads Magento system configuration by path and scope. Validates the scope against existing websites/store views and lists per-scope overrides of a default value. Blocks sensitive paths (keys, secrets, passwords, tokens, payment config). |
+| `config_writer` | `Service\Skills\Configuration\ConfigWriter` | No | Writes Magento system configuration on a validated default/website/store view scope. Same blocked-path protections. Requires user confirmation. |
 | `cache_manager` | `Service\Skills\Configuration\CacheManager` | No | Flush all caches, flush specific cache types, or view cache status. Requires confirmation for flush actions. |
 | `indexer_manager` | `Service\Skills\Configuration\IndexerManager` | No | Reindex specific indexers or all, check indexer status, change indexer mode (realtime/schedule). Requires confirmation. |
 
@@ -232,8 +257,8 @@ The module ships with 10 tools grouped into 4 skill areas:
 
 | Tool | Class | Read-only | Description |
 |------|-------|-----------|-------------|
-| `cms_data` | `Service\Skills\Content\CmsData` | Mixed | List, read, and update CMS pages and blocks. Read actions (list/get) execute automatically; write actions (update) require confirmation. Uses `isReadOnlyAction()` for per-action granularity. |
-| `content_generator` | `Service\Skills\Content\ContentGenerator` | No | AI-powered product description, meta, and short description generation. Two-phase: first call returns product context, second call saves confirmed content. |
+| `cms_data` | `Service\Skills\Content\CmsData` | Mixed | List, read, create and update CMS pages and blocks. Read actions (list/get) execute automatically; write actions (create/update) require confirmation. New pages and blocks target all store views or one store view via `store_id`. Uses `isReadOnlyAction()` for per-action granularity. |
+| `content_generator` | `Service\Skills\Content\ContentGenerator` | No | AI-powered product description, meta, and short description generation. Two-phase: first call returns product context, second call saves confirmed content. Works on the default scope or on one store view via `store_id`. |
 
 ### Navigation
 

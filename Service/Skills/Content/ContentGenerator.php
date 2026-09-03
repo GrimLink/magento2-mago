@@ -8,11 +8,13 @@ namespace MaggyAssistant\Base\Service\Skills\Content;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use MaggyAssistant\Base\Api\Tool\ToolInterface;
+use MaggyAssistant\Base\Service\Store\StoreScopeContext;
 
 class ContentGenerator implements ToolInterface
 {
     public function __construct(
-        private readonly ProductRepositoryInterface $productRepository
+        private readonly ProductRepositoryInterface $productRepository,
+        private readonly StoreScopeContext $scopeContext
     ) {
     }
 
@@ -47,6 +49,12 @@ class ContentGenerator implements ToolInterface
                     'type' => 'string',
                     'description' => 'Additional instructions for content generation (tone, keywords, length)',
                 ],
+                'store_id' => [
+                    'type' => 'integer',
+                    'description' => 'Scope of the content: 0 = default values shared by all store views (default). '
+                        . 'Pass a store view id from the store scope list to read and save a store-view-specific '
+                        . 'version, e.g. a translation.',
+                ],
             ],
             'required' => ['action', 'sku'],
         ];
@@ -61,19 +69,32 @@ class ContentGenerator implements ToolInterface
             return ['error' => 'SKU is required'];
         }
 
+        $storeId = (int)($params['store_id'] ?? 0);
+        if ($storeId !== 0 && !$this->scopeContext->hasStoreView($storeId)) {
+            return ['error' => $this->scopeContext->getUnknownStoreViewError($storeId)];
+        }
+        $scopeLabel = $storeId === 0
+            ? 'default scope (shared by all store views)'
+            : $this->scopeContext->describeStoreTarget($storeId);
+
         try {
-            $product = $this->productRepository->get($sku);
+            $product = $this->productRepository->get($sku, false, $storeId);
         } catch (\Throwable $e) {
             return ['error' => 'Product not found: ' . $sku];
         }
 
         // If content is provided, this is a save action
         if (!empty($params['content'])) {
-            return $this->saveContent($product, $action, $params['content']);
+            return $this->saveContent($product, $action, $params['content'], $storeId) + [
+                'store_id' => $storeId,
+                'scope_label' => $scopeLabel,
+            ];
         }
 
         // Otherwise return product context for the AI to generate content
         $context = [
+            'store_id' => $storeId,
+            'scope_label' => $scopeLabel,
             'sku' => $product->getSku(),
             'name' => $product->getName(),
             'price' => (float)$product->getPrice(),
@@ -113,7 +134,10 @@ class ContentGenerator implements ToolInterface
 
     public function getInstructions(): string
     {
-        return '';
+        return 'Content is read and saved at the default scope unless store_id names a store view. On a multi-store '
+            . 'installation, ask whether the text is for all store views or for one store view (for example a '
+            . 'translation) when the user did not say. Use the same store_id for the generate call and the save call, '
+            . 'and repeat the scope_label in your answer.';
     }
 
     public function getMagentoAcl(array $input = []): string
@@ -121,7 +145,7 @@ class ContentGenerator implements ToolInterface
         return 'Magento_Catalog::products';
     }
 
-    private function saveContent($product, string $action, string $content): array
+    private function saveContent($product, string $action, string $content, int $storeId): array
     {
         $field = match ($action) {
             'generate_description' => 'description',
@@ -137,11 +161,51 @@ class ContentGenerator implements ToolInterface
         $product->setData($field, $content);
         $this->productRepository->save($product);
 
-        return [
+        $result = [
             'success' => true,
             'sku' => $product->getSku(),
             'field' => $field,
             'message' => sprintf('Updated %s for product %s', $field, $product->getSku()),
         ];
+
+        if ($storeId === 0 && !$this->scopeContext->hasSingleStoreView()) {
+            $overriddenIn = $this->findStoreViewOverrides((string)$product->getSku(), $field, $content);
+            if ($overriddenIn !== []) {
+                $result['overridden_in'] = $overriddenIn;
+                $result['note'] = 'These store views keep their own value for this field, so the new default text is '
+                    . 'not visible there. Tell the user, and offer to save the text for those store views too '
+                    . '(same call with their store_id).';
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Store views that still show a different value after a default-scope save.
+     *
+     * Earlier versions of this tool saved at the admin's current store view instead of the default
+     * scope, so shops upgraded from them carry store-level values that mask a new default text.
+     *
+     * @return array<int, array{store_id:int,store_label:string}>
+     */
+    private function findStoreViewOverrides(string $sku, string $field, string $content): array
+    {
+        $overriddenIn = [];
+        foreach (array_keys($this->scopeContext->getStoreViews()) as $storeViewId) {
+            try {
+                $storeProduct = $this->productRepository->get($sku, false, $storeViewId, true);
+            } catch (\Throwable) {
+                continue;
+            }
+            if ((string)$storeProduct->getData($field) !== $content) {
+                $overriddenIn[] = [
+                    'store_id' => $storeViewId,
+                    'store_label' => $this->scopeContext->describeStoreTarget($storeViewId),
+                ];
+            }
+        }
+
+        return $overriddenIn;
     }
 }

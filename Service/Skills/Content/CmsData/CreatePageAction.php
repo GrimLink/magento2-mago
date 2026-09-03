@@ -8,11 +8,13 @@ namespace MaggyAssistant\Base\Service\Skills\Content\CmsData;
 
 use MaggyAssistant\Base\Api\Skill\ActionInterface;
 use MaggyAssistant\Base\Service\Api\InternalApiClient;
+use MaggyAssistant\Base\Service\Store\StoreScopeContext;
 
 class CreatePageAction implements ActionInterface
 {
     public function __construct(
-        private readonly InternalApiClient $apiClient
+        private readonly InternalApiClient $apiClient,
+        private readonly StoreScopeContext $scopeContext
     ) {
     }
 
@@ -52,6 +54,12 @@ class CreatePageAction implements ActionInterface
                 'type' => 'boolean',
                 'description' => 'Whether the page is enabled (default: true)',
             ],
+            'store_id' => [
+                'type' => 'integer',
+                'description' => 'Only for create_page and create_block: store view the new page or block belongs '
+                    . 'to. 0 = all store views (default); a store view id from the store scope list limits it to that '
+                    . 'store view. Ignored by all other actions.',
+            ],
         ];
     }
 
@@ -67,7 +75,9 @@ class CreatePageAction implements ActionInterface
 
     public function getInstructions(): string
     {
-        return '';
+        return 'New pages belong to all store views unless store_id names one store view. On a multi-store '
+            . 'installation, ask which store view the page is for when the user did not say and the content is '
+            . 'store-specific (language, brand, region); otherwise create it for all store views.';
     }
 
     public function execute(array $params, int $adminUserId): array
@@ -84,6 +94,12 @@ class CreatePageAction implements ActionInterface
             return ['error' => 'Admin user context is required'];
         }
 
+        $storeId = (int)($params['store_id'] ?? 0);
+        $storeCode = $this->scopeContext->getRestStoreCode($storeId);
+        if ($storeCode === null) {
+            return ['error' => $this->scopeContext->getUnknownStoreViewError($storeId)];
+        }
+
         $page = [
             'identifier' => $identifier,
             'title' => $title,
@@ -95,16 +111,20 @@ class CreatePageAction implements ActionInterface
             $page['content_heading'] = $params['content_heading'];
         }
 
-        $result = $this->apiClient->post('cmsPage', ['page' => $page], $adminUserId);
+        $result = $this->apiClient->post('cmsPage', ['page' => $page], $adminUserId, $storeCode);
 
         if (isset($result['error'])) {
             return ['error' => 'Failed to create page: ' . $result['error']];
         }
 
+        $storeLabel = $this->scopeContext->describeStoreTarget($storeId);
+
         return [
             'success' => true,
-            'message' => 'Page "' . $identifier . '" created',
+            'message' => 'Page "' . $identifier . '" created for ' . $storeLabel,
             'id' => $result['id'] ?? null,
+            'store_id' => $storeId,
+            'store_label' => $storeLabel,
         ];
     }
 }
