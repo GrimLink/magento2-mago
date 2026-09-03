@@ -47,6 +47,14 @@ body.maggy-active .page-wrapper {
     width: calc(100% - 8.8rem - var(--maggy-panel-width, 440px)) !important;
 }
 
+// The Mage-OS admin theme reserves a scrollbar gutter on <html> at all times.
+// A fixed panel stops at the edge of that gutter, which leaves an empty strip
+// down the right side whenever the page does not actually scroll. With the
+// panel open the gutter is dropped so the panel sits flush with the viewport.
+html:has(body.maggy-active) {
+    scrollbar-gutter: auto;
+}
+
 // The themes float the header actions to the right, which drops the toggle onto
 // a second line as soon as that column gets narrow (a 1280px window with the
 // panel open is enough). Reversed flex keeps the exact right-to-left order the
