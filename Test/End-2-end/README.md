@@ -119,6 +119,13 @@ then drive it with `chatMock.install(page, scenario)`. A write action needs a `c
 event plus a `status` payload, because the frontend resolves the message id through
 `maggy/chat/status` when it only has a conversation id.
 
+For a backend scenario (real controller and tools, only the provider mocked) add a mapping file
+under `wiremock/mappings/` and its SSE bodies under `wiremock/__files/`. Key each scenario on a
+unique phrase in the user's question so mappings never collide, and give every turn a fallback
+mapping with a lower priority that answers with a clearly wrong sentence: a test that reads
+"Store scope missing" in the reply fails for the right reason instead of timing out.
+`tests/store-scope.spec.ts` shows the pattern.
+
 ## Known gaps
 
 These tests stop at the SSE boundary. Nothing here covers `ChatService`, tool

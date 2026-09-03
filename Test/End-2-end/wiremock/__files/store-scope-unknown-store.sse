@@ -1,0 +1,10 @@
+data: {"id":"chatcmpl-e2e-scope-3","object":"chat.completion.chunk","created":1754000021,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-3","object":"chat.completion.chunk","created":1754000021,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"Store view 9999 does not exist, "},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-3","object":"chat.completion.chunk","created":1754000021,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"so no configuration was read. Which store view did you mean?"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-3","object":"chat.completion.chunk","created":1754000021,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":1450,"completion_tokens":22,"total_tokens":1472}}
+
+data: [DONE]
+
