@@ -4,5 +4,14 @@
         <referenceContainer name="after.body.start">
             <block class="MaggyAssistant\Base\Block\Adminhtml\ChatPanel" name="maggy.chat.panel" as="maggy_chat_panel" template="MaggyAssistant_Base::chat/panel.phtml" cacheable="false"/>
         </referenceContainer>
+        <!-- header.inner.right is where the admin theme collects search, notifications and the
+             user menu (see Magento_Backend::layout/default.xml); referencing it directly, rather
+             than the generic "header" container, is what actually lands the icon among them.
+             Visual order among the four is settled by CSS (order in _chat.less), because
+             after/before here has no effect on a block whose siblings only arrive via the
+             theme's own <move> instructions. -->
+        <referenceContainer name="header.inner.right">
+            <block class="MaggyAssistant\Base\Block\Adminhtml\ChatPanel" name="maggy.header.toggle" as="maggy_header_toggle" template="MaggyAssistant_Base::chat/header_toggle.phtml" cacheable="false"/>
+        </referenceContainer>
     </body>
 </page>

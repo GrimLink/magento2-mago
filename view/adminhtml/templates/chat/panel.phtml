@@ -55,23 +55,6 @@ if ($luminance < 0.3) {
 }
 </style>
 
-<?php
-// The tab stays visible while the panel is open and doubles as the close
-// affordance, so it carries both labels and the JS swaps the title.
-$labelOpen = __('Open %1', $block->getAssistantName());
-$labelClose = __('Close %1', $block->getAssistantName());
-?>
-<button type="button" id="maggy-toggle" class="maggy-toggle-tab"
-        title="<?= $escaper->escapeHtmlAttr($labelOpen) ?>"
-        data-label-open="<?= $escaper->escapeHtmlAttr($labelOpen) ?>"
-        data-label-close="<?= $escaper->escapeHtmlAttr($labelClose) ?>">
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="34 30 188 188" fill="currentColor" aria-hidden="true">
-        <polygon points="128,40 160,72 128,104 96,72" opacity="0.55"/>
-        <polygon points="44,208 96,104 128,136 160,104 212,208 152,208 128,160 104,208"/>
-    </svg>
-    <?= $escaper->escapeHtml($block->getAssistantName()) ?>
-</button>
-
 <div id="maggy-chat" class="maggy-chat-panel">
     <div class="maggy-header">
         <div class="maggy-header-left">
