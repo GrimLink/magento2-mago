@@ -1,0 +1,16 @@
+data: {"id":"chatcmpl-e2e-scope-2","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-2","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"Let me read the store name "},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-2","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"for store view 9999."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-2","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_e2e_scope_1","type":"function","function":{"name":"config_reader","arguments":""}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-2","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"path\":\"general/store_information/name\","}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-2","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"scope\":\"stores\",\"scope_id\":9999}"}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-2","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":1300,"completion_tokens":40,"total_tokens":1340}}
+
+data: [DONE]
+

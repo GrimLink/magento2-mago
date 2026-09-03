@@ -34,28 +34,71 @@ class InternalApiClient
     ) {
     }
 
-    public function get(string $endpoint, array $params, int $adminUserId): array
+    /**
+     * @param string $endpoint Path after /V1/
+     * @param array<string, mixed> $params Query parameters
+     * @param int $adminUserId
+     * @param string|null $storeCode Store view code to run the call in ("all" for every store view);
+     *                               null keeps Magento's default store view
+     * @return array<string, mixed>
+     */
+    public function get(string $endpoint, array $params, int $adminUserId, ?string $storeCode = null): array
     {
-        $url = $this->buildUrl($endpoint);
+        $url = $this->buildUrl($endpoint, $storeCode);
         if ($params) {
             $url .= '?' . http_build_query($params);
         }
         return $this->request(InternalRequestOptions::METHOD_GET, $url, null, $adminUserId);
     }
 
-    public function post(string $endpoint, array $body, int $adminUserId): array
+    /**
+     * @param string $endpoint Path after /V1/
+     * @param array<string, mixed> $body
+     * @param int $adminUserId
+     * @param string|null $storeCode See get()
+     * @return array<string, mixed>
+     */
+    public function post(string $endpoint, array $body, int $adminUserId, ?string $storeCode = null): array
     {
-        return $this->request(InternalRequestOptions::METHOD_POST, $this->buildUrl($endpoint), $body, $adminUserId);
+        return $this->request(
+            InternalRequestOptions::METHOD_POST,
+            $this->buildUrl($endpoint, $storeCode),
+            $body,
+            $adminUserId
+        );
     }
 
-    public function put(string $endpoint, array $body, int $adminUserId): array
+    /**
+     * @param string $endpoint Path after /V1/
+     * @param array<string, mixed> $body
+     * @param int $adminUserId
+     * @param string|null $storeCode See get()
+     * @return array<string, mixed>
+     */
+    public function put(string $endpoint, array $body, int $adminUserId, ?string $storeCode = null): array
     {
-        return $this->request(InternalRequestOptions::METHOD_PUT, $this->buildUrl($endpoint), $body, $adminUserId);
+        return $this->request(
+            InternalRequestOptions::METHOD_PUT,
+            $this->buildUrl($endpoint, $storeCode),
+            $body,
+            $adminUserId
+        );
     }
 
-    public function delete(string $endpoint, int $adminUserId): array
+    /**
+     * @param string $endpoint Path after /V1/
+     * @param int $adminUserId
+     * @param string|null $storeCode See get()
+     * @return array<string, mixed>
+     */
+    public function delete(string $endpoint, int $adminUserId, ?string $storeCode = null): array
     {
-        return $this->request(InternalRequestOptions::METHOD_DELETE, $this->buildUrl($endpoint), null, $adminUserId);
+        return $this->request(
+            InternalRequestOptions::METHOD_DELETE,
+            $this->buildUrl($endpoint, $storeCode),
+            null,
+            $adminUserId
+        );
     }
 
     /**
@@ -112,10 +155,17 @@ class InternalApiClient
         return $token;
     }
 
-    private function buildUrl(string $endpoint): string
+    /**
+     * Without a store code Magento serves /rest/V1/ in its default store view, which is also the
+     * store view it assigns to anything created through that URL. A store code in the path
+     * (/rest/{code}/V1/) runs the call in that store view; "all" runs it in the admin store, so
+     * created entities belong to all store views.
+     */
+    private function buildUrl(string $endpoint, ?string $storeCode = null): string
     {
         $endpoint = ltrim($endpoint, '/');
-        return $this->getInternalBaseUrl() . '/rest/V1/' . $endpoint;
+        $storeSegment = $storeCode !== null && $storeCode !== '' ? rawurlencode($storeCode) . '/' : '';
+        return $this->getInternalBaseUrl() . '/rest/' . $storeSegment . 'V1/' . $endpoint;
     }
 
     private function getInternalBaseUrl(): string

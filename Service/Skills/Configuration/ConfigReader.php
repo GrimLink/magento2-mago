@@ -8,6 +8,7 @@ namespace MaggyAssistant\Base\Service\Skills\Configuration;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use MaggyAssistant\Base\Api\Tool\ToolInterface;
+use MaggyAssistant\Base\Service\Store\StoreScopeContext;
 
 class ConfigReader implements ToolInterface
 {
@@ -17,7 +18,8 @@ class ConfigReader implements ToolInterface
     ];
 
     public function __construct(
-        private readonly ScopeConfigInterface $scopeConfig
+        private readonly ScopeConfigInterface $scopeConfig,
+        private readonly StoreScopeContext $scopeContext
     ) {
     }
 
@@ -42,12 +44,14 @@ class ConfigReader implements ToolInterface
                 ],
                 'scope' => [
                     'type' => 'string',
-                    'description' => 'Scope: "default", "websites", or "stores"',
+                    'description' => 'Scope to read: "default" (global value), "websites" or "stores". '
+                        . 'Defaults to "default".',
                     'enum' => ['default', 'websites', 'stores'],
                 ],
                 'scope_id' => [
                     'type' => 'integer',
-                    'description' => 'Scope ID (store or website ID). 0 for default.',
+                    'description' => 'Website id for scope "websites", store view id for scope "stores" '
+                        . '(take the id from the store scope list). 0 for default.',
                 ],
             ],
             'required' => ['path'],
@@ -65,16 +69,82 @@ class ConfigReader implements ToolInterface
             return ['error' => 'Access to this configuration path is restricted for security reasons'];
         }
 
-        $scope = $params['scope'] ?? 'default';
-        $scopeId = $params['scope_id'] ?? 0;
+        $scope = (string)($params['scope'] ?? StoreScopeContext::SCOPE_DEFAULT);
+        $scopeId = (int)($params['scope_id'] ?? 0);
+
+        $scopeError = $this->scopeContext->validateScope($scope, $scopeId);
+        if ($scopeError !== null) {
+            return ['error' => $scopeError];
+        }
 
         $value = $this->scopeConfig->getValue($path, $scope, $scopeId);
 
-        return [
+        $result = [
             'path' => $path,
             'value' => $value,
             'scope' => $scope,
             'scope_id' => $scopeId,
+            'scope_label' => $this->scopeContext->describeScope($scope, $scopeId),
+        ];
+
+        if ($scope === StoreScopeContext::SCOPE_DEFAULT && !$this->scopeContext->hasSingleStoreView()) {
+            $overrides = $this->collectOverrides($path, $value);
+            $result['overrides'] = $overrides;
+            $result['note'] = $overrides === []
+                ? 'No website or store view overrides this value; the default applies everywhere.'
+                : 'The websites and store views listed in "overrides" use a different value than the default scope. '
+                    . 'Mention them to the user.';
+        }
+
+        return $result;
+    }
+
+    /**
+     * Websites and store views whose effective value differs from what they inherit.
+     *
+     * A store view is only listed when it differs from its own website, so a single website override
+     * is reported once instead of once per store view under it.
+     *
+     * @param string $path
+     * @param mixed $defaultValue
+     * @return array<int, array{scope:string,scope_id:int,scope_label:string,value:mixed}>
+     */
+    private function collectOverrides(string $path, mixed $defaultValue): array
+    {
+        $overrides = [];
+        foreach ($this->scopeContext->getWebsites() as $website) {
+            $websiteValue = $this->scopeConfig->getValue($path, StoreScopeContext::SCOPE_WEBSITES, $website['id']);
+            if ($this->differs($websiteValue, $defaultValue)) {
+                $overrides[] = $this->override(StoreScopeContext::SCOPE_WEBSITES, $website['id'], $websiteValue);
+            }
+            foreach ($website['groups'] as $group) {
+                foreach ($group['stores'] as $store) {
+                    $storeValue = $this->scopeConfig->getValue($path, StoreScopeContext::SCOPE_STORES, $store['id']);
+                    if ($this->differs($storeValue, $websiteValue)) {
+                        $overrides[] = $this->override(StoreScopeContext::SCOPE_STORES, $store['id'], $storeValue);
+                    }
+                }
+            }
+        }
+
+        return $overrides;
+    }
+
+    private function differs(mixed $a, mixed $b): bool
+    {
+        return json_encode($a) !== json_encode($b);
+    }
+
+    /**
+     * @return array{scope:string,scope_id:int,scope_label:string,value:mixed}
+     */
+    private function override(string $scope, int $scopeId, mixed $value): array
+    {
+        return [
+            'scope' => $scope,
+            'scope_id' => $scopeId,
+            'scope_label' => $this->scopeContext->describeScope($scope, $scopeId),
+            'value' => $value,
         ];
     }
 
@@ -90,7 +160,12 @@ class ConfigReader implements ToolInterface
 
     public function getInstructions(): string
     {
-        return '';
+        return 'Scope: "default" (scope_id 0) is the global value and the fallback for every website and store view. '
+            . '"websites" with a website id or "stores" with a store view id returns the effective value at that level. '
+            . 'When the user names a website or store view, read at that scope using the id from the store scope list. '
+            . 'A default-scope read on a multi-store installation also returns "overrides": every website or store view '
+            . 'that uses a different value. Report those overrides to the user instead of presenting the default as '
+            . 'the only value.';
     }
 
     public function getMagentoAcl(array $input = []): string
