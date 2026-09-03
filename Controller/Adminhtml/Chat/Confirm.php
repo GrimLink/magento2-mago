@@ -165,10 +165,24 @@ class Confirm extends Action implements HttpPostActionInterface
                 $adminUserId
             );
 
+            // The follow-up turn may itself be another write action (e.g. add variants right after
+            // creating a configurable parent), so it needs the same persistence as a first turn or
+            // the chained confirmation is lost.
             $content = $result['content'] ?? '';
-            $this->conversationRepository->addMessage($conversationId, 'assistant', $content);
+            $pendingConfirmation = !empty($result['pending_confirmation']);
+            $newMessageId = $this->conversationRepository->addMessage(
+                $conversationId,
+                'assistant',
+                $content,
+                $result['tool_calls'] ?? null,
+                $pendingConfirmation
+            );
 
-            $this->sendSse('done', ['conversation_id' => $conversationId], true);
+            $this->sendSse('done', [
+                'message_id' => $newMessageId,
+                'conversation_id' => $conversationId,
+                'pending_confirmation' => $pendingConfirmation,
+            ], true);
         } catch (\Throwable $e) {
             $this->errorLogger->addLog('Confirm Controller', $e->getMessage());
             $this->sendSse('error', ['error' => $e->getMessage()]);

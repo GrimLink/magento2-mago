@@ -466,7 +466,9 @@
             var line = '**' + t.name + '**';
             if (t.input) {
                 var params = Object.keys(t.input).map(function(k) {
-                    return k + ': `' + t.input[k] + '`';
+                    var v = t.input[k];
+                    if (v !== null && typeof v === 'object') { v = JSON.stringify(v); }
+                    return k + ': `' + v + '`';
                 });
                 if (params.length) line += ' — ' + params.join(', ');
             }
@@ -670,7 +672,16 @@
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         updateToolStatus(msg, d.name, d.status, d.message);
                     }
-                    else if (evt==='done') { busy=false; loading.style.display='none'; sendBtn.disabled=false; }
+                    else if (evt==='confirm') {
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        content.innerHTML = renderMd(formatConfirmMessage(d.tools || []));
+                        busy=false; loading.style.display='none'; sendBtn.disabled=false;
+                        showConfirmButtons(msg, conversationId);
+                    }
+                    else if (evt==='done') {
+                        if (d.conversation_id) conversationId=d.conversation_id;
+                        saveState(); busy=false; loading.style.display='none'; sendBtn.disabled=false;
+                    }
                     else if (evt==='error') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         full+='\n\nError: '+(d.error||'Unknown'); content.innerHTML=renderMd(full);

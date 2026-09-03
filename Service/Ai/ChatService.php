@@ -30,6 +30,16 @@ class ChatService implements ChatServiceInterface
     ) {
     }
 
+    /**
+     * Some models (gpt-4o in particular) answer a tool result with an empty completion, or announce
+     * the next step in prose without calling the tool. One follow-up turn recovers both cases.
+     */
+    private const EMPTY_TURN_NUDGE = [
+        'role' => 'user',
+        'content' => 'Your previous reply was empty. If a next tool call is required to finish the task, '
+            . 'make it now. Otherwise summarise the result for the user.',
+    ];
+
     public function processMessage(array $messages, ?int $conversationId = null, ?int $adminUserId = null): array
     {
         try {
@@ -44,6 +54,7 @@ class ChatService implements ChatServiceInterface
 
         $messages = $this->prependSystemMessage($messages);
         $instructedTools = [];
+        $nudged = false;
 
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
@@ -56,6 +67,11 @@ class ChatService implements ChatServiceInterface
             $this->logUsage($response, $adminUserId, $conversationId, $client, $messages);
 
             if (empty($response['tool_calls'])) {
+                if ($this->needsNudge($response, $messages, $nudged)) {
+                    $messages[] = self::EMPTY_TURN_NUDGE;
+                    $nudged = true;
+                    continue;
+                }
                 return $response;
             }
 
@@ -101,6 +117,7 @@ class ChatService implements ChatServiceInterface
 
         $messages = $this->prependSystemMessage($messages);
         $instructedTools = [];
+        $nudged = false;
 
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
@@ -113,6 +130,11 @@ class ChatService implements ChatServiceInterface
             $this->logUsage($response, $adminUserId, $conversationId, $client, $messages);
 
             if (empty($response['tool_calls'])) {
+                if ($this->needsNudge($response, $messages, $nudged)) {
+                    $messages[] = self::EMPTY_TURN_NUDGE;
+                    $nudged = true;
+                    continue;
+                }
                 return $response;
             }
 
@@ -434,5 +456,18 @@ class ChatService implements ChatServiceInterface
         }
 
         return $messages;
+    }
+
+    /**
+     * An empty completion straight after a tool result is worth exactly one retry.
+     */
+    private function needsNudge(array $response, array $messages, bool $nudged): bool
+    {
+        if ($nudged || trim((string)($response['content'] ?? '')) !== '') {
+            return false;
+        }
+        $last = end($messages);
+
+        return is_array($last) && ($last['role'] ?? '') === 'tool';
     }
 }
