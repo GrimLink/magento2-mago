@@ -39,43 +39,38 @@ body.maggy-active .page-wrapper {
     width: calc(100% - 8.8rem - var(--maggy-panel-width, 360px)) !important;
 }
 
-// Header toggle icon — sits in the admin toolbar between global search and the
-// notification bell. Magento's own layout XML can't reorder a block that only
-// lands in .page-header-actions via the theme's <move> (search/notifications/
-// user), so position is settled with flex order instead of after/before.
+// The themes float the header actions to the right, which drops the toggle onto
+// a second line as soon as that column gets narrow (a 1280px window with the
+// panel open is enough). Reversed flex keeps the exact right-to-left order the
+// floats produce - user, notifications, toggle, search - on a single line,
+// without reordering or repositioning the theme's own icons.
 .page-header-actions {
     display: flex;
-    align-items: flex-start;
-    // float:right always packed search/notifications/user flush against the
-    // right edge; flex defaults to packing from the left, which left a gap on
-    // the right and pushed all three away from their original position.
-    justify-content: flex-end;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    align-items: center;
     flex-wrap: nowrap;
 }
 
-.search-global {
-    order: 1;
-}
-
-.notifications-wrapper {
-    order: 3;
-}
-
-.admin-user {
-    order: 4;
-}
-
+// Header toggle icon - sits in the admin toolbar between global search and the
+// notification bell, where the layout already puts it in the DOM.
 .maggy-header-icon {
+    // Borrows the spacing the theme gives the icon next to it, since that is
+    // the only place the rhythm is defined: Magento/backend spaces its header
+    // icons with padding, other admin themes with a margin on the wrapper.
+    &:extend(.notifications-wrapper);
     box-sizing: border-box;
-    order: 2;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 33px;
+    // Themed metrics rather than fixed pixels: header actions are 3.3rem tall
+    // with 1.9rem icons in Magento/backend and 3rem with 2.4rem icons in the
+    // Mage-OS admin theme, so a hard-coded box lands a couple of pixels low
+    // and a size too small in whichever theme it was not measured against.
+    width: @page-header-action__height;
+    height: @page-header-action__height;
     padding: 0;
-    margin: 0;
     border: none;
     border-radius: 8px;
     background: transparent;
@@ -98,8 +93,8 @@ body.maggy-active .page-wrapper {
     }
 
     svg {
-        width: 18px;
-        height: 18px;
+        width: @notifications-action-icon__size;
+        height: @notifications-action-icon__size;
     }
 }
 

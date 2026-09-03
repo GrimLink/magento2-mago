@@ -33,6 +33,12 @@
     var inputArea = qs('#maggy-input-area');
     var slashMenu = qs('#maggy-slash-menu');
 
+    // A theme without the header container renders the panel without its
+    // toggle, so bail out before anything binds to a missing element.
+    if (!toggle || !chat) {
+        return;
+    }
+
     function clearMsgs() {
         while (msgs.firstChild) {
             if (msgs.firstChild === loading) break;

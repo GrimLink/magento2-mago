@@ -137,3 +137,22 @@ test('Does not push search, notifications or the user menu away from their origi
 
   expect(Math.abs((userBox.x + userBox.width) - (actionsBox.x + actionsBox.width))).toBeLessThan(2);
 });
+
+test('Lines the header icon up with the icons it sits between', async ({page}) => {
+  await chatMock.install(page, lookupProduct);
+
+  await page.goto('/' + (process.env.ADMIN_PATH || 'admin') + '/admin/dashboard', {waitUntil: 'load'});
+
+  // Admin themes size their header icons differently, so the toggle takes its
+  // box from the theme rather than from fixed pixels: same height and same
+  // center line as the icons on either side of it, whatever the theme picks.
+  const toggleBox = await page.locator('#maggy-toggle').boundingBox();
+  const notificationsBox = await page.locator('.notifications-action').boundingBox();
+  const userBox = await page.locator('.admin-user .admin__action-dropdown').boundingBox();
+
+  const centerY = (box: {y: number, height: number}): number => box.y + box.height / 2;
+
+  expect(Math.abs(toggleBox.height - notificationsBox.height)).toBeLessThan(2);
+  expect(Math.abs(centerY(toggleBox) - centerY(notificationsBox))).toBeLessThan(2);
+  expect(Math.abs(centerY(toggleBox) - centerY(userBox))).toBeLessThan(2);
+});
