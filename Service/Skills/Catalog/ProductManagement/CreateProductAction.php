@@ -141,7 +141,7 @@ class CreateProductAction implements ActionInterface
         return <<<'TEXT'
 Only pass values the user actually gave. Never invent qty, weight, descriptions, categories or
 other attributes to make the product look complete; leave them out and the store's defaults apply.
-Deriving a SKU from the name (lowercase, dashes) and assuming product_type "simple" is fine, say so.
+Deriving a SKU from the name (uppercase, dashes) and assuming product_type "simple" is fine, say so.
 The result lists what was left empty under "missing" — repeat that to the user so they can follow up.
 Required: sku, name, product_type. Price is required for simple, virtual, downloadable, configurable
 and fixed-price bundle products. Grouped products and dynamic bundles derive price from children —
@@ -217,7 +217,7 @@ TEXT;
             $product['price'] = (float)$params['price'];
         }
 
-        if ($type === 'simple' || $type === 'grouped') {
+        if ($type === 'simple') {
             $product['weight'] = (float)($params['weight'] ?? 1);
         }
 
@@ -245,7 +245,6 @@ TEXT;
             }
         }
         foreach ($params['custom_attributes'] ?? [] as $code => $value) {
-            // Models tend to send placeholders like {"color": ""}; the REST API rejects those outright.
             if ($value === null || $value === '' || $value === []) {
                 continue;
             }
@@ -329,7 +328,7 @@ TEXT;
         $result = $this->apiClient->get(
             'products',
             $this->apiClient->buildSearchCriteria([
-                ['field' => 'name', 'value' => '%' . $name . '%', 'condition_type' => 'like'],
+                ['field' => 'name', 'value' => '%' . addcslashes($name, '%_') . '%', 'condition_type' => 'like'],
             ], 5),
             $adminUserId
         );

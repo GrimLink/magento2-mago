@@ -154,7 +154,6 @@ TEXT;
             $childSku = trim((string)($variant['sku'] ?? ''))
                 ?: $parentSku . '-' . $this->slugify(implode('-', $labelParts));
 
-            // Reuse an existing child (e.g. from a previously interrupted run) instead of failing
             $existing = $this->apiClient->get('products/' . urlencode($childSku), [], $adminUserId);
             if (!isset($existing['error'])) {
                 if (($existing['type_id'] ?? '') !== 'simple') {
@@ -173,11 +172,12 @@ TEXT;
                 'qty' => (float)($variant['qty'] ?? 0),
                 'visible' => false,
                 'custom_attributes' => $resolved,
+                'ignore_similar' => true,
             ], $adminUserId);
 
-            if (isset($result['error'])) {
+            if (isset($result['error']) || !empty($result['not_created'])) {
                 return [
-                    'error' => 'Failed to create variant "' . $childSku . '": ' . $result['error'],
+                    'error' => 'Failed to create variant "' . $childSku . '": ' . ($result['error'] ?? 'not created'),
                     'created_so_far' => array_column($created, 'sku'),
                 ];
             }

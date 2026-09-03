@@ -672,15 +672,12 @@
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
                         updateToolStatus(msg, d.name, d.status, d.message);
                     }
-                    else if (evt==='confirm') {
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
-                        content.innerHTML = renderMd(formatConfirmMessage(d.tools || []));
-                        busy=false; loading.style.display='none'; sendBtn.disabled=false;
-                        showConfirmButtons(msg, conversationId);
-                    }
                     else if (evt==='done') {
                         if (d.conversation_id) conversationId=d.conversation_id;
                         saveState(); busy=false; loading.style.display='none'; sendBtn.disabled=false;
+                        if (d.pending_confirmation && msg) {
+                            showConfirmButtons(msg, d.message_id || conversationId);
+                        }
                     }
                     else if (evt==='error') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
