@@ -1,0 +1,79 @@
+<?php
+/**
+ * Copyright © Maggy Assistant
+ */
+declare(strict_types=1);
+
+namespace MaggyAssistant\Base\Test\Unit\Service\Skills\Content\CmsData;
+
+use MaggyAssistant\Base\Service\Api\InternalApiClient;
+use MaggyAssistant\Base\Service\Skills\Content\CmsData\CreateBlockAction;
+use MaggyAssistant\Base\Service\Store\StoreScopeContext;
+use MaggyAssistant\Base\Test\Unit\Fakes\BuildsStoreLayouts;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+
+class CreateBlockActionTest extends TestCase
+{
+    use BuildsStoreLayouts;
+
+    private const ADMIN_USER_ID = 7;
+
+    #[Test]
+    public function itCreatesTheBlockForAllStoreViewsByDefault(): void
+    {
+        $apiClient = $this->createMock(InternalApiClient::class);
+        $apiClient->expects(self::once())
+            ->method('post')
+            ->with('cmsBlock', self::anything(), self::ADMIN_USER_ID, 'all')
+            ->willReturn(['id' => 3]);
+
+        $result = $this->actionWith($apiClient)->execute($this->params(), self::ADMIN_USER_ID);
+
+        self::assertTrue($result['success']);
+        self::assertSame('Block "footer-links" created for all store views', $result['message']);
+    }
+
+    #[Test]
+    public function itCreatesTheBlockInTheRequestedStoreView(): void
+    {
+        $apiClient = $this->createMock(InternalApiClient::class);
+        $apiClient->expects(self::once())
+            ->method('post')
+            ->with('cmsBlock', self::anything(), self::ADMIN_USER_ID, 'luma')
+            ->willReturn(['id' => 3]);
+
+        $result = $this->actionWith($apiClient)->execute($this->params(['store_id' => 2]), self::ADMIN_USER_ID);
+
+        self::assertSame('store view "Luma" (id 2, code "luma")', $result['store_label']);
+    }
+
+    #[Test]
+    public function itRejectsAnUnknownStoreViewWithoutCallingTheApi(): void
+    {
+        $apiClient = $this->createMock(InternalApiClient::class);
+        $apiClient->expects(self::never())->method('post');
+
+        $result = $this->actionWith($apiClient)->execute($this->params(['store_id' => 42]), self::ADMIN_USER_ID);
+
+        self::assertStringStartsWith('Unknown store view id 42', $result['error']);
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
+    private function params(array $overrides = []): array
+    {
+        return $overrides + [
+            'identifier' => 'footer-links',
+            'title' => 'Footer links',
+            'content' => '<ul></ul>',
+        ];
+    }
+
+    private function actionWith(InternalApiClient $apiClient): CreateBlockAction
+    {
+        return new CreateBlockAction($apiClient, new StoreScopeContext($this->multiStoreManager()));
+    }
+}

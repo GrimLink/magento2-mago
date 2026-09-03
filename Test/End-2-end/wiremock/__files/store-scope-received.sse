@@ -1,0 +1,10 @@
+data: {"id":"chatcmpl-e2e-scope-1","object":"chat.completion.chunk","created":1754000010,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-1","object":"chat.completion.chunk","created":1754000010,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"Store scope received: "},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-1","object":"chat.completion.chunk","created":1754000010,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"the request listed the websites and store views of this installation."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-scope-1","object":"chat.completion.chunk","created":1754000010,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":1300,"completion_tokens":20,"total_tokens":1320}}
+
+data: [DONE]
+

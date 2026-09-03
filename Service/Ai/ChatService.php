@@ -12,12 +12,16 @@ use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 use Magento\Framework\AuthorizationInterface;
+use MaggyAssistant\Base\Service\Store\StoreScopeContext;
 use MaggyAssistant\Base\Service\Tool\ToolRegistry;
 use MaggyAssistant\Base\Service\Usage\UsageLogger;
 
 class ChatService implements ChatServiceInterface
 {
     private const BYTES_PER_TOKEN_ESTIMATE = 4;
+
+    /** Marker that opens the store scope section so it is never injected twice */
+    private const STORE_SCOPE_MARKER = '[Store scope]';
 
     public function __construct(
         private readonly ConfigRepository $configRepository,
@@ -26,7 +30,8 @@ class ChatService implements ChatServiceInterface
         private readonly DebugLogger $debugLogger,
         private readonly ErrorLogger $errorLogger,
         private readonly UsageLogger $usageLogger,
-        private readonly AuthorizationInterface $authorization
+        private readonly AuthorizationInterface $authorization,
+        private readonly StoreScopeContext $storeScopeContext
     ) {
     }
 
@@ -440,19 +445,38 @@ class ChatService implements ChatServiceInterface
         return 'Running ' . $toolName . '...';
     }
 
+    /**
+     * Put the configured system prompt first and make sure the store scope summary is in it.
+     *
+     * The scope summary is rebuilt on every request, so the assistant always checks a request
+     * against the current website / store view layout before it decides whether an action belongs
+     * on the default scope or on a specific website or store view.
+     */
     private function prependSystemMessage(array $messages): array
     {
         $systemPrompt = $this->configRepository->getSystemPrompt();
-        $hasSystem = false;
-        foreach ($messages as $msg) {
-            if (($msg['role'] ?? '') === 'system') {
-                $hasSystem = true;
-                break;
+        $firstSystemIndex = null;
+        $hasStoreScope = false;
+        foreach ($messages as $index => $msg) {
+            if (($msg['role'] ?? '') !== 'system') {
+                continue;
+            }
+            $firstSystemIndex ??= $index;
+            if (str_contains((string)($msg['content'] ?? ''), self::STORE_SCOPE_MARKER)) {
+                $hasStoreScope = true;
             }
         }
 
-        if (!$hasSystem) {
-            array_unshift($messages, ['role' => 'system', 'content' => $systemPrompt]);
+        $scopeSection = $hasStoreScope ? '' : $this->getStoreScopeSection();
+
+        if ($firstSystemIndex === null) {
+            $content = $scopeSection !== '' ? $systemPrompt . "\n\n" . $scopeSection : $systemPrompt;
+            array_unshift($messages, ['role' => 'system', 'content' => $content]);
+            return $messages;
+        }
+
+        if ($scopeSection !== '') {
+            array_splice($messages, $firstSystemIndex + 1, 0, [['role' => 'system', 'content' => $scopeSection]]);
         }
 
         return $messages;
@@ -469,5 +493,18 @@ class ChatService implements ChatServiceInterface
         $last = end($messages);
 
         return is_array($last) && ($last['role'] ?? '') === 'tool';
+    }
+
+    /**
+     * Store layout and scope rules; a failure to load the stores must never take the chat down.
+     */
+    private function getStoreScopeSection(): string
+    {
+        try {
+            return $this->storeScopeContext->toPromptSection();
+        } catch (\Throwable $e) {
+            $this->errorLogger->addLog('StoreScopeContext', $e->getMessage());
+            return '';
+        }
     }
 }

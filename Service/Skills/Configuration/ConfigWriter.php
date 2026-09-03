@@ -9,6 +9,7 @@ namespace MaggyAssistant\Base\Service\Skills\Configuration;
 use Magento\Config\Model\ResourceModel\Config as ConfigResource;
 use Magento\Framework\App\Cache\TypeListInterface;
 use MaggyAssistant\Base\Api\Tool\ToolInterface;
+use MaggyAssistant\Base\Service\Store\StoreScopeContext;
 
 class ConfigWriter implements ToolInterface
 {
@@ -19,7 +20,8 @@ class ConfigWriter implements ToolInterface
 
     public function __construct(
         private readonly ConfigResource $configResource,
-        private readonly TypeListInterface $cacheTypeList
+        private readonly TypeListInterface $cacheTypeList,
+        private readonly StoreScopeContext $scopeContext
     ) {
     }
 
@@ -48,12 +50,14 @@ class ConfigWriter implements ToolInterface
                 ],
                 'scope' => [
                     'type' => 'string',
-                    'description' => 'Scope: "default", "websites", or "stores"',
+                    'description' => 'Scope to write: "default" (every website and store view without an override), '
+                        . '"websites" or "stores". Verify the intended scope with the user on multi-store installations.',
                     'enum' => ['default', 'websites', 'stores'],
                 ],
                 'scope_id' => [
                     'type' => 'integer',
-                    'description' => 'Scope ID (0 for default)',
+                    'description' => 'Website id for scope "websites", store view id for scope "stores" '
+                        . '(take the id from the store scope list). 0 for default.',
                 ],
             ],
             'required' => ['path', 'value'],
@@ -73,8 +77,15 @@ class ConfigWriter implements ToolInterface
             return ['error' => 'Cannot modify this configuration path for security reasons'];
         }
 
-        $scope = $params['scope'] ?? 'default';
+        $scope = (string)($params['scope'] ?? StoreScopeContext::SCOPE_DEFAULT);
         $scopeId = (int)($params['scope_id'] ?? 0);
+
+        $scopeError = $this->scopeContext->validateScope($scope, $scopeId);
+        if ($scopeError !== null) {
+            return ['error' => $scopeError];
+        }
+
+        $scopeLabel = $this->scopeContext->describeScope($scope, $scopeId);
 
         $this->configResource->saveConfig($path, $value, $scope, $scopeId);
         $this->cacheTypeList->cleanType('config');
@@ -85,7 +96,8 @@ class ConfigWriter implements ToolInterface
             'value' => $value,
             'scope' => $scope,
             'scope_id' => $scopeId,
-            'message' => sprintf('Configuration "%s" has been set to "%s"', $path, $value),
+            'scope_label' => $scopeLabel,
+            'message' => sprintf('Configuration "%s" has been set to "%s" on %s', $path, $value, $scopeLabel),
         ];
     }
 
@@ -101,7 +113,13 @@ class ConfigWriter implements ToolInterface
 
     public function getInstructions(): string
     {
-        return '';
+        return 'Decide the scope before calling this tool. The default scope (scope_id 0) changes the value for every '
+            . 'website and store view that does not override it. On a multi-store installation, when the user did not '
+            . 'name a website or store view and the setting could differ per store view (store name and contact '
+            . 'details, locale, currency, URLs, email addresses, design), ask which scope they mean first. When the '
+            . 'user names a website or store view, pass scope "websites" or "stores" with the id from the store scope '
+            . 'list; never guess an id. Use config_reader first when you need to know whether a deeper scope already '
+            . 'overrides the value. Repeat the resulting scope_label in your answer.';
     }
 
     public function getMagentoAcl(array $input = []): string
