@@ -32,3 +32,15 @@ test('Closes full-screen Page Builder when it was opened before Maggy', async ({
 
   await expect(pageBuilderStage.stage(page)).not.toHaveClass(/stage-full-screen/);
 });
+
+test('Lines the full-screen stage header up with the stage beside the panel', async ({page}) => {
+  await pageBuilderStage.openCmsPage(page, ABOUT_US_PAGE_TITLE);
+  await pageBuilderStage.switchToPageBuilder(page);
+
+  await chatPanel.open(page);
+
+  const stageBox = await pageBuilderStage.stage(page).boundingBox();
+  const headerBox = await pageBuilderStage.fullScreenHeader(page).boundingBox();
+
+  expect(Math.abs((headerBox.x + headerBox.width) - (stageBox.x + stageBox.width))).toBeLessThan(2);
+});

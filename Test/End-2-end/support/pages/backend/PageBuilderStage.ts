@@ -60,4 +60,8 @@ export default class PageBuilderStage {
   closeFullScreenButton(page: Page): Locator {
     return page.getByTitle('Close Full Screen');
   }
+
+  fullScreenHeader(page: Page): Locator {
+    return page.locator('.pagebuilder-stage-wrapper.stage-full-screen .pagebuilder-header');
+  }
 }
