@@ -32,6 +32,7 @@
                 <item name="catalog_price_rules" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules</item>
                 <item name="url_rewrite_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Seo\UrlRewriteManager</item>
                 <item name="review_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager</item>
+                <item name="product_management" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ProductManagement</item>
                 <item name="order_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager</item>
                 <item name="cron_status" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus</item>
                 <item name="product_debug" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug</item>
@@ -251,4 +252,15 @@
         </arguments>
     </type>
 
+    <!-- Skill Actions: ProductManagement -->
+    <type name="MaggyAssistant\Base\Service\Skills\Catalog\ProductManagement">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="list_attribute_sets" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ProductManagement\ListAttributeSetsAction</item>
+                <item name="get_attribute_options" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ProductManagement\GetAttributeOptionsAction</item>
+                <item name="create_product" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ProductManagement\CreateProductAction</item>
+                <item name="add_configurable_variants" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ProductManagement\AddConfigurableVariantsAction</item>
+            </argument>
+        </arguments>
+    </type>
 </config>

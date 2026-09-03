@@ -256,6 +256,7 @@ class InternalApiClient
             return ['error' => $message];
         }
 
-        return $decoded;
+        // Some endpoints return a scalar (e.g. an ID or bool) instead of an object
+        return is_array($decoded) ? $decoded : ['result' => $decoded];
     }
 }
