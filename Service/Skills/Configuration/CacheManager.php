@@ -8,10 +8,16 @@ namespace MaggyAssistant\Base\Service\Skills\Configuration;
 
 use Magento\Framework\App\Cache\Frontend\Pool as CacheFrontendPool;
 use Magento\Framework\App\Cache\TypeListInterface;
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
+use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
 
-class CacheManager implements ToolInterface
+class CacheManager implements ActionScopedToolInterface
 {
+    private const ACTION_DESCRIPTIONS = [
+        'status' => 'list all cache types and their status',
+        'flush' => 'flush all caches',
+        'flush_type' => 'flush a specific cache type by id, e.g. "config", "full_page", "layout", "block_html"',
+    ];
+
     public function __construct(
         private readonly TypeListInterface $cacheTypeList,
         private readonly CacheFrontendPool $cacheFrontendPool
@@ -25,25 +31,45 @@ class CacheManager implements ToolInterface
 
     public function getDescription(): string
     {
-        return 'Manage Magento caches. Actions: "status" (list all cache types and their status), '
-            . '"flush" (flush all caches), "flush_type" (flush a specific cache type by id, e.g. "config", "full_page", "layout", "block_html").';
+        return $this->getDescriptionForActions(array_keys(self::ACTION_DESCRIPTIONS));
+    }
+
+    public function getDescriptionForActions(array $actionNames): string
+    {
+        $parts = [];
+        foreach (self::ACTION_DESCRIPTIONS as $name => $description) {
+            if (in_array($name, $actionNames, true)) {
+                $parts[] = '"' . $name . '" (' . $description . ')';
+            }
+        }
+
+        return 'Manage Magento caches. Actions: ' . implode(', ', $parts) . '.';
     }
 
     public function getParameterSchema(): array
     {
+        return $this->getParameterSchemaForActions(array_keys(self::ACTION_DESCRIPTIONS));
+    }
+
+    public function getParameterSchemaForActions(array $actionNames): array
+    {
+        $properties = [
+            'action' => [
+                'type' => 'string',
+                'description' => 'The action to perform',
+                'enum' => array_values(array_intersect(array_keys(self::ACTION_DESCRIPTIONS), $actionNames)),
+            ],
+        ];
+        if (in_array('flush_type', $actionNames, true)) {
+            $properties['cache_type'] = [
+                'type' => 'string',
+                'description' => 'Cache type ID for flush_type action (e.g. "config", "full_page", "layout", "block_html", "collections", "reflection", "eav", "translate")',
+            ];
+        }
+
         return [
             'type' => 'object',
-            'properties' => [
-                'action' => [
-                    'type' => 'string',
-                    'description' => 'The action to perform',
-                    'enum' => ['status', 'flush', 'flush_type'],
-                ],
-                'cache_type' => [
-                    'type' => 'string',
-                    'description' => 'Cache type ID for flush_type action (e.g. "config", "full_page", "layout", "block_html", "collections", "reflection", "eav", "translate")',
-                ],
-            ],
+            'properties' => $properties,
             'required' => ['action'],
         ];
     }

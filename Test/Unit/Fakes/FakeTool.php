@@ -1,0 +1,84 @@
+<?php
+/**
+ * Copyright © Maggy Assistant
+ */
+declare(strict_types=1);
+
+namespace MaggyAssistant\Base\Test\Unit\Fakes;
+
+use MaggyAssistant\Base\Api\Tool\ToolInterface;
+
+/**
+ * Hand-written mixed tool (not action-scoped) whose read actions are those listed in $readActions.
+ * Counts getParameterSchema() calls so registry memoization can be asserted.
+ */
+final class FakeTool implements ToolInterface
+{
+    private int $schemaCalls = 0;
+
+    /**
+     * @param string[] $actions
+     * @param string[] $readActions
+     */
+    public function __construct(
+        private readonly string $name,
+        private readonly array $actions,
+        private readonly array $readActions,
+        private readonly string $magentoAcl = ''
+    ) {
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getDescription(): string
+    {
+        return 'Fake tool with actions ' . implode(', ', $this->actions);
+    }
+
+    public function getParameterSchema(): array
+    {
+        $this->schemaCalls++;
+
+        return [
+            'type' => 'object',
+            'properties' => [
+                'action' => ['type' => 'string', 'enum' => $this->actions],
+                'target' => ['type' => 'string'],
+            ],
+            'required' => ['action'],
+        ];
+    }
+
+    public function getSchemaCalls(): int
+    {
+        return $this->schemaCalls;
+    }
+
+    public function execute(array $params): array
+    {
+        return ['executed' => $params['action'] ?? ''];
+    }
+
+    public function isReadOnly(): bool
+    {
+        return $this->readActions === $this->actions;
+    }
+
+    public function isReadOnlyAction(array $input): bool
+    {
+        return in_array($input['action'] ?? '', $this->readActions, true);
+    }
+
+    public function getInstructions(): string
+    {
+        return '';
+    }
+
+    public function getMagentoAcl(array $input = []): string
+    {
+        return $this->magentoAcl;
+    }
+}

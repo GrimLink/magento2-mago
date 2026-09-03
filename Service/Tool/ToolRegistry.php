@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Service\Tool;
 
+use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
 use MaggyAssistant\Base\Api\Tool\ToolInterface;
 use MaggyAssistant\Base\Service\Skills\PermissionChecker;
 
@@ -13,6 +14,12 @@ class ToolRegistry
 {
     /** @var ToolInterface[] */
     private array $tools;
+
+    /** @var array<string, array<string, mixed>> Unfiltered parameter schema per tool name */
+    private array $schemaCache = [];
+
+    /** @var array<string, string[]> Read-only action names per tool name */
+    private array $readActionsCache = [];
 
     /**
      * @param PermissionChecker|null $permissionChecker
@@ -75,19 +82,45 @@ class ToolRegistry
     {
         $definitions = [];
         foreach ($this->getEnabledTools($adminUserId) as $tool) {
-            $schema = $tool->getParameterSchema();
-            if ($this->permissionChecker !== null
-                && !$this->permissionChecker->isAllowed($adminUserId ?? 0, $tool->getName(), 'write')
-            ) {
-                $schema = $this->filterSchemaToReadActions($tool, $schema);
-            }
-            $definitions[] = [
-                'name' => $tool->getName(),
-                'description' => $tool->getDescription(),
-                'parameters' => $schema,
-            ];
+            $definitions[] = $this->getToolDefinition($tool, $adminUserId);
         }
         return $definitions;
+    }
+
+    /**
+     * Definition of one tool as the given admin user may use it.
+     *
+     * A user without write access to a mixed tool gets a definition narrowed to
+     * the read-only actions: the action enum, and for action-scoped tools also
+     * the description and the parameters, so denied write actions are not
+     * advertised to the model at all.
+     *
+     * @param ToolInterface $tool
+     * @param int|null $adminUserId
+     * @return array{name: string, description: string, parameters: array<string, mixed>}
+     */
+    public function getToolDefinition(ToolInterface $tool, ?int $adminUserId): array
+    {
+        $description = $tool->getDescription();
+        $schema = $this->getSchema($tool);
+
+        if (!$tool->isReadOnly() && !$this->hasWriteAccess($tool, $adminUserId)) {
+            $readActions = $this->getReadActionNames($tool);
+            if ($readActions !== []) {
+                if ($tool instanceof ActionScopedToolInterface) {
+                    $description = $tool->getDescriptionForActions($readActions);
+                    $schema = $tool->getParameterSchemaForActions($readActions);
+                } elseif (isset($schema['properties']['action']['enum'])) {
+                    $schema['properties']['action']['enum'] = $readActions;
+                }
+            }
+        }
+
+        return [
+            'name' => $tool->getName(),
+            'description' => $description,
+            'parameters' => $schema,
+        ];
     }
 
     /**
@@ -124,6 +157,21 @@ class ToolRegistry
         return $this->permissionChecker->isAllowed($adminUserId ?? 0, $tool->getName(), $action);
     }
 
+    /**
+     * Whether the admin user holds a write grant for the tool
+     *
+     * @param ToolInterface $tool
+     * @param int|null $adminUserId
+     * @return bool
+     */
+    public function hasWriteAccess(ToolInterface $tool, ?int $adminUserId): bool
+    {
+        if ($this->permissionChecker === null) {
+            return true;
+        }
+        return $this->permissionChecker->isAllowed($adminUserId ?? 0, $tool->getName(), 'write');
+    }
+
     private function isToolAvailable(ToolInterface $tool, ?int $adminUserId): bool
     {
         if ($this->permissionChecker === null) {
@@ -138,48 +186,43 @@ class ToolRegistry
      */
     private function supportsReadAction(ToolInterface $tool): bool
     {
-        if ($tool->isReadOnly()) {
-            return true;
-        }
-        foreach ($this->getActionNames($tool) as $actionName) {
-            if ($tool->isReadOnlyAction(['action' => $actionName])) {
-                return true;
-            }
-        }
-        return false;
+        return $tool->isReadOnly() || $this->getReadActionNames($tool) !== [];
     }
 
     /**
-     * Restrict a mixed skill's action enum to its read-only actions
+     * Unfiltered parameter schema, built once per tool per request
      *
      * @param ToolInterface $tool
-     * @param array<string, mixed> $schema
      * @return array<string, mixed>
      */
-    private function filterSchemaToReadActions(ToolInterface $tool, array $schema): array
+    private function getSchema(ToolInterface $tool): array
     {
-        if (!isset($schema['properties']['action']['enum'])) {
-            return $schema;
+        $name = $tool->getName();
+        if (!array_key_exists($name, $this->schemaCache)) {
+            $this->schemaCache[$name] = $tool->getParameterSchema();
         }
-        $readActions = [];
-        foreach ($this->getActionNames($tool) as $actionName) {
-            if ($tool->isReadOnlyAction(['action' => $actionName])) {
-                $readActions[] = $actionName;
-            }
-        }
-        if ($readActions !== []) {
-            $schema['properties']['action']['enum'] = $readActions;
-        }
-        return $schema;
+        return $this->schemaCache[$name];
     }
 
     /**
+     * Names of the tool's read-only actions, derived once per tool per request
+     *
      * @param ToolInterface $tool
      * @return string[]
      */
-    private function getActionNames(ToolInterface $tool): array
+    private function getReadActionNames(ToolInterface $tool): array
     {
-        $enum = $tool->getParameterSchema()['properties']['action']['enum'] ?? [];
-        return is_array($enum) ? $enum : [];
+        $name = $tool->getName();
+        if (!array_key_exists($name, $this->readActionsCache)) {
+            $readActions = [];
+            $enum = $this->getSchema($tool)['properties']['action']['enum'] ?? [];
+            foreach (is_array($enum) ? $enum : [] as $actionName) {
+                if ($tool->isReadOnlyAction(['action' => $actionName])) {
+                    $readActions[] = $actionName;
+                }
+            }
+            $this->readActionsCache[$name] = $readActions;
+        }
+        return $this->readActionsCache[$name];
     }
 }

@@ -8,6 +8,7 @@ namespace MaggyAssistant\Base\Service\Ai;
 
 use MageOS\AiBase\Api\AiClientInterface;
 use MaggyAssistant\Base\Api\ChatServiceInterface;
+use MaggyAssistant\Base\Api\Tool\ToolInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
@@ -80,10 +81,11 @@ class ChatService implements ChatServiceInterface
                 return $response;
             }
 
-            // Check if any tool call requires confirmation (write action)
+            // Check if any tool call requires confirmation (permitted write action).
+            // Denied write actions skip the confirm round-trip: they fall through to
+            // executeTool(), which returns the denial as a tool result.
             foreach ($response['tool_calls'] as $toolCall) {
-                $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
-                if ($tool && !$tool->isReadOnlyAction($toolCall['input'] ?? [])) {
+                if ($this->requiresConfirmation($toolCall, $adminUserId)) {
                     return [
                         'content' => $response['content'],
                         'tool_calls' => $response['tool_calls'],
@@ -107,7 +109,7 @@ class ChatService implements ChatServiceInterface
                     'content' => json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 ];
 
-                $this->injectToolInstructions($toolCall['name'], $messages, $instructedTools);
+                $this->injectToolInstructions($toolCall, $adminUserId, $messages, $instructedTools);
             }
         }
 
@@ -143,21 +145,22 @@ class ChatService implements ChatServiceInterface
                 return $response;
             }
 
-            // Check for write actions needing confirmation
+            // Check for permitted write actions needing confirmation (denied ones are
+            // executed below and answered with the denial as a tool result)
             foreach ($response['tool_calls'] as $toolCall) {
-                $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
-                if ($tool && !$tool->isReadOnlyAction($toolCall['input'] ?? [])) {
+                if ($this->requiresConfirmation($toolCall, $adminUserId)) {
                     // Send confirm event with tool details so frontend can show what will happen
                     $confirmTools = [];
                     foreach ($response['tool_calls'] as $tc) {
-                        $t = $this->toolRegistry->getTool($tc['name'], $adminUserId);
-                        if ($t && !$t->isReadOnlyAction($tc['input'] ?? [])) {
-                            $confirmTools[] = [
-                                'name' => $tc['name'],
-                                'description' => $t->getDescription(),
-                                'input' => $tc['input'] ?? [],
-                            ];
+                        if (!$this->requiresConfirmation($tc, $adminUserId)) {
+                            continue;
                         }
+                        $t = $this->toolRegistry->getTool($tc['name'], $adminUserId);
+                        $confirmTools[] = [
+                            'name' => $tc['name'],
+                            'description' => $t->getDescription(),
+                            'input' => $tc['input'] ?? [],
+                        ];
                     }
                     $onChunk('confirm', ['tools' => $confirmTools]);
                     return [
@@ -176,23 +179,28 @@ class ChatService implements ChatServiceInterface
             ];
 
             foreach ($response['tool_calls'] as $toolCall) {
-                $statusMsg = $this->getToolStatusMessage(
-                    $toolCall['name'],
-                    $toolCall['input']['action'] ?? '',
-                    $toolCall['input'] ?? []
-                );
-                $onChunk('tool_status', [
-                    'name' => $toolCall['name'],
-                    'status' => 'running',
-                    'message' => $statusMsg,
-                ]);
+                // A denied call never runs, so do not announce it as running
+                $reportStatus = !$this->isToolCallDenied($toolCall, $adminUserId);
+                if ($reportStatus) {
+                    $onChunk('tool_status', [
+                        'name' => $toolCall['name'],
+                        'status' => 'running',
+                        'message' => $this->getToolStatusMessage(
+                            $toolCall['name'],
+                            $toolCall['input']['action'] ?? '',
+                            $toolCall['input'] ?? []
+                        ),
+                    ]);
+                }
 
                 $result = $this->executeTool($toolCall, $adminUserId);
 
-                $onChunk('tool_status', [
-                    'name' => $toolCall['name'],
-                    'status' => 'done',
-                ]);
+                if ($reportStatus) {
+                    $onChunk('tool_status', [
+                        'name' => $toolCall['name'],
+                        'status' => 'done',
+                    ]);
+                }
 
                 $messages[] = [
                     'role' => 'tool',
@@ -200,7 +208,7 @@ class ChatService implements ChatServiceInterface
                     'content' => json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 ];
 
-                $this->injectToolInstructions($toolCall['name'], $messages, $instructedTools);
+                $this->injectToolInstructions($toolCall, $adminUserId, $messages, $instructedTools);
             }
         }
 
@@ -217,7 +225,8 @@ class ChatService implements ChatServiceInterface
     {
         $results = [];
         foreach ($toolCalls as $toolCall) {
-            if ($onChunk) {
+            $reportStatus = $onChunk && !$this->isToolCallDenied($toolCall, $adminUserId);
+            if ($reportStatus) {
                 $statusMsg = $this->getToolStatusMessage(
                     $toolCall['name'],
                     $toolCall['input']['action'] ?? '',
@@ -232,7 +241,7 @@ class ChatService implements ChatServiceInterface
 
             $results[$toolCall['id']] = $this->executeTool($toolCall, $adminUserId);
 
-            if ($onChunk) {
+            if ($reportStatus) {
                 $onChunk('tool_status', [
                     'name' => $toolCall['name'],
                     'status' => 'done',
@@ -283,21 +292,9 @@ class ChatService implements ChatServiceInterface
             return ['error' => 'Tool not found: ' . $toolCall['name']];
         }
 
-        if (!$this->toolRegistry->isCallAllowed($tool, $toolCall['input'] ?? [], $adminUserId)) {
-            return ['error' => sprintf(
-                'Access denied: your skill permissions do not allow this action with the %s tool',
-                $tool->getName()
-            )];
-        }
-
-        // Check Magento-native ACL if the tool requires it
-        $magentoAcl = $tool->getMagentoAcl($toolCall['input'] ?? []);
-        if ($magentoAcl && !$this->authorization->isAllowed($magentoAcl)) {
-            return ['error' => sprintf(
-                'Access denied: you do not have the required Magento permission (%s) to use the %s tool',
-                $magentoAcl,
-                $tool->getName()
-            )];
+        $denial = $this->getDenialReason($tool, $toolCall['input'] ?? [], $adminUserId);
+        if ($denial !== null) {
+            return ['error' => $denial];
         }
 
         try {
@@ -362,16 +359,98 @@ class ChatService implements ChatServiceInterface
     }
 
     /**
-     * Inject tool instructions once per tool per conversation (JIT)
+     * Whether a tool call is a write action the user is permitted to perform, and
+     * therefore needs the merchant's confirmation before execution. Read actions
+     * and denied calls return false: both are executed directly (a denied call
+     * yields the denial as its tool result instead of a confirm round-trip).
+     *
+     * @param array<string, mixed> $toolCall
+     * @param int|null $adminUserId
+     * @return bool
      */
-    private function injectToolInstructions(string $toolName, array &$messages, array &$instructedTools): void
+    private function requiresConfirmation(array $toolCall, ?int $adminUserId): bool
     {
+        $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
+        if (!$tool) {
+            return false;
+        }
+        $input = $toolCall['input'] ?? [];
+        if ($tool->isReadOnlyAction($input)) {
+            return false;
+        }
+        return $this->getDenialReason($tool, $input, $adminUserId) === null;
+    }
+
+    /**
+     * Whether executeTool() would refuse this call: unknown/unavailable tool or a denied invocation
+     *
+     * @param array<string, mixed> $toolCall
+     * @param int|null $adminUserId
+     * @return bool
+     */
+    private function isToolCallDenied(array $toolCall, ?int $adminUserId): bool
+    {
+        $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
+
+        return !$tool || $this->getDenialReason($tool, $toolCall['input'] ?? [], $adminUserId) !== null;
+    }
+
+    /**
+     * Why the admin user may not perform this invocation, or null when allowed.
+     * Checks the assistant skill permission first, then the tool's native Magento ACL.
+     *
+     * @param ToolInterface $tool
+     * @param array<string, mixed> $input
+     * @param int|null $adminUserId
+     * @return string|null
+     */
+    private function getDenialReason(ToolInterface $tool, array $input, ?int $adminUserId): ?string
+    {
+        if (!$this->toolRegistry->isCallAllowed($tool, $input, $adminUserId)) {
+            return sprintf(
+                'Access denied: your skill permissions do not allow this action with the %s tool',
+                $tool->getName()
+            );
+        }
+
+        $magentoAcl = $tool->getMagentoAcl($input);
+        if ($magentoAcl && !$this->authorization->isAllowed($magentoAcl)) {
+            return sprintf(
+                'Access denied: you do not have the required Magento permission (%s) to use the %s tool',
+                $magentoAcl,
+                $tool->getName()
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Inject tool instructions once per tool per conversation (JIT).
+     * Skipped when the call was denied: the tool did not run, so its usage
+     * instructions would only add prompt text the model cannot act on.
+     *
+     * @param array<string, mixed> $toolCall
+     * @param int|null $adminUserId
+     * @param array<int, array<string, mixed>> $messages
+     * @param array<string, bool> $instructedTools
+     */
+    private function injectToolInstructions(
+        array $toolCall,
+        ?int $adminUserId,
+        array &$messages,
+        array &$instructedTools
+    ): void {
+        $toolName = $toolCall['name'];
         if (isset($instructedTools[$toolName])) {
             return;
         }
 
-        $tool = $this->toolRegistry->getToolByName($toolName);
-        $instructions = $tool ? $tool->getInstructions() : '';
+        if ($this->isToolCallDenied($toolCall, $adminUserId)) {
+            return;
+        }
+
+        $instructions = $this->toolRegistry->getTool($toolName, $adminUserId)->getInstructions();
         if ($instructions) {
             $messages[] = [
                 'role' => 'system',

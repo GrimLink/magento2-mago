@@ -101,12 +101,25 @@ Central registry that collects all tools via DI injection:
 ```php
 class ToolRegistry
 {
-    public function __construct(array $tools = []);       // ToolInterface[] injected via di.xml
-    public function getEnabledTools(): array;             // Filters by config toggle
-    public function getToolDefinitions(): array;          // Returns specs for AI provider
-    public function getTool(string $name): ToolInterface; // Retrieve by name
+    public function __construct(?PermissionChecker $permissionChecker = null, array $tools = []); // ToolInterface[] injected via di.xml
+    public function getEnabledTools(?int $adminUserId = null): array;              // Tools the admin may invoke
+    public function getToolDefinitions(?int $adminUserId = null): array;           // Specs for the AI provider, as the admin may use them
+    public function getToolDefinition(ToolInterface $tool, ?int $adminUserId): array; // One spec, narrowed to the admin's grant
+    public function getTool(string $name, ?int $adminUserId = null): ?ToolInterface; // Retrieve by name (enabled tools only)
+    public function isCallAllowed(ToolInterface $tool, array $input, ?int $adminUserId): bool;
+    public function hasWriteAccess(ToolInterface $tool, ?int $adminUserId): bool;
 }
 ```
+
+Parameter schemas and the derived read-only action lists are memoized per tool for the lifetime of the registry (one request), so a tool's `getParameterSchema()` is built once no matter how often the registry consults it.
+
+#### `ActionScopedToolInterface`
+
+```
+MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface
+```
+
+Optional extension of `ToolInterface` for mixed read/write tools. It adds `getDescriptionForActions(array $actionNames)` and `getParameterSchemaForActions(array $actionNames)`, which the registry calls for admins holding only a `read` grant so the provider sees a description and schema that mention nothing but the read actions. `AbstractSkill` implements it for free; hand-written mixed tools (`cache_manager`, `indexer_manager`) implement it themselves. A mixed tool that only implements `ToolInterface` still works, but is narrowed by the action enum alone.
 
 #### `ChatService`
 
@@ -306,7 +319,7 @@ If no argument is provided, the command uses its default value.
 
 ### Registering Custom Commands (Planned)
 
-> **Status: Planned** — `CommandRegistry` via DI is not yet implemented. Slash commands are currently hardcoded from `ToolRegistry::getAllTools()` in the frontend.
+> **Status: Planned** — `CommandRegistry` via DI is not yet implemented. Slash commands are currently fed from `ToolRegistry::getEnabledTools($adminUserId)` in the frontend.
 
 Third-party modules will register commands via `di.xml`, similar to tools:
 
@@ -381,8 +394,12 @@ On top of role ACL, the **Skills** admin screen (Maggy Assistant → Skills) sto
 Enforcement happens at three points, all keyed on the acting admin user id, which the chat controllers pass through `ChatService` into `ToolRegistry`:
 
 1. **Advertising** — `ToolRegistry::getToolDefinitions($adminUserId)` excludes skills the user may not use at all. Availability requires the grant to cover the skill's least-privileged side: `read` suffices for read-only and mixed skills, write-only skills require `write`.
-2. **Action filtering** — for a user with only a `read` grant, a mixed skill (e.g. `cms_data`) stays available but its advertised `action` enum is filtered to its read-only actions.
+2. **Action filtering** — for a user with only a `read` grant, a mixed skill (e.g. `cms_data`) stays available but its advertised definition is narrowed to its read-only actions: the `action` enum, and for `ActionScopedToolInterface` tools also the description and the write-only parameters. The model is never told about actions the user cannot invoke.
 3. **Execution** — `ToolRegistry::isCallAllowed($tool, $input, $adminUserId)` re-checks every invocation per action (`isReadOnlyAction($input)`), including tool calls executed via the Confirm flow. A missing user id routes through the ACL fallback rather than allowing everything.
+
+Should the model nevertheless emit a write action the user may not perform, `ChatService` does not start the confirmation round-trip: the call is executed straight away, `executeTool()` returns the "Access denied" error as the tool result, and the loop continues so the model can answer within the same turn. The same holds for a native Magento ACL denial. JIT tool instructions (`getInstructions()`) are only injected after a call that was actually permitted.
+
+The chat panel's slash-command legend is fed from `ToolRegistry::getEnabledTools($adminUserId)` with the same narrowed definitions, so an admin only sees the skills (and actions) they can invoke; a mixed skill is badged `read` when the admin lacks a write grant.
 
 Per-user rows only apply to genuine admin users. Integration-token ids live in a different table than `admin_user`, so a colliding id must never select another admin's permission rows or conversations. The REST endpoints (`Model/WebApi/ChatManagement.php`) therefore require an admin user token: any other user type (`USER_TYPE_INTEGRATION`, customer, guest) receives an authorization error before any conversation or tool work happens.
 

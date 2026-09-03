@@ -63,17 +63,29 @@ class ChatPanel extends Template
         return $this->formKey->getFormKey();
     }
 
+    /**
+     * Skills for the slash-command legend: only those the current admin may invoke,
+     * described as that admin sees them (write actions omitted for a read-only grant).
+     */
     public function getSkillsJson(): string
     {
+        $adminUserId = $this->getAdminUserId();
         $skills = [];
-        foreach ($this->toolRegistry->getAllTools() as $tool) {
+        foreach ($this->toolRegistry->getEnabledTools($adminUserId) as $tool) {
+            $definition = $this->toolRegistry->getToolDefinition($tool, $adminUserId);
             $skills[] = [
-                'name' => $tool->getName(),
-                'description' => $tool->getDescription(),
-                'readOnly' => $tool->isReadOnly(),
+                'name' => $definition['name'],
+                'description' => $definition['description'],
+                'readOnly' => $tool->isReadOnly() || !$this->toolRegistry->hasWriteAccess($tool, $adminUserId),
             ];
         }
         return $this->json->serialize($skills);
+    }
+
+    private function getAdminUserId(): ?int
+    {
+        $user = $this->adminSession->getUser();
+        return $user && $user->getId() ? (int)$user->getId() : null;
     }
 
     public function getAdminFirstName(): string
