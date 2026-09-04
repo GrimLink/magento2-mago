@@ -13,6 +13,10 @@
     <!-- WebApi -->
     <preference for="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" type="MaggyAssistant\Base\Model\WebApi\ChatManagement"/>
 
+    <!-- Module Info Repository -->
+    <preference for="MaggyAssistant\Base\Api\ModuleInfo\RepositoryInterface" type="MaggyAssistant\Base\Model\ModuleInfo\Repository"/>
+    <preference for="MaggyAssistant\Base\Api\ModuleInfo\InstalledPackagesInterface" type="MaggyAssistant\Base\Model\ModuleInfo\ComposerInstalledPackages"/>
+
     <!-- Tool Registry: inject all tools -->
     <type name="MaggyAssistant\Base\Service\Tool\ToolRegistry">
         <arguments>
@@ -37,6 +41,7 @@
                 <item name="cron_status" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus</item>
                 <item name="product_debug" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug</item>
                 <item name="docs_search" xsi:type="object">MaggyAssistant\Base\Service\Skills\Docs\DocsSearch</item>
+                <item name="module_version" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\ModuleVersion</item>
             </argument>
         </arguments>
     </type>
@@ -133,6 +138,15 @@
         <arguments>
             <argument name="actions" xsi:type="array">
                 <item name="diagnose" xsi:type="object">MaggyAssistant\Base\Service\Skills\Debug\ProductDebug\DiagnoseAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: ModuleVersion -->
+    <type name="MaggyAssistant\Base\Service\Skills\System\ModuleVersion">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="get_version" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\ModuleVersion\GetVersionAction</item>
             </argument>
         </arguments>
     </type>
