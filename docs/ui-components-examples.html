@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mago UI kit — examples</title>
+<!--
+    Live examples of every widget (W01–W21) and skill card (S01–S14) in
+    view/adminhtml/web/js/mago-ui.js, each with the call that produced it.
+
+    The page loads the module's own JS and LESS, so it always shows the current
+    kit. less.js compiles _components.less in the browser, which needs an HTTP
+    origin (file:// is blocked). From the module root:
+
+        python3 -m http.server 8080
+        open http://localhost:8080/docs/ui-components-examples.html
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet/less" type="text/css" href="../view/adminhtml/web/css/source/module/_components.less">
+<style>
+/* The tokens panel.phtml sets on :root at runtime, with the brand defaults. */
+:root {
+    --maggy-accent: #FF7A33; --maggy-accent-hover: #E65000; --maggy-accent-light: #FFE9DC;
+    --maggy-accent-rgb: 255, 122, 51; --maggy-accent-text: #FFFFFF;
+    --mago-sunset: #FF7A33; --mago-deep: #E65000; --mago-obsidian: #2A2624; --mago-void: #373330; --mago-tint: #FFE9DC;
+    --mago-panel: #FFFFFF; --mago-surface: #F7F5F3; --mago-hairline: #E9E5E1;
+    --mago-ink: #373330; --mago-ink-soft: #6B645F; --mago-ink-muted: #9A918B;
+    --mago-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --mago-tracking: -0.01em;
+}
+body { margin: 0; background: #F3F3F5; font-family: var(--mago-font); color: #1A1A1D; padding: 40px 48px 96px; -webkit-font-smoothing: antialiased; }
+h1 { font-size: 30px; margin: 0 0 8px; letter-spacing: -0.03em; }
+.lead { color: #6E6E76; font-size: 14px; line-height: 1.6; max-width: 70ch; }
+.lead code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+h2 { font-size: 20px; margin: 48px 0 20px; padding-bottom: 10px; border-bottom: 1px solid #E1E1E4; letter-spacing: -0.02em; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, 420px); gap: 36px 40px; }
+.cell-head { display: flex; gap: 9px; align-items: baseline; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
+.cell-head small { font-size: 11.5px; font-weight: 600; letter-spacing: .12em; color: #9A9AA2; }
+.frame { background: #fff; padding: 20px; border-radius: 2px; }
+.frame .mago-kit { display: flex; flex-direction: column; gap: 10px; }
+details { margin-top: 8px; }
+summary { font-size: 12px; color: #9A9AA2; cursor: pointer; user-select: none; }
+pre { margin: 8px 0 0; padding: 12px 14px; background: #2A2624; color: #F3F3F5; border-radius: 10px; font-size: 11.5px; line-height: 1.55; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.note { font-size: 12.5px; color: #9A9AA2; margin-top: 8px; }
+#error { display: none; background: #FDF5F3; border: 1px solid #F3D8D3; color: #6A3529; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 13.5px; }
+/* Capture mode (?section=): one section, three columns, no code blocks. */
+body.is-capture { padding: 32px 40px 40px; }
+body.is-capture h2 { margin-top: 0; }
+body.is-capture .grid { grid-template-columns: repeat(3, 420px); }
+body.is-capture details { display: none; }
+</style>
+</head>
+<body>
+<h1>Mago UI kit</h1>
+<p class="lead">Every builder in <code>view/adminhtml/web/js/mago-ui.js</code>, rendered at panel width with sample data. Open “code” under an example for the call that produced it. Callbacks log to the console. See <code>ui-components.md</code> for the option reference.</p>
+<div id="error">The kit did not load. Serve the module over HTTP (for example <code>python3 -m http.server 8080</code> in the module root) and open <code>/docs/ui-components-examples.html</code>.</div>
+
+<h2>Metrics</h2><div class="grid" id="metrics"></div>
+<h2>Charts</h2><div class="grid" id="charts"></div>
+<h2>Data</h2><div class="grid" id="data"></div>
+<h2>Action &amp; state</h2><div class="grid" id="actions"></div>
+<h2>Skill actions</h2><div class="grid" id="skills"></div>
+<h2>Widgets from an answer</h2>
+<p class="lead">An assistant answer carries widgets in a fenced block with language <code>mago</code>. <code>MagoUI.renderJson()</code> turns the JSON into HTML; the chat panel calls it from its markdown renderer. Specs are treated as untrusted: no raw HTML, only web or admin links.</p>
+<div class="grid" id="spec"></div>
+
+<script>
+    // less.js needs to know the stylesheet before it loads; keep the compiled
+    // CSS out of the cache so edits to the LESS show up on reload.
+    window.less = {env: 'development', logLevel: 1};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/less.js/4.2.0/less.min.js"></script>
+<script>
+    // mago-ui.js is an AMD module; this shim runs the factory and lets it set window.MagoUI.
+    window.define = function (deps, factory) { factory(); };
+</script>
+<script src="../view/adminhtml/web/js/mago-ui.js"></script>
+<script>
+(function () {
+    var U = window.MagoUI;
+    if (!U) {
+        document.getElementById('error').style.display = 'block';
+        return;
+    }
+
+    // ?section=<id> shows one section only, without the intro and code blocks.
+    // docs/render-examples.sh uses it to capture the PNGs in docs/examples/.
+    var only = new URLSearchParams(location.search).get('section');
+    if (only) {
+        document.body.classList.add('is-capture');
+        var keepGrid = document.getElementById(only);
+        document.querySelectorAll('h1, .lead, h2, .grid').forEach(function (node) {
+            // Keep the grid itself and whatever introduces it (its heading and an optional lead).
+            var next = node;
+            while (next && !next.classList.contains('grid') && next.tagName !== 'H2' || next === node) {
+                next = next.nextElementSibling;
+                if (!next || next.tagName === 'H2' && next !== node) {
+                    break;
+                }
+            }
+            var introduces = node.tagName === 'H2' || node.classList.contains('lead');
+            var keep = node === keepGrid || (introduces && next === keepGrid);
+            if (!keep) {
+                node.style.display = 'none';
+            }
+        });
+        window.addEventListener('load', function () {
+            // Let less.js and the fonts settle, then report the height for the capture script.
+            setTimeout(function () {
+                document.body.setAttribute('data-height', String(document.documentElement.scrollHeight));
+            }, 800);
+        });
+    }
+    var log = function () { console.log.apply(console, ['[mago-ui example]'].concat([].slice.call(arguments))); };
+
+    // ex(section, code, title, build[, note]) renders build() and shows its source.
+    function ex(section, code, title, build, note) {
+        var cell = document.createElement('div');
+        cell.innerHTML = '<div class="cell-head"><small>' + code + '</small>' + title + '</div>';
+        var frame = document.createElement('div');
+        frame.className = 'frame';
+        var kit = document.createElement('div');
+        kit.className = 'mago-kit';
+        var out = build();
+        (Array.isArray(out) ? out : [out]).forEach(function (n) { kit.appendChild(n); });
+        frame.appendChild(kit);
+        cell.appendChild(frame);
+        if (note) {
+            var p = document.createElement('div');
+            p.className = 'note';
+            p.textContent = note;
+            cell.appendChild(p);
+        }
+        var details = document.createElement('details');
+        var src = build.toString().split('\n');
+        src = src.slice(1, -1).map(function (l) { return l.replace(/^ {8}/, ''); }).join('\n');
+        details.innerHTML = '<summary>code</summary>';
+        var pre = document.createElement('pre');
+        pre.textContent = src;
+        details.appendChild(pre);
+        cell.appendChild(details);
+        document.getElementById(section).appendChild(cell);
+    }
+
+    /* ---------------- Metrics ---------------- */
+
+    ex('metrics', 'W01', 'Stat', function () {
+        return U.stat({
+            label: 'Revenue, 7 days',
+            value: '€38.410',
+            delta: {value: '12,4%', direction: 'up', suffix: 'vs last week'}
+        });
+    });
+
+    ex('metrics', 'W02', 'Stat pair', function () {
+        return U.stats({items: [
+            {label: 'Orders', value: '412', delta: {value: '+1,0%', direction: 'flat'}},
+            {label: 'Basket', value: '€93,20', delta: {value: '4,5%', direction: 'up'}}
+        ]});
+    }, 'At most two side by side.');
+
+    ex('metrics', 'W03', 'Stat + sparkline', function () {
+        return U.sparkline({label: 'Sessions', value: '24.108', points: [10, 16, 13, 28, 24, 40, 46]});
+    });
+
+    ex('metrics', 'W04', 'Quota meter', function () {
+        return U.meter({label: 'Index queue', value: 1842, max: 2400, note: '77% processed · ± 4 min left'});
+    });
+
+    ex('metrics', 'W05', 'Share ring', function () {
+        return U.ring({percent: 65, legend: [
+            {label: 'Mobile', value: '15.670'},
+            {label: 'Desktop', value: '8.438', color: '#E1E1E4'}
+        ]});
+    }, 'One ratio, never a pie of six.');
+
+    ex('metrics', 'W06', 'Composition bar', function () {
+        return U.composition({label: 'Order status, 412 total', segments: [
+            {label: 'Complete', value: 222},
+            {label: 'Processing', value: 107},
+            {label: 'Hold', value: 54},
+            {label: 'Canceled', value: 29}
+        ]});
+    });
+
+    /* ---------------- Charts ---------------- */
+
+    ex('charts', 'W07', 'Ranked bars', function () {
+        return U.rankedBars({label: 'Without image, per category', items: [
+            {label: 'Accessories', value: 61, onClick: log},
+            {label: 'Lighting', value: 38, onClick: log},
+            {label: 'Textiles', value: 19, onClick: log},
+            {label: 'Other', value: 10}
+        ]});
+    }, 'The default for "which / how many". From four items on, the last one is grey.');
+
+    ex('charts', 'W08', 'Columns over time', function () {
+        return U.columns({label: 'Revenue per day', points: [
+            {label: 'M', value: 44}, {label: 'T', value: 58}, {label: 'W', value: 51},
+            {label: 'T', value: 72}, {label: 'F', value: 100}, {label: 'S', value: 81}, {label: 'S', value: 63}
+        ]});
+    }, 'The peak takes the accent; pass highlight: true to pick another point.');
+
+    ex('charts', 'W09', 'Two-series lines', function () {
+        return U.lines({
+            label: 'Revenue, 30 days',
+            series: [
+                {label: 'now', points: [30, 48, 42, 70, 64, 88, 94]},
+                {label: 'previous', points: [22, 34, 28, 56, 50, 78, 86]}
+            ],
+            xLabels: ['1 Aug', '15 Aug', '30 Aug']
+        });
+    });
+
+    ex('charts', 'W10', 'Stacked columns', function () {
+        return U.stackedColumns({
+            label: 'Orders per channel',
+            series: [{label: 'web'}, {label: 'POS'}],
+            points: [
+                {label: 'wk 31', values: [41, 21]}, {label: '32', values: [53, 21]}, {label: '33', values: [35, 23]},
+                {label: '34', values: [78, 22]}, {label: '35', values: [59, 27]}
+            ]
+        });
+    });
+
+    ex('charts', 'W11', 'Heatmap', function () {
+        return U.heatmap({
+            label: 'Orders per hour',
+            rows: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+            values: [
+                [1, 2, 3, 4, 3, 2, 1, 0],
+                [2, 3, 4, 5, 4, 3, 2, 1],
+                [1, 2, 3, 4, 3, 2, 1, 0],
+                [2, 3, 4, 4, 3, 3, 2, 1],
+                [3, 4, 5, 5, 4, 3, 2, 1]
+            ],
+            scale: ['8h', '22h']
+        });
+    });
+
+    ex('charts', 'W12', 'Funnel', function () {
+        return U.funnel({label: 'Checkout, 30 days', steps: [
+            {label: 'Cart', value: 6480}, {label: 'Shipping', value: 4601},
+            {label: 'Payment', value: 3370}, {label: 'Paid', value: 2334}
+        ]});
+    }, 'Drop-off per step is computed.');
+
+    /* ---------------- Data ---------------- */
+
+    ex('data', 'W13', 'Entity list', function () {
+        return U.entityList({
+            items: [
+                {title: 'Brass Wall Sconce, Small', meta: 'SKU LT-2201 · 1.240 views / 30d', onClick: log, action: {label: 'Upload', onClick: log}},
+                {title: 'Leather Card Holder, Tan', meta: 'SKU AC-1044 · 980 views / 30d', href: '#', action: {label: 'Upload', href: '#'}}
+            ],
+            more: {count: 126, onClick: log}
+        });
+    }, 'Never more than five in the panel; the rest behind "show more" or a grid link.');
+
+    ex('data', 'W14', 'Compact table', function () {
+        return U.table({
+            columns: [
+                {key: 'order', label: 'Order', num: true},
+                {key: 'status', label: 'Status', width: '92px'},
+                {key: 'total', label: 'Total', align: 'right', width: '84px'}
+            ],
+            rows: [
+                {order: '#100241', status: {badge: 'Hold', tone: 'warn'}, total: {text: '€248,00', strong: true, num: true}},
+                {order: '#100238', status: {badge: 'Hold', tone: 'warn'}, total: {text: '€92,50', strong: true, num: true}},
+                {order: '#100230', status: {badge: 'Paid', tone: 'ok'}, total: {text: '€1.104,00', strong: true, num: true}}
+            ],
+            onRowClick: log
+        });
+    }, 'Max three columns at panel width.');
+
+    ex('data', 'W15', 'Record card', function () {
+        return U.record({
+            title: 'Order #100241',
+            badge: {text: 'On hold, 4 days', tone: 'warn'},
+            rows: [
+                {label: 'Customer', value: 'Anouk de Vries'},
+                {label: 'Payment', value: 'iDEAL · authorized'},
+                {label: 'Hold reason', value: 'Stock LT-2201 missing'},
+                {label: 'Total', value: '€248,00', strong: true, num: true}
+            ]
+        });
+    });
+
+    /* ---------------- Action & state ---------------- */
+
+    ex('actions', 'W16', 'Confirm write', function () {
+        return U.confirmWrite({
+            text: {html: 'Change the price of <strong>Linen Throw, Sand</strong> in the webshop.'},
+            diff: {from: '€79,00', to: '€69,00', delta: '−12,7%'},
+            onConfirm: log,
+            onCancel: log
+        });
+    });
+
+    ex('actions', 'W17', 'Tool trace', function () {
+        return U.toolTrace({steps: [
+            {label: 'Ran the 7-day sales report'},
+            {label: 'Compared with the week before'},
+            {label: 'Writing the summary', state: 'active'},
+            {label: 'Attaching the chart', state: 'pending'}
+        ]});
+    });
+
+    ex('actions', 'W18', 'Callouts', function () {
+        return [
+            U.callout({tone: 'warn', text: 'Cache has not been refreshed for 6 days. Numbers may lag.'}),
+            U.callout({tone: 'danger', text: {html: 'No permission for <strong>Stores → Configuration</strong>. Ask your administrator.'}}),
+            U.callout({tone: 'ok', text: '3 orders released.', action: {label: 'See them in the grid.', href: '#'}})
+        ];
+    });
+
+    ex('actions', 'W19', 'Suggestion cards', function () {
+        return U.suggestions({
+            cards: [{label: 'Revenue versus last week', icon: 'barChart', onClick: log}],
+            chips: [{label: 'Split per country', onClick: log}, {label: 'Mobile only', onClick: log}, {label: 'Export CSV', onClick: log}]
+        });
+    });
+
+    ex('actions', 'W20', 'Answer footer', function () {
+        return U.answerFooter({
+            primary: {label: 'Open all 128 in a grid', href: '#', external: true},
+            onCopy: log,
+            onFeedback: log
+        });
+    });
+
+    ex('actions', 'W21', 'Empty & skeleton', function () {
+        return [
+            U.empty({title: 'Nothing found', text: 'Every product in Lighting has an image.'}),
+            U.skeleton()
+        ];
+    });
+
+    /* ---------------- Skill actions ---------------- */
+
+    ex('skills', 'S01', 'Asks permission', function () {
+        return U.skillAsk({
+            title: 'Cache management',
+            tool: 'cache_manager',
+            text: {html: 'I want to <strong>flush all cache types</strong>. The shop is 1–2 minutes slower while it rebuilds.'},
+            params: [
+                {key: 'action', value: 'flush'},
+                {key: 'cache_type', value: 'all types', mono: false, muted: '(empty)'}
+            ],
+            onAllow: log,
+            onAlways: log,
+            onLater: log
+        });
+    }, 'MagoUI.paramsFromInput(toolInput) turns a tool input object into params rows.');
+
+    ex('skills', 'S02', 'Running', function () {
+        var card = U.skillRunning({
+            title: 'Flushing cache',
+            elapsed: '3s',
+            progress: 64,
+            steps: [{label: 'config, layout, block_html'}, {label: 'full_page', state: 'active'}],
+            onStop: log
+        });
+        // Later: card.magoUpdate({progress: 90, elapsed: '5s'}); card.magoAddStep({label: 'done', state: 'done'});
+        return card;
+    });
+
+    ex('skills', 'S03', 'Done', function () {
+        return [
+            U.callout({tone: 'ok', text: 'All 7 cache types are flushed. The shop is rebuilding its first pages now.'}),
+            U.skillLine({
+                title: 'Cache management',
+                action: 'flush',
+                duration: '4,1s',
+                request: {action: 'flush', cache_type: ''},
+                response: {flushed: 7, duration_ms: 4102}
+            })
+        ];
+    }, 'Result above, card collapsed to a line. Click the line to expand it (S05).');
+
+    ex('skills', 'S04', 'Failed', function () {
+        return U.skillFailed({
+            title: 'Cache flush failed',
+            code: 'HTTP 403',
+            text: {html: 'Your account may not call <strong>System → Cache Management</strong>. The rest of the answer still stands.'},
+            details: 'Magento\\Framework\\Exception\\AuthorizationException: not allowed',
+            onRetry: log
+        });
+    });
+
+    ex('skills', 'S05', 'Expanded', function () {
+        return U.skillLine({
+            title: 'Cache management',
+            action: 'flush',
+            duration: '4,1s',
+            expanded: true,
+            request: {action: 'flush', cache_type: ''},
+            response: {flushed: 7, duration_ms: 4102}
+        });
+    });
+
+    ex('skills', 'S06', 'Read, no question', function () {
+        return [
+            U.readLine({text: 'Fetched cache status', tool: 'cache_manager', action: 'status'}),
+            U.readLine({text: 'Read 412 orders', tool: 'sales_report'}),
+            U.readLine({text: 'Searching products', tool: 'product_data', state: 'active'})
+        ];
+    }, 'One line per call, no card.');
+
+    ex('skills', 'S07', 'Irreversible', function () {
+        return U.skillIrreversible({
+            tool: 'product_delete',
+            text: {html: 'Permanently delete 19 products from <strong>Textiles</strong>.'},
+            impacts: ['19 products, including media', '7 appear in 41 open orders', 'No trash bin; recovery needs a backup'],
+            ackLabel: 'I understand this cannot be undone',
+            confirmLabel: 'Delete',
+            onConfirm: log,
+            onCancel: log
+        });
+    }, 'The confirm button stays disabled until the acknowledgement is ticked.');
+
+    ex('skills', 'S08', 'Bulk, with selection', function () {
+        return U.skillBulk({
+            title: 'Release orders',
+            items: [
+                {id: 100241, label: '#100241 · Anouk de Vries', meta: '€248,00'},
+                {id: 100238, label: '#100238 · Joris Bakker', meta: '€92,50'},
+                {id: 100230, label: '#100230 · Sanne Willems', meta: '€1.104,00'},
+                {id: 100228, label: '#100228 · fraud flag', meta: '€64,00', checked: false}
+            ],
+            confirmLabel: function (n) { return 'Release ' + n; },
+            onConfirm: log,
+            onLater: log
+        });
+    });
+
+    ex('skills', 'S09', 'Plan with several steps', function () {
+        return U.skillPlan({
+            title: 'Plan: update prices',
+            current: 2,
+            total: 4,
+            steps: [
+                {title: 'Read CSV with 240 rows', meta: 'no errors', state: 'done'},
+                {title: 'Validate prices against cost', meta: '184 / 240', state: 'active'},
+                {title: 'Write prices', meta: 'will ask permission', state: 'ask'},
+                {title: 'Flush 3 cache types', state: 'pending'}
+            ],
+            onAllowAll: log,
+            onPause: log
+        });
+    });
+
+    ex('skills', 'S10', 'Missing parameter', function () {
+        return U.paramPrompt({
+            text: 'I can change the price — what should it become?',
+            prefix: '€',
+            value: '69,00',
+            onSubmit: log,
+            chips: [{label: '−10%', value: '71,10'}, {label: '−20%', value: '63,20'}, {label: 'Back to €79,00', value: '79,00'}]
+        });
+    });
+
+    ex('skills', 'S11', 'Done, with undo', function () {
+        return U.undoCallout({
+            text: {html: 'Price of <strong>Linen Throw, Sand</strong> is now €69,00.'},
+            onUndo: log,
+            expiresText: '5 min left'
+        });
+    });
+
+    ex('skills', 'S12', 'Session log', function () {
+        return U.sessionLog({
+            entries: [
+                {text: 'Price LT-2201 → €69,00', time: '14:22'},
+                {text: '3 orders released', time: '14:19'},
+                {text: 'Cache flush refused by permissions', time: '14:11', tone: 'danger'}
+            ],
+            onExport: log
+        });
+    });
+
+    ex('skills', 'S14', 'Skill menu', function () {
+        var menu = U.skillMenu({
+            skills: [
+                {name: 'sales_data', title: 'Sales report', description: 'revenue, orders and basket over a period', risk: 'read'},
+                {name: 'product_data', title: 'Search the catalog', description: 'products by attribute, stock or media', risk: 'read'},
+                {name: 'cache_manager', title: 'Cache management', description: 'view status, flush or enable types', risk: 'write'},
+                {name: 'product_delete', title: 'Delete products', description: 'permanent, with an impact check first', risk: 'irreversible'}
+            ],
+            onSelect: log
+        });
+        // Keyboard navigation: menu.magoSetActive(index)
+        return menu;
+    });
+
+    /* ---------------- Spec renderer ---------------- */
+
+    ex('spec', 'R', 'renderJson()', function () {
+        var json = JSON.stringify([
+            {type: 'stats', items: [
+                {label: 'Revenue, 7 days', value: '€38.410', delta: {value: '12,4%', direction: 'up'}},
+                {label: 'Orders', value: '412'}
+            ]},
+            {type: 'rankedBars', label: 'By category', items: [{label: 'Accessories', value: 61}, {label: 'Lighting', value: 38}]},
+            {type: 'callout', tone: 'warn', text: 'Rendered from the JSON in a ```mago block.'}
+        ], null, 2);
+        var wrap = document.createElement('div');
+        wrap.innerHTML = U.renderJson(json);
+        return wrap.firstChild;
+    }, 'MagoUI.types lists every accepted "type".');
+})();
+</script>
+</body>
+</html>

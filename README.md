@@ -81,7 +81,7 @@ Typing `/` in the chat shows the available commands. These run without the AI pr
 
 Write commands need the `MaggyAssistant_Base::assistant_write` ACL resource plus a write grant on the underlying skill. See [docs/skills-architecture.md](docs/skills-architecture.md#slash-commands) for registering your own commands.
 
-The answer widgets and skill cards the chat panel renders are documented in [docs/ui-components.md](docs/ui-components.md).
+The answer widgets and skill cards the chat panel renders are documented in [docs/ui-components.md](docs/ui-components.md); [docs/ui-components-examples.md](docs/ui-components-examples.md) shows every component with sample data and the call behind it.
 
 ## Documentation grounding
 

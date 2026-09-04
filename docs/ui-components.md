@@ -8,6 +8,11 @@ admin chatbot design project.
 
 ## Using the kit
 
+[ui-components-examples.md](ui-components-examples.md) shows every builder with sample data and the call
+that produced it. The live version, [ui-components-examples.html](ui-components-examples.html), loads the
+module's own JS and LESS; serve the module root over HTTP (`python3 -m http.server 8080`) and open
+`/docs/ui-components-examples.html`. `docs/render-examples.sh` refreshes the captures.
+
 The module is an AMD module (`MaggyAssistant_Base/js/mago-ui`) and also sets
 `window.MagoUI`. Every builder takes one options object and returns a detached
 `HTMLElement`; append it wherever it belongs.
