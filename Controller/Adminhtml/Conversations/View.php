@@ -42,7 +42,7 @@ class View extends Action implements HttpGetActionInterface
 
         $resultPage = $this->pageFactory->create();
         $resultPage->setActiveMenu('MaggyAssistant_Base::conversations');
-        $resultPage->getConfig()->getTitle()->prepend($title ?: __('Conversation #%1', $conversationId));
+        $resultPage->getConfig()->getTitle()->prepend((string)($title ?: __('Conversation #%1', $conversationId)));
         return $resultPage;
     }
 }

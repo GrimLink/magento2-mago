@@ -126,7 +126,7 @@ class CreateShipmentAction implements ActionInterface
             return $result;
         }
 
-        $shipmentId = is_numeric($result) ? (int)$result : ($result['id'] ?? $result);
+        $shipmentId = $result['result'] ?? $result['id'] ?? null;
 
         return [
             'success' => true,

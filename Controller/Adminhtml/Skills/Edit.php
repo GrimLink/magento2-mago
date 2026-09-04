@@ -37,7 +37,7 @@ class Edit extends Action implements HttpGetActionInterface
 
         $resultPage = $this->pageFactory->create();
         $resultPage->setActiveMenu('MaggyAssistant_Base::skills');
-        $resultPage->getConfig()->getTitle()->prepend(__('Edit Skill: %1', $tool->getName()));
+        $resultPage->getConfig()->getTitle()->prepend((string)__('Edit Skill: %1', $tool->getName()));
         return $resultPage;
     }
 }

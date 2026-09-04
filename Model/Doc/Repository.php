@@ -65,7 +65,7 @@ class Repository
 
     private function longestWord(string $query): string
     {
-        if (!preg_match_all('/\w{3,}/u', $query, $matches) || !$matches[0]) {
+        if (!preg_match_all('/\w{3,}/u', $query, $matches)) {
             return '';
         }
         usort($matches[0], static fn(string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));

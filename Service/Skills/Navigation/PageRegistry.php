@@ -93,7 +93,7 @@ class PageRegistry
             return [];
         }
 
-        $terms = preg_split('/[\s,]+/', $query, -1, PREG_SPLIT_NO_EMPTY);
+        $terms = preg_split('/[\s,]+/', $query, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $scored = [];
 
         foreach ($this->pages as $page) {

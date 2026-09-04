@@ -40,7 +40,7 @@ class ChatPanel extends Template
 
     public function getJsConfig(): string
     {
-        return $this->json->serialize([
+        return (string)$this->json->serialize([
             'streamUrl' => $this->getUrl('maggy/chat/stream'),
             'historyUrl' => $this->getUrl('maggy/chat/history'),
             'loadUrl' => $this->getUrl('maggy/chat/load'),
@@ -79,7 +79,7 @@ class ChatPanel extends Template
                 'readOnly' => $tool->isReadOnly() || !$this->toolRegistry->hasWriteAccess($tool, $adminUserId),
             ];
         }
-        return $this->json->serialize($skills);
+        return (string)$this->json->serialize($skills);
     }
 
     private function getAdminUserId(): ?int

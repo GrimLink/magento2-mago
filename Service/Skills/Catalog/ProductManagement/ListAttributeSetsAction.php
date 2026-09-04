@@ -89,7 +89,7 @@ class ListAttributeSetsAction implements ActionInterface
         }
 
         $attributes = $this->apiClient->get('products/attribute-sets/' . $setId . '/attributes', [], $adminUserId);
-        if (!is_array($attributes) || isset($attributes['error'])) {
+        if (isset($attributes['error'])) {
             return [];
         }
 

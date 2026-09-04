@@ -30,13 +30,13 @@ class ExlMarkdownNormalizer
                 $description = $this->cleanScalar($d[1]);
             }
             if (preg_match('/^feature:\s*(.+?)\s*$/m', $frontMatter, $f)) {
-                $tags = trim(preg_replace('/["\[\]]/', '', $f[1]));
+                $tags = trim((string)preg_replace('/["\[\]]/', '', $f[1]));
             }
         }
 
         for ($depth = 0; $depth < 3; $depth++) {
             $replaced = 0;
-            $body = preg_replace_callback(
+            $body = (string)preg_replace_callback(
                 '/\{\{\$include\s+([^\}]+)\}\}/',
                 static function (array $mm) use ($includeResolver): string {
                     $resolved = $includeResolver(trim($mm[1]));
@@ -52,10 +52,10 @@ class ExlMarkdownNormalizer
         }
 
         // Unwrap Experience League inline markup.
-        $body = preg_replace('/\[!(?:UICONTROL|DNL)\s+([^\]]+)\]/', '$1', $body);
+        $body = (string)preg_replace('/\[!(?:UICONTROL|DNL)\s+([^\]]+)\]/', '$1', $body);
 
         // Strip attribute blocks such as {width="700" zoomable="yes"}.
-        $body = preg_replace('/\{[^}\n]*\b(?:width|height|zoomable|align|border|class)=[^}\n]*\}/', '', $body);
+        $body = (string)preg_replace('/\{[^}\n]*\b(?:width|height|zoomable|align|border|class)=[^}\n]*\}/', '', $body);
 
         return [
             'title' => $title,

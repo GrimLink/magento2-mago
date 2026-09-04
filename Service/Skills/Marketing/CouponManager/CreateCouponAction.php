@@ -130,7 +130,7 @@ class CreateCouponAction implements ActionInterface
             'rule_id' => $ruleId,
             'rule_name' => $rule['name'] ?? '',
             'codes' => $result,
-            'quantity_generated' => is_array($result) ? count($result) : 0,
+            'quantity_generated' => count($result),
             'admin_url' => $this->secureAdminUrl->getUrl(
                 'sales_rule/promo_quote/edit',
                 ['id' => $ruleId]

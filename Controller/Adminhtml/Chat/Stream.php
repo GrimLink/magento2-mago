@@ -236,7 +236,7 @@ class Stream extends Action implements HttpPostActionInterface
      * Terminate response to prevent Magento from sending its own HTML response.
      * SSE requires direct output, Magento's response object would override our headers.
      *
-     * @SuppressWarnings(PHPMD.ExitExpression)
+     * @SuppressWarnings("PHPMD.ExitExpression")
      */
     private function terminateResponse(): never
     {
