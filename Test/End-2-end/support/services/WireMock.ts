@@ -1,5 +1,5 @@
 /*
- * Copyright © 2026 Mago Assistant
+ * Copyright © Mago Assistant
  */
 
 import type {APIRequestContext} from '@playwright/test';

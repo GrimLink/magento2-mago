@@ -68,7 +68,7 @@ class Stream extends Action implements HttpPostActionInterface
 
         try {
             $rawBody = $this->getRequest()->getContent();
-            $postData = $this->json->unserialize($rawBody);
+            $postData = (array)$this->json->unserialize($rawBody);
 
             $rawPageContext = $postData['page_context'] ?? null;
             $pageContext = $this->pageContextNormalizer->normalize($rawPageContext);
@@ -288,8 +288,8 @@ class Stream extends Action implements HttpPostActionInterface
      * logging it verbatim would put untrusted client data into the debug log untouched. Only the
      * namespace, entity id and field count are worth keeping here.
      *
-     * @param array<string,mixed> $postData
-     * @return array<string,mixed>
+     * @param array<array-key, mixed> $postData
+     * @return array<array-key, mixed>
      */
     private function redactedPostData(array $postData): array
     {

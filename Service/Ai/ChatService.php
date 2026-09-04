@@ -290,17 +290,15 @@ class ChatService implements ChatServiceInterface
                 continue;
             }
 
-            $reportStatus = $onChunk && !$this->isToolCallDenied($toolCall, $adminUserId);
-            if ($reportStatus) {
-                $statusMsg = $this->getToolStatusMessage(
-                    $toolCall['name'],
-                    $toolCall['input']['action'] ?? '',
-                    $toolCall['input'] ?? []
-                );
-                $onChunk('tool_status', [
+            $reportStatus = $onChunk !== null && !$this->isToolCallDenied($toolCall, $adminUserId);            if ($reportStatus) {
+                $this->reportToolStatus($onChunk, [
                     'name' => $toolCall['name'],
                     'status' => 'running',
-                    'message' => $statusMsg,
+                    'message' => $this->getToolStatusMessage(
+                        $toolCall['name'],
+                        $toolCall['input']['action'] ?? '',
+                        $toolCall['input'] ?? []
+                    ),
                 ]);
             }
 
@@ -309,7 +307,10 @@ class ChatService implements ChatServiceInterface
             $results[$toolCall['id']] = $this->withoutClientDirective($result);
 
             if ($reportStatus) {
-                $onChunk('tool_status', $this->statusAfter($toolCall['name'], $results[$toolCall['id']]));
+                $this->reportToolStatus(
+                    $onChunk,
+                    $this->statusAfter($toolCall['name'], $results[$toolCall['id']])
+                );
             }
         }
         return $results;
@@ -391,6 +392,18 @@ class ChatService implements ChatServiceInterface
     }
 
     /**
+     * @param array<string, mixed> $status
+     */
+    private function reportToolStatus(?callable $onChunk, array $status): void
+    {
+        if ($onChunk === null) {
+            return;
+        }
+
+        $onChunk('tool_status', $status);
+    }
+
+    /**
      * Forwards a tool result's client_directive, untouched, to the panel. Neither the presence of
      * this key nor its shape is domain knowledge ChatService holds; only json_encode-ability of the
      * value into the onChunk('type', array $data) contract is checked.
@@ -461,10 +474,18 @@ class ChatService implements ChatServiceInterface
      */
     private function capToolResult(array $result, string $toolName): array
     {
+        // A client_directive is stripped again before the tool message is built, so it never
+        // spends context: it neither counts towards the cap nor may be truncated away with the
+        // rest, or a confirmed write would be staged nowhere with nothing said about it.
+        $directive = is_array($result[self::CLIENT_DIRECTIVE_KEY] ?? null)
+            ? $result[self::CLIENT_DIRECTIVE_KEY]
+            : null;
+        $result = $this->withoutClientDirective($result);
+
         $maxBytes = $this->configRepository->getMaxResponseTokens() * self::BYTES_PER_TOKEN_ESTIMATE;
         $json = json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         if ($json === false || strlen($json) <= $maxBytes) {
-            return $result;
+            return $this->withClientDirective($result, $directive);
         }
 
         if ($this->configRepository->isDebugEnabled()) {
@@ -477,7 +498,7 @@ class ChatService implements ChatServiceInterface
 
         $output = mb_strcut($json, 0, $maxBytes);
 
-        return [
+        return $this->withClientDirective([
             '_truncated' => true,
             'output' => $output,
             'total_bytes' => strlen($json),
@@ -485,7 +506,25 @@ class ChatService implements ChatServiceInterface
             'note' => 'Tool output exceeded the configured limit and was truncated. The output field holds the '
                 . 'beginning of the JSON result and may stop mid-value. Do not retry the same call; ask the user '
                 . 'to narrow the query (filters, pagination, fewer fields) or use a more specific action.',
-        ];
+        ], $directive);
+    }
+
+    /**
+     * Put back what only the browser reads, after the model's copy has been measured and capped
+     *
+     * @param array<string, mixed> $result
+     * @param array<string, mixed>|null $directive
+     * @return array<string, mixed>
+     */
+    private function withClientDirective(array $result, ?array $directive): array
+    {
+        if ($directive === null) {
+            return $result;
+        }
+
+        $result[self::CLIENT_DIRECTIVE_KEY] = $directive;
+
+        return $result;
     }
 
     /**

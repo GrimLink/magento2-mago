@@ -100,8 +100,7 @@
         hideNavigateStatus();
         var el = document.createElement('div');
         el.className = 'mago-message is-assistant ' + NAVIGATE_STATUS_CLASS;
-        el.innerHTML = '<div class="mago-message-role">' + esc(assistantName) + '</div>'
-            + '<div class="mago-tool-status"><span class="mago-tool-status-spinner"></span>'
+        el.innerHTML = '<div class="mago-tool-status"><span class="mago-tool-status-spinner"></span>'
             + '<span class="mago-tool-status-text">' + esc(text) + '</span></div>';
         msgs.insertBefore(el, loading);
         msgs.scrollTop = msgs.scrollHeight;

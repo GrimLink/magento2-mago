@@ -50,7 +50,7 @@ test('Starts a fresh conversation in a second tab instead of sharing the first t
   await chatMock.install(page, lookupProduct);
   await chatPanel.openOnDashboard(page);
   await chatPanel.ask(page, 'Which products contain candle?');
-  await expect(chatPanel.assistantMessages(page)).toHaveCount(2);
+  await expect(chatPanel.assistantMessages(page)).toHaveCount(1);
 
   const secondTab = await context.newPage();
   await chatMock.install(secondTab, lookupProduct);

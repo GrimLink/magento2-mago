@@ -1,5 +1,5 @@
 /*
- * Copyright © 2026 Mago Assistant
+ * Copyright © Mago Assistant
  */
 
 import {expect, test, type Page} from '@playwright/test';
