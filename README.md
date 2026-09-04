@@ -81,6 +81,8 @@ Typing `/` in the chat shows the available commands. These run without the AI pr
 
 Write commands need the `MaggyAssistant_Base::assistant_write` ACL resource plus a write grant on the underlying skill. See [docs/skills-architecture.md](docs/skills-architecture.md#slash-commands) for registering your own commands.
 
+The answer widgets and skill cards the chat panel renders are documented in [docs/ui-components.md](docs/ui-components.md).
+
 ## Documentation grounding
 
 When enabled, the assistant can answer "how do I…" questions from the official Magento admin documentation instead of guessing. The `docs_search` skill runs a MySQL FULLTEXT search over an indexed copy of the docs and cites the source page it used.

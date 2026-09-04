@@ -1,0 +1,123 @@
+# Mago UI kit
+
+The chat panel answers with a small set of reusable widgets and skill cards. They
+are built by `view/adminhtml/web/js/mago-ui.js` and styled by
+`view/adminhtml/web/css/source/module/_components.less`. The design source is the
+"Mago Widget Kit" (W01–W21) and "Mago Skill Actions" (S01–S14) pages of the Mago
+admin chatbot design project.
+
+## Using the kit
+
+The module is an AMD module (`MaggyAssistant_Base/js/mago-ui`) and also sets
+`window.MagoUI`. Every builder takes one options object and returns a detached
+`HTMLElement`; append it wherever it belongs.
+
+```js
+require(['MaggyAssistant_Base/js/mago-ui'], function (MagoUI) {
+    var card = MagoUI.stat({label: 'Revenue, 7 days', value: '€38.410', delta: {value: '12,4%', direction: 'up', suffix: 'vs last week'}});
+    container.appendChild(card);
+});
+```
+
+Text options are inserted as plain text. Pass `{html: '...'}` for trusted markup
+(for example the output of the markdown renderer) or a DOM node.
+
+The widgets use the CSS custom properties the panel defines (`--mago-ink`,
+`--mago-hairline`, `--maggy-accent`, ...), so they follow the configured accent
+colour. Outside the panel, put the widgets inside an element with class
+`mago-kit` so the semantic tokens (success, warning, danger, chart ramp) apply.
+
+Labels default to English and can be overridden per call through `labels`
+(`MagoUI.skillAsk({..., labels: {allow: 'Toestaan'}})`) or globally through
+`MagoUI.labels`.
+
+## Widgets from an answer
+
+An assistant answer can carry widgets in a fenced block with language `mago`
+containing one spec or an array of specs. `type` names the builder, the rest are
+its options:
+
+````markdown
+Revenue is up this week.
+
+```mago
+[
+  {"type": "stats", "items": [{"label": "Revenue", "value": "€38.410", "delta": {"value": "12,4%", "direction": "up"}}, {"label": "Orders", "value": "412"}]},
+  {"type": "rankedBars", "label": "By category", "items": [{"label": "Accessories", "value": 61}, {"label": "Lighting", "value": 38}]}
+]
+```
+````
+
+While the block is still streaming, a skeleton holds its place; an invalid spec
+falls back to a code block. `MagoUI.render(spec)` and `MagoUI.renderJson(json)`
+expose the same mapping for other callers. Event handlers cannot travel through
+JSON, so specs should use `href` for clickable items.
+
+## Widgets (W01–W21)
+
+| # | Builder | Options |
+|---|---------|---------|
+| W01 | `stat` | `label`, `value`, `delta: {value, direction: up\|down\|flat, suffix}`, `note` |
+| W02 | `stats` | `items: [statOptions, statOptions]` (max two) |
+| W03 | `sparkline` | `label`, `value`, `points: [n, ...]`, `delta` |
+| W04 | `meter` | `label`, `value`, `max`, `valueText`, `note` |
+| W05 | `ring` | `label`, `percent`, `valueText`, `legend: [{label, value, color}]` |
+| W06 | `composition` | `label`, `segments: [{label, value, valueText, color}]` |
+| W07 | `rankedBars` | `label`, `items: [{label, value, valueText, color, onClick}]` |
+| W08 | `columns` | `label`, `points: [{label, value, valueText, highlight}]` |
+| W09 | `lines` | `label`, `series: [{label, points, style: solid\|dashed}]`, `xLabels` |
+| W10 | `stackedColumns` | `label`, `series: [{label, color}]`, `points: [{label, values}]` |
+| W11 | `heatmap` | `label`, `rows: [label]`, `values: [[n, ...]]`, `scale: [low, high]` |
+| W12 | `funnel` | `label`, `steps: [{label, value, valueText}]` |
+| W13 | `entityList` | `items: [{title, meta, thumb, href, onClick, action: {label, href, onClick}}]`, `more: {count, label, href, onClick}` |
+| W14 | `table` | `columns: [{key, label, align, width, num}]`, `rows: [{key: value \| {text, badge, tone, strong, num}}]`, `onRowClick` |
+| W15 | `record` | `title`, `badge: {text, tone}`, `rows: [{label, value, strong, num}]` |
+| W16 | `confirmWrite` | `title`, `text`, `diff: {from, to, delta}`, `onConfirm`, `onCancel` |
+| W17 | `toolTrace` | `steps: [{label, state: done\|active\|pending\|failed, tool}]` |
+| W18 | `callout` | `tone: warn\|danger\|ok\|info`, `text`, `action: {label, href, onClick}` |
+| W19 | `suggestions` | `cards: [{label, icon, href, onClick}]`, `chips: [{label, onClick}]` |
+| W20 | `answerFooter` | `primary: {label, href, onClick, external}`, `onCopy`, `onFeedback(vote)` |
+| W21 | `empty`, `skeleton` | `title`, `text`, `icon` / `widths` |
+
+Chart colours follow the ramp: the first (highest) item is the accent, the next
+ones peach, and from four items on the last one is grey ("the remainder").
+Numbers are rendered with tabular figures; pass preformatted strings when the
+locale formatting matters, or use `MagoUI.formatNumber(n)`.
+
+## Skill actions (S01–S14)
+
+A write action has one card with a fixed life cycle: ask, run, done. The card
+changes in place, it does not move.
+
+| # | Builder | Notes |
+|---|---------|-------|
+| S01 | `skillAsk` | `title`, `tool`, `text`, `params: [{key, value, mono, muted}]`, `onAllow`, `onAlways` (optional), `onLater`. `MagoUI.paramsFromInput(toolInput)` turns a tool input object into rows. `classes: {actions, allow, later}` adds hook classes for tests. |
+| S02 | `skillRunning` | `title`, `elapsed`, `progress`, `steps`, `onStop`. The element exposes `magoUpdate({progress, elapsed, steps})` and `magoAddStep(step)`; a step exposes `magoSetState(state)`. |
+| S03 / S05 | `skillLine` | Collapsed result line: `title`, `action`, `duration`, `state: done\|failed\|skipped`, `request`, `response`, `expanded`. Expands on click when a payload is given. |
+| S04 | `skillFailed` | `title`, `code`, `text`, `details`, `onRetry`, `onDetails` |
+| S06 | `readLine` | `text`, `tool`, `action`, `state: done\|active` — one quiet line per read-only call |
+| S07 | `skillIrreversible` | `title`, `tool`, `text`, `impacts: [...]`, `ackLabel`, `confirmLabel`, `onConfirm`, `onCancel`. The confirm button stays disabled until the acknowledgement is ticked. |
+| S08 | `skillBulk` | `title`, `items: [{id, label, meta, checked, disabled}]`, `confirmLabel(n)`, `onConfirm(ids, items)`, `onLater` |
+| S09 | `skillPlan` | `title`, `current`, `total`, `steps: [{title, meta, state: done\|active\|ask\|pending}]`, `onAllowAll`, `onPause` |
+| S10 | `paramPrompt` | `text`, `prefix`, `value`, `placeholder`, `type`, `onSubmit(value)`, `chips: [{label, value}]` |
+| S11 | `undoCallout` | `text`, `onUndo`, `undoLabel`, `expiresText` |
+| S12 | `sessionLog` | `title`, `entries: [{text, time, tone}]`, `onExport` |
+| S14 | `skillMenu` | `skills: [{name, title, description, risk: read\|write\|irreversible}]`, `activeIndex`, `onSelect(skill, index)`, `itemClass`. Exposes `magoSetActive(index)`. |
+
+## Where the panel uses them
+
+`chat-panel.js` wires the kit into the streaming flow:
+
+- a `confirm` event renders an S01 card with the tool's parameters; Allow turns
+  it into the S02 progress card, which collects the `tool_status` events of the
+  confirmed run and collapses into an S03 line with the duration when the run is
+  done. "Not now" leaves a muted line and makes no write call;
+- `tool_status` events for read-only tools render as S06 lines above the answer;
+- `error` events render as a danger callout (W18);
+- the slash menu is the S14 skill menu, coloured green for read-only skills and
+  orange for skills that write;
+- ```` ```mago ```` fenced blocks in an answer render as widgets.
+
+"Always allow" (S01) has no backend yet and is therefore not offered in the
+panel; the builder supports it through `onAlways` for when per-user skill
+permissions land.

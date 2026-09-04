@@ -157,8 +157,9 @@ window.MAGGY_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
 window.MAGGY_CONFIG.commands = <?= /* @noEscape */ $block->getCommandsJson() ?>;
 </script>
 <script>
-require(['marked'], function(marked) {
+require(['marked', 'MaggyAssistant_Base/js/mago-ui'], function(marked, MagoUI) {
     window.marked = marked;
+    window.MagoUI = MagoUI;
     require(['MaggyAssistant_Base/js/chat-panel']);
 });
 </script>

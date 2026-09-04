@@ -1,0 +1,2109 @@
+// Mago UI kit — styling for the widgets and skill cards built by js/mago-ui.js.
+//
+// Design source: "Mago Widget Kit" (W01–W21) and "Mago Skill Actions" (S01–S14)
+// in the Mago admin chatbot design project. Every widget is a card on white:
+// 1px hairline, 16px radius, 18px padding, an uppercase caption; numbers are
+// always tabular. Orange marks the subject, peach the rest, grey the remainder.
+//
+// The kit only uses CSS custom properties. The chat panel defines the brand
+// tokens (--mago-ink, --mago-hairline, --maggy-accent, ...) in panel.phtml;
+// the semantic tokens the kit adds on top live here, on the panel and on any
+// element carrying .mago-kit, so the same widgets render outside the panel.
+
+.maggy-chat-panel,
+.mago-kit {
+    // Semantic tones
+    --mago-ok: #5C7A3F;
+    --mago-ok-soft: #7A9A5E;
+    --mago-ok-ink: #41552D;
+    --mago-ok-bg: #F6F9F1;
+    --mago-ok-line: #DFE8D4;
+    --mago-ok-muted: #7C9160;
+
+    --mago-warn: #B4720F;
+    --mago-warn-ink: #5A4A2A;
+    --mago-warn-bg: #FDF9F0;
+    --mago-warn-line: #F2E3C6;
+    --mago-warn-chip: #FDF3E3;
+
+    --mago-danger: #B8402A;
+    --mago-danger-soft: #A56553;
+    --mago-danger-ink: #6A3529;
+    --mago-danger-bg: #FDF5F3;
+    --mago-danger-line: #F3D8D3;
+    --mago-danger-chip: #FBEBE7;
+    --mago-danger-hairline: #F7E4E0;
+
+    // Accent-tinted surfaces for anything that asks a question
+    --mago-accent-bg: #FFFAF7;
+    --mago-accent-line: #FFD3B8;
+    --mago-accent-hairline: #FFE4D2;
+    --mago-accent-chip: #FFF1E8;
+    --mago-accent-hover: #FFB98F;
+
+    // Chart ramp, rank descending
+    --mago-ramp-1: var(--maggy-accent, #FF7A33);
+    --mago-ramp-2: #FF9D66;
+    --mago-ramp-3: #FFC9A6;
+    --mago-ramp-4: #FFE9DC;
+    --mago-ramp-5: #FFF4EC;
+    --mago-ramp-rest: #E1E1E4;
+    --mago-line-secondary: #D4D4D8;
+    --mago-track: #F5F5F7;
+
+    --mago-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --mago-radius: 16px;
+    --mago-radius-sm: 12px;
+}
+
+@keyframes mago-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes mago-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .45; }
+}
+
+// ---------------------------------------------------------------------------
+// Atoms
+// ---------------------------------------------------------------------------
+
+.mago-widget {
+    box-sizing: border-box;
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    border-radius: var(--mago-radius, 16px);
+    padding: 18px;
+    color: var(--mago-ink, #373330);
+    font-family: var(--mago-font, inherit);
+    font-size: 13px;
+    line-height: 1.5;
+    letter-spacing: var(--mago-tracking, -0.01em);
+
+    &.is-flush {
+        padding: 0;
+        overflow: hidden;
+    }
+
+    &.is-accent {
+        background: var(--mago-accent-bg);
+        border-color: var(--mago-accent-line);
+    }
+
+    &.is-danger {
+        background: var(--mago-danger-bg);
+        border-color: var(--mago-danger-line);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    a {
+        color: var(--mago-deep, #E65000);
+        text-decoration: none;
+
+        &:hover {
+            color: #B84200;
+        }
+    }
+}
+
+// Stack of widgets inside one answer
+.mago-answer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+
+    &:first-child {
+        margin-top: 0;
+    }
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.mago-caption {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mago-ink-muted, #9A918B);
+
+    &.is-grow {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.mago-widget-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.mago-num {
+    font-variant-numeric: tabular-nums;
+}
+
+.mago-note {
+    font-size: 12px;
+    color: var(--mago-ink-muted, #9A918B);
+    margin-top: 10px;
+}
+
+.mago-mono {
+    font-family: var(--mago-mono);
+    font-size: 11.5px;
+    letter-spacing: 0;
+
+    &.is-chip {
+        display: inline-block;
+        font-size: 12px;
+        background: var(--mago-track);
+        border-radius: 6px;
+        padding: 2px 7px;
+        color: var(--mago-ink, #373330);
+    }
+}
+
+.mago-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0;
+    border-radius: 999px;
+    padding: 3px 9px;
+    background: var(--mago-surface, #F7F5F3);
+    color: var(--mago-ink-soft, #6B645F);
+    white-space: nowrap;
+
+    &.is-ok {
+        background: #F0F4EA;
+        color: var(--mago-ok);
+    }
+
+    &.is-warn {
+        background: var(--mago-warn-chip);
+        color: var(--mago-warn);
+    }
+
+    &.is-danger {
+        background: var(--mago-danger-chip);
+        color: var(--mago-danger);
+    }
+
+    &.is-accent {
+        background: var(--mago-accent-chip);
+        color: var(--mago-deep, #E65000);
+    }
+}
+
+// Spinner ring used by running cards and active trace steps
+.mago-spin {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--mago-ramp-3);
+    border-top-color: var(--mago-deep, #E65000);
+    border-radius: 50%;
+    animation: mago-spin .8s linear infinite;
+    flex: none;
+}
+
+// Buttons: primary is the accent, secondary a bordered white, ghost text only
+.mago-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mago-font, inherit);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.2;
+    border-radius: 11px;
+    padding: 10px 15px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--mago-ink, #373330);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+
+    &:disabled {
+        cursor: not-allowed;
+    }
+
+    &.is-primary {
+        background: var(--maggy-accent, #FF7A33);
+        color: var(--maggy-accent-text, #FFFFFF);
+        box-shadow: 0 6px 16px -8px rgba(230, 80, 0, .8);
+
+        &:hover:not(:disabled) {
+            background: var(--maggy-accent-hover, #E65000);
+        }
+
+        &:disabled {
+            background: var(--mago-ramp-4);
+            color: var(--mago-accent-hover);
+            box-shadow: none;
+        }
+    }
+
+    &.is-secondary {
+        background: var(--mago-panel, #FFFFFF);
+        border-color: var(--mago-hairline, #E9E5E1);
+        color: var(--mago-ink-soft, #6B645F);
+        font-weight: 500;
+
+        &:hover {
+            border-color: var(--mago-accent-hover);
+            color: var(--mago-deep, #E65000);
+        }
+    }
+
+    &.is-ghost {
+        color: var(--mago-ink-muted, #9A918B);
+        font-weight: 500;
+        padding-left: 12px;
+        padding-right: 12px;
+
+        &:hover {
+            color: var(--mago-ink, #373330);
+        }
+
+        &.is-danger-hover:hover {
+            color: var(--mago-danger);
+        }
+    }
+
+    &.is-link {
+        padding: 0;
+        border-radius: 4px;
+        font-size: 12.5px;
+        color: var(--mago-deep, #E65000);
+
+        &:hover {
+            color: #B84200;
+        }
+    }
+
+    &.is-ink {
+        background: var(--mago-void, #373330);
+        color: #FFFFFF;
+        font-weight: 500;
+
+        &:hover {
+            background: var(--mago-obsidian, #2A2624);
+        }
+    }
+
+    &.is-danger {
+        background: var(--mago-danger);
+        color: #FFFFFF;
+
+        &:hover:not(:disabled) {
+            background: #9E3421;
+        }
+
+        &:disabled {
+            background: #F5DCD6;
+            color: #B08A80;
+        }
+    }
+
+    &.is-outline-danger {
+        background: var(--mago-panel, #FFFFFF);
+        border-color: #E9CCC5;
+        color: #8A3E2B;
+
+        &:hover {
+            background: var(--mago-danger-bg);
+        }
+    }
+
+    &.is-link-danger {
+        color: var(--mago-danger-soft);
+        font-weight: 500;
+        padding-left: 12px;
+        padding-right: 12px;
+
+        &:hover {
+            color: var(--mago-danger-ink);
+        }
+    }
+}
+
+.mago-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+
+    &.is-tight {
+        margin-top: 14px;
+    }
+
+    &.is-divided {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--mago-track);
+    }
+}
+
+.mago-icon-btn {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--mago-ink-muted, #9A918B);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: background .15s, color .15s;
+
+    &:hover,
+    &.is-active {
+        background: var(--mago-surface, #F7F5F3);
+        color: var(--mago-ink-soft, #6B645F);
+    }
+}
+
+.is-clickable {
+    cursor: pointer;
+}
+
+// Legends and swatches
+.mago-legend {
+    display: flex;
+    gap: 8px 16px;
+
+    &.is-stacked {
+        flex-direction: column;
+        gap: 9px;
+    }
+
+    &.is-wrap {
+        flex-wrap: wrap;
+        margin-top: 14px;
+    }
+
+    &.is-inline {
+        gap: 12px;
+        font-size: 12px;
+    }
+}
+
+.mago-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--mago-ink-soft, #6B645F);
+    white-space: nowrap;
+}
+
+.mago-legend-value {
+    color: var(--mago-ink-muted, #9A918B);
+}
+
+.mago-swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+    flex: none;
+
+    &.is-line {
+        width: 14px;
+        height: 3px;
+        border-radius: 2px;
+    }
+}
+
+.mago-delta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 6px;
+    color: var(--mago-ink-muted, #9A918B);
+
+    &.is-up {
+        color: var(--mago-ok);
+    }
+
+    &.is-down {
+        color: var(--mago-danger);
+    }
+}
+
+.mago-delta-suffix {
+    color: var(--mago-ink-muted, #9A918B);
+    font-weight: 400;
+}
+
+// ---------------------------------------------------------------------------
+// W01–W06 Metrics
+// ---------------------------------------------------------------------------
+
+.mago-stat-value {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-top: 8px;
+
+    .is-compact &,
+    &.is-compact {
+        font-size: 28px;
+    }
+}
+
+.mago-stats {
+    display: flex;
+    gap: 12px;
+
+    .mago-widget {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.mago-sparkstat {
+    padding-bottom: 12px;
+}
+
+.mago-sparkstat-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.mago-sparkstat-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.mago-sparkline {
+    flex: none;
+    margin-top: 6px;
+    max-width: 45%;
+    height: auto;
+
+    .mago-sparkline-fill {
+        fill: var(--mago-ramp-4);
+    }
+
+    .mago-sparkline-line {
+        fill: none;
+        stroke: var(--mago-ramp-1);
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .mago-sparkline-dot {
+        fill: var(--mago-ramp-1);
+    }
+}
+
+.mago-meter-value {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.mago-meter-track,
+.mago-bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--mago-track);
+    overflow: hidden;
+}
+
+.mago-meter-fill,
+.mago-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--mago-ramp-1);
+    transition: width .3s ease;
+}
+
+.mago-meter .mago-widget-head {
+    margin-bottom: 0;
+}
+
+.mago-meter .mago-meter-track {
+    margin-top: 14px;
+}
+
+.mago-ring-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    .mago-caption + & {
+        margin-top: 14px;
+    }
+}
+
+.mago-ring-svg {
+    flex: none;
+
+    .mago-ring-track {
+        fill: none;
+        stroke: var(--mago-track);
+        stroke-width: 12;
+    }
+
+    .mago-ring-value {
+        fill: none;
+        stroke: var(--mago-ramp-1);
+        stroke-width: 12;
+        stroke-linecap: round;
+    }
+
+    .mago-ring-text {
+        font-family: var(--mago-font, inherit);
+        font-size: 19px;
+        font-weight: 600;
+        fill: var(--mago-ink, #373330);
+    }
+}
+
+.mago-composition-bar {
+    display: flex;
+    gap: 3px;
+    height: 14px;
+    margin-top: 14px;
+
+    .mago-composition-seg {
+        min-width: 3px;
+
+        &:first-child {
+            border-radius: 999px 3px 3px 999px;
+        }
+
+        &:last-child {
+            border-radius: 3px 999px 999px 3px;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// W07–W12 Charts
+// ---------------------------------------------------------------------------
+
+.mago-ranked-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .mago-caption + & {
+        margin-top: 16px;
+    }
+}
+
+.mago-ranked-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 6px;
+
+    &.is-clickable:hover .mago-ranked-label {
+        color: var(--mago-deep, #E65000);
+    }
+}
+
+.mago-ranked-label {
+    font-size: 13px;
+    color: var(--mago-ink-soft, #6B645F);
+    width: 88px;
+    flex: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mago-ranked-row .mago-bar-track {
+    flex: 1;
+}
+
+.mago-ranked-value {
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 28px;
+    text-align: right;
+}
+
+.mago-columns-plot {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 96px;
+
+    .mago-caption + & {
+        margin-top: 16px;
+    }
+
+    &.is-stacked {
+        gap: 10px;
+        height: 100px;
+    }
+}
+
+.mago-column {
+    flex: 1;
+    min-height: 3px;
+    background: var(--mago-ramp-4);
+    border-radius: 6px 6px 3px 3px;
+    transition: height .3s ease;
+
+    &.is-peak {
+        background: var(--mago-ramp-1);
+    }
+}
+
+.mago-stack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 2px;
+    min-height: 3px;
+
+    .mago-stack-seg {
+        border-radius: 2px;
+        min-height: 2px;
+
+        &:first-child {
+            border-radius: 6px 6px 2px 2px;
+        }
+
+        &:last-child {
+            border-radius: 2px 2px 3px 3px;
+        }
+    }
+}
+
+.mago-axis {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+
+    &.is-spread {
+        justify-content: space-between;
+        margin-top: 8px;
+    }
+
+    .mago-columns-plot.is-stacked + & {
+        gap: 10px;
+    }
+}
+
+.mago-axis-label {
+    flex: 1;
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--mago-ink-muted, #9A918B);
+    font-variant-numeric: tabular-nums;
+
+    &.is-peak {
+        font-weight: 600;
+        color: var(--mago-deep, #E65000);
+    }
+
+    .is-spread & {
+        flex: none;
+    }
+}
+
+.mago-lines .mago-widget-head {
+    align-items: center;
+}
+
+.mago-lines-svg {
+    display: block;
+    width: 100%;
+    height: 118px;
+
+    .mago-grid {
+        stroke: var(--mago-track);
+        stroke-width: 1;
+    }
+
+    .mago-line {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+
+        &.is-primary {
+            stroke: var(--mago-ramp-1);
+            stroke-width: 2.6;
+        }
+
+        &.is-secondary {
+            stroke: var(--mago-line-secondary);
+            stroke-width: 2.2;
+        }
+
+        &.is-dashed {
+            stroke-dasharray: 5 5;
+        }
+    }
+
+    .mago-line-fill {
+        fill: var(--mago-ramp-5);
+    }
+}
+
+.mago-heat-row {
+    display: flex;
+    gap: 8px;
+
+    .mago-caption + & {
+        margin-top: 16px;
+    }
+}
+
+.mago-heat-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 24px;
+    flex: none;
+    text-align: right;
+}
+
+.mago-heat-rowlabel {
+    height: 22px;
+    line-height: 22px;
+    font-size: 11.5px;
+    color: var(--mago-ink-muted, #9A918B);
+}
+
+.mago-heat-grid {
+    flex: 1;
+    display: grid;
+    grid-auto-rows: 22px;
+    gap: 5px;
+}
+
+.mago-heat-cell {
+    border-radius: 5px;
+}
+
+.mago-heat-scale {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 11.5px;
+    color: var(--mago-ink-muted, #9A918B);
+}
+
+.mago-heat-gradient {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--mago-ramp-5), var(--mago-ramp-1));
+}
+
+.mago-funnel-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+
+    .mago-caption + & {
+        margin-top: 16px;
+    }
+}
+
+.mago-funnel-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mago-funnel-bar {
+    height: 34px;
+    min-width: 30%;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+
+    &.is-light {
+        color: #4A2A12;
+    }
+}
+
+.mago-funnel-value {
+    margin-left: auto;
+}
+
+.mago-funnel-drop {
+    font-size: 12.5px;
+    color: var(--mago-ink-muted, #9A918B);
+    flex: none;
+}
+
+// ---------------------------------------------------------------------------
+// W13–W15 Data
+// ---------------------------------------------------------------------------
+
+.mago-entities {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mago-entity,
+.mago-entity-more {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    border-radius: 14px;
+    padding: 12px;
+    color: var(--mago-ink, #373330);
+    text-decoration: none;
+    transition: border-color .15s, background .15s, color .15s;
+
+    &.is-clickable:hover,
+    &[href]:hover {
+        border-color: var(--mago-accent-hover);
+        background: var(--mago-accent-bg);
+        color: var(--mago-ink, #373330);
+    }
+}
+
+.mago-entity-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    object-fit: cover;
+    flex: none;
+    background: var(--mago-track);
+
+    &.is-empty {
+        border: 1px dashed var(--mago-line-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--mago-ink-muted, #9A918B);
+    }
+}
+
+.mago-entity-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.mago-entity-title {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mago-entity-meta {
+    font-size: 12.5px;
+    color: var(--mago-ink-muted, #9A918B);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mago-entity-action {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--mago-deep, #E65000);
+    flex: none;
+}
+
+.mago-entity-more {
+    justify-content: center;
+    gap: 7px;
+    padding: 11px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--mago-ink-soft, #6B645F);
+
+    &.is-clickable:hover,
+    &[href]:hover {
+        background: var(--mago-panel, #FFFFFF);
+        color: var(--mago-deep, #E65000);
+    }
+}
+
+.mago-table-row {
+    display: grid;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--mago-track);
+    font-size: 13.5px;
+    align-items: center;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &.is-head {
+        padding: 11px 16px;
+        background: #FAFAFA;
+        border-bottom: 1px solid var(--mago-hairline, #E9E5E1);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--mago-ink-muted, #9A918B);
+    }
+
+    &.is-clickable:hover {
+        background: var(--mago-accent-bg);
+    }
+}
+
+.mago-table-cell {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.is-right {
+        text-align: right;
+    }
+
+    &.is-strong {
+        font-weight: 600;
+    }
+}
+
+.mago-record-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--mago-hairline, #E9E5E1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mago-record-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    flex: 1;
+    min-width: 0;
+}
+
+.mago-record-rows {
+    padding: 6px 18px 14px;
+}
+
+.mago-kv {
+    display: flex;
+    gap: 12px;
+    padding: 9px 0;
+    font-size: 13.5px;
+    border-top: 1px solid var(--mago-track);
+
+    &:first-child {
+        border-top: none;
+    }
+}
+
+.mago-kv-label {
+    color: var(--mago-ink-muted, #9A918B);
+    width: 104px;
+    flex: none;
+}
+
+.mago-kv-value {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+
+    &.is-strong {
+        font-weight: 600;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// W16–W21 Action & state
+// ---------------------------------------------------------------------------
+
+.mago-ask-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mago-deep, #E65000);
+    margin-bottom: 12px;
+}
+
+.mago-ask-text {
+    font-size: 14px;
+    line-height: 1.55;
+    color: #3D3D44;
+    text-wrap: pretty;
+
+    strong {
+        font-weight: 600;
+        color: var(--mago-ink, #373330);
+    }
+
+    .is-danger & {
+        color: var(--mago-danger-ink);
+    }
+}
+
+.mago-diff {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-accent-line);
+    border-radius: var(--mago-radius-sm, 12px);
+    padding: 12px 14px;
+    color: #B9B9C1;
+
+    .mago-diff-from {
+        font-size: 15px;
+        color: var(--mago-ink-muted, #9A918B);
+        text-decoration: line-through;
+    }
+
+    .mago-diff-to {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--mago-ink, #373330);
+    }
+
+    .mago-diff-delta {
+        margin-left: auto;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--mago-deep, #E65000);
+    }
+}
+
+.mago-trace {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    &.is-tight {
+        gap: 9px;
+        margin-top: 14px;
+    }
+}
+
+.mago-trace-step {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-size: 13px;
+    color: var(--mago-ink-muted, #8A8A92);
+    min-width: 0;
+
+    &.is-active {
+        color: var(--mago-deep, #E65000);
+        font-weight: 500;
+    }
+
+    &.is-pending {
+        color: #B9B9C1;
+    }
+
+    &.is-failed {
+        color: var(--mago-danger-ink);
+    }
+}
+
+.mago-trace-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mago-trace-icon {
+    display: inline-flex;
+    flex: none;
+
+    &.is-ok {
+        color: var(--mago-ok-soft);
+    }
+
+    &.is-danger {
+        color: var(--mago-danger);
+    }
+
+    &.is-muted {
+        color: #B9B9C1;
+    }
+}
+
+.mago-trace-dot {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--mago-hairline, #E9E5E1);
+    border-radius: 50%;
+    display: block;
+    flex: none;
+}
+
+.mago-trace-tool {
+    color: #B9B9C1;
+    flex: none;
+}
+
+.mago-readline {
+    font-size: 13.5px;
+}
+
+.mago-callout {
+    display: flex;
+    gap: 12px;
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--mago-ink-soft, #6B645F);
+    background: var(--mago-surface, #F7F5F3);
+
+    .mago-callout-icon {
+        display: inline-flex;
+        flex: none;
+        margin-top: 1px;
+    }
+
+    .mago-callout-text {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+
+        strong {
+            font-weight: 600;
+        }
+    }
+
+    &.is-warn {
+        background: var(--mago-warn-bg);
+        border-color: var(--mago-warn-line);
+        color: var(--mago-warn-ink);
+
+        .mago-callout-icon {
+            color: var(--mago-warn);
+        }
+    }
+
+    &.is-danger {
+        background: var(--mago-danger-bg);
+        border-color: var(--mago-danger-line);
+        color: var(--mago-danger-ink);
+
+        .mago-callout-icon {
+            color: var(--mago-danger);
+        }
+    }
+
+    &.is-ok {
+        background: var(--mago-ok-bg);
+        border-color: var(--mago-ok-line);
+        color: var(--mago-ok-ink);
+
+        .mago-callout-icon {
+            color: var(--mago-ok);
+        }
+    }
+
+    &.is-info .mago-callout-icon {
+        color: var(--mago-ink-muted, #9A918B);
+    }
+}
+
+.mago-callout-link {
+    color: var(--mago-deep, #E65000);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.mago-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mago-suggestion-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    &:empty {
+        display: none;
+    }
+}
+
+.mago-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    border-radius: 14px;
+    padding: 16px;
+    color: var(--mago-ink, #373330);
+    text-decoration: none;
+    transition: border-color .15s, background .15s;
+
+    &:hover {
+        border-color: var(--mago-accent-hover);
+        background: var(--mago-accent-bg);
+        color: var(--mago-ink, #373330);
+    }
+
+    > svg:last-child {
+        color: #B9B9C1;
+        flex: none;
+    }
+}
+
+.mago-suggestion-icon {
+    display: inline-flex;
+    color: var(--maggy-accent, #FF7A33);
+    flex: none;
+}
+
+.mago-suggestion-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+
+.mago-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .mago-suggestion-cards:not(:empty) + & {
+        margin-top: 4px;
+    }
+}
+
+.mago-chip {
+    font-family: var(--mago-font, inherit);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--mago-ink-soft, #6B645F);
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    border-radius: 999px;
+    padding: 7px 13px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+
+    &:hover {
+        border-color: var(--mago-accent-hover);
+        color: var(--mago-deep, #E65000);
+    }
+
+    .is-accent & {
+        border-color: var(--mago-accent-hairline);
+    }
+}
+
+.mago-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .mago-btn.is-ink {
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+}
+
+.mago-footer-tools {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+}
+
+.mago-empty {
+    border: 1px dashed var(--mago-line-secondary);
+    border-radius: var(--mago-radius, 16px);
+    padding: 26px 18px;
+    text-align: center;
+    color: var(--mago-ink, #373330);
+
+    .mago-empty-icon {
+        display: inline-flex;
+        color: #B9B9C1;
+        margin-bottom: 10px;
+    }
+
+    .mago-empty-title {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .mago-empty-text {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--mago-ink-muted, #9A918B);
+        margin-top: 5px;
+    }
+}
+
+.mago-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+
+    .mago-skeleton-line {
+        height: 11px;
+        border-radius: 999px;
+        background: var(--mago-track);
+        animation: mago-pulse 1.4s ease-in-out infinite;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Skill actions S01–S12
+// ---------------------------------------------------------------------------
+
+.mago-skill-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--mago-hairline, #E9E5E1);
+
+    .is-accent & {
+        border-bottom-color: var(--mago-accent-hairline);
+    }
+
+    .is-danger & {
+        border-bottom-color: var(--mago-danger-hairline);
+    }
+}
+
+.mago-skill-icon {
+    display: inline-flex;
+    flex: none;
+    color: var(--mago-deep, #E65000);
+
+    .is-danger & {
+        color: var(--mago-danger);
+    }
+}
+
+.mago-skill-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    .is-danger & {
+        color: var(--mago-danger-ink);
+    }
+}
+
+.mago-skill-tool {
+    flex: none;
+    color: #A9825F;
+    background: var(--mago-accent-chip);
+    border-radius: 6px;
+    padding: 3px 7px;
+
+    .is-danger & {
+        color: var(--mago-danger-soft);
+        background: var(--mago-danger-chip);
+    }
+
+    .is-running & {
+        color: var(--mago-ink-muted, #9A918B);
+        background: var(--mago-track);
+    }
+}
+
+.mago-skill-meta {
+    font-size: 12.5px;
+    color: var(--mago-ink-muted, #9A918B);
+    flex: none;
+}
+
+.mago-skill-count {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--mago-deep, #E65000);
+    flex: none;
+}
+
+.mago-skill-body {
+    padding: 16px;
+
+    &.is-list {
+        padding-top: 8px;
+    }
+
+    .mago-skill.is-running & {
+        padding: 14px 16px;
+    }
+}
+
+.mago-params {
+    margin-top: 14px;
+    border: 1px solid var(--mago-accent-hairline);
+    background: var(--mago-panel, #FFFFFF);
+    border-radius: var(--mago-radius-sm, 12px);
+    overflow: hidden;
+}
+
+.mago-param {
+    display: flex;
+    gap: 12px;
+    padding: 10px 13px;
+    font-size: 13px;
+    align-items: center;
+    border-top: 1px solid var(--mago-accent-chip);
+
+    &:first-child {
+        border-top: none;
+    }
+}
+
+.mago-param-key {
+    color: var(--mago-ink-muted, #9A918B);
+    width: 104px;
+    flex: none;
+    font-family: var(--mago-mono);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mago-param-value {
+    min-width: 0;
+    color: var(--mago-ink-soft, #6B645F);
+    overflow-wrap: anywhere;
+}
+
+.mago-param-muted {
+    color: #B9B9C1;
+}
+
+.mago-progress {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--mago-track);
+    overflow: hidden;
+}
+
+.mago-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--mago-ramp-1);
+    transition: width .3s ease;
+
+    &.is-pulse {
+        animation: mago-pulse 1.4s ease-in-out infinite;
+    }
+}
+
+.mago-skill-details {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-danger-line);
+    border-radius: 10px;
+    font-family: var(--mago-mono);
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--mago-ink-soft, #6B645F);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 220px;
+    overflow: auto;
+}
+
+// Collapsed result line (S03 / S05)
+.mago-line {
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    border-radius: var(--mago-radius-sm, 12px);
+    overflow: hidden;
+    background: var(--mago-panel, #FFFFFF);
+}
+
+.mago-line-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 13px;
+    transition: background .15s, border-color .15s;
+
+    .mago-line.is-expandable & {
+        cursor: pointer;
+    }
+
+    .mago-line.is-expandable &:hover,
+    .mago-line.is-expanded & {
+        background: #FAFAFA;
+    }
+
+    .mago-line.is-expanded & {
+        border-bottom: 1px solid var(--mago-hairline, #E9E5E1);
+    }
+}
+
+.mago-line-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--mago-ink-soft, #6B645F);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mago-line-sep {
+    color: #B9B9C1;
+}
+
+.mago-line-action {
+    font-size: 12px;
+    color: var(--mago-ink-muted, #9A918B);
+}
+
+.mago-line-meta {
+    font-size: 12.5px;
+    color: var(--mago-ink-muted, #9A918B);
+    flex: none;
+}
+
+.mago-line-chevron {
+    display: inline-flex;
+    color: #B9B9C1;
+    flex: none;
+}
+
+.mago-line-details {
+    display: none;
+    padding: 13px;
+    flex-direction: column;
+    gap: 9px;
+    font-family: var(--mago-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--mago-ink-soft, #6B645F);
+
+    .mago-line.is-expanded & {
+        display: flex;
+    }
+}
+
+.mago-payload {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+
+    & + & {
+        border-top: 1px solid var(--mago-track);
+        padding-top: 9px;
+    }
+}
+
+.mago-payload-label {
+    color: var(--mago-ink-muted, #9A918B);
+}
+
+// Irreversible (S07)
+.mago-impacts {
+    margin-top: 14px;
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-danger-line);
+    border-radius: var(--mago-radius-sm, 12px);
+    padding: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--mago-ink-soft, #6B645F);
+}
+
+.mago-impact {
+    display: flex;
+    gap: 9px;
+}
+
+.mago-impact-mark {
+    color: var(--mago-danger);
+    flex: none;
+}
+
+.mago-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    font-size: 13.5px;
+    color: var(--mago-danger-ink);
+    cursor: pointer;
+    user-select: none;
+}
+
+.mago-check-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    pointer-events: none;
+}
+
+.mago-check-box {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #D8AEA4;
+    border-radius: 5px;
+    background: var(--mago-panel, #FFFFFF);
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    transition: background .15s, border-color .15s, color .15s;
+
+    .mago-check-input:checked + & {
+        background: var(--mago-danger);
+        border-color: var(--mago-danger);
+        color: #FFFFFF;
+    }
+
+    .mago-check-input:focus-visible + & {
+        box-shadow: 0 0 0 3px rgba(184, 64, 42, .2);
+    }
+}
+
+// Bulk selection (S08)
+.mago-bulk-rows {
+    display: flex;
+    flex-direction: column;
+}
+
+.mago-bulk-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px 0;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--mago-accent-chip);
+    color: var(--mago-ink-muted, #9A918B);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    .mago-check-box {
+        border-color: #E1D0C2;
+    }
+
+    &.is-checked {
+        color: var(--mago-ink, #373330);
+
+        .mago-check-box {
+            background: var(--maggy-accent, #FF7A33);
+            border-color: var(--maggy-accent, #FF7A33);
+            color: #FFFFFF;
+        }
+    }
+
+    &.is-disabled {
+        cursor: not-allowed;
+    }
+
+    &:focus-visible {
+        outline: none;
+
+        .mago-check-box {
+            box-shadow: 0 0 0 3px rgba(255, 122, 51, .2);
+        }
+    }
+}
+
+.mago-bulk-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mago-bulk-meta {
+    color: var(--mago-ink-muted, #9A918B);
+    flex: none;
+}
+
+// Plan timeline (S09)
+.mago-plan {
+    display: flex;
+    flex-direction: column;
+}
+
+.mago-plan-step {
+    display: flex;
+    gap: 12px;
+
+    &:last-child .mago-plan-text {
+        padding-bottom: 0;
+    }
+}
+
+.mago-plan-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: none;
+    width: 20px;
+}
+
+.mago-plan-marker {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+
+    &.is-done {
+        background: #F0F4EA;
+        color: var(--mago-ok);
+    }
+
+    &.is-ask {
+        border: 1.5px dashed var(--mago-accent-hover);
+    }
+
+    &.is-pending {
+        border: 1.5px solid var(--mago-hairline, #E9E5E1);
+    }
+}
+
+.mago-plan-line {
+    flex: 1;
+    width: 1.5px;
+    background: var(--mago-hairline, #E9E5E1);
+    margin: 4px 0;
+    min-height: 8px;
+}
+
+.mago-plan-text {
+    padding-bottom: 16px;
+    min-width: 0;
+}
+
+.mago-plan-title {
+    font-size: 13.5px;
+    font-weight: 500;
+
+    .is-active & {
+        color: var(--mago-deep, #E65000);
+    }
+
+    .is-ask & {
+        color: var(--mago-ink-soft, #6B645F);
+    }
+
+    .is-pending & {
+        color: #B9B9C1;
+    }
+}
+
+.mago-plan-meta {
+    font-size: 12.5px;
+    color: var(--mago-ink-muted, #9A918B);
+    margin-top: 2px;
+
+    &.is-accent {
+        color: var(--mago-deep, #E65000);
+        font-weight: 500;
+    }
+}
+
+// Missing parameter (S10)
+.mago-field-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+
+    + .mago-chips {
+        margin-top: 12px;
+    }
+}
+
+.mago-field {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-accent-line);
+    border-radius: 11px;
+    padding: 0 14px;
+    min-width: 0;
+    transition: border-color .15s, box-shadow .15s;
+
+    &:focus-within {
+        border-color: var(--maggy-accent, #FF7A33);
+        box-shadow: 0 0 0 3px rgba(255, 122, 51, .14);
+    }
+}
+
+.mago-field-prefix {
+    font-size: 14.5px;
+    color: var(--mago-ink-muted, #9A918B);
+    flex: none;
+}
+
+.mago-field-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 11px 0;
+    font-family: var(--mago-font, inherit);
+    font-size: 14.5px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--mago-ink, #373330);
+    outline: none;
+    box-shadow: none;
+    height: auto;
+    line-height: 1.3;
+}
+
+// Undo (S11)
+.mago-undo-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.mago-undo-link {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #C9D8B8;
+    border-radius: 0;
+    padding: 0;
+    font-family: var(--mago-font, inherit);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--mago-ok-ink);
+    cursor: pointer;
+
+    &:hover {
+        color: #2F3F20;
+    }
+}
+
+.mago-undo-expires {
+    font-size: 12.5px;
+    color: var(--mago-ok-muted);
+}
+
+// Session log (S12)
+.mago-log-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #FAFAFA;
+    border-bottom: 1px solid var(--mago-hairline, #E9E5E1);
+
+    .mago-caption {
+        letter-spacing: 0.08em;
+    }
+}
+
+.mago-log-row {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    align-items: center;
+    border-bottom: 1px solid var(--mago-track);
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.mago-log-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+    background: var(--maggy-accent, #FF7A33);
+    flex: none;
+
+    .is-danger & {
+        background: var(--mago-danger);
+    }
+
+    .is-ok & {
+        background: var(--mago-ok-soft);
+    }
+}
+
+.mago-log-text {
+    flex: 1;
+    min-width: 0;
+
+    .is-danger & {
+        color: var(--mago-ink-soft, #6B645F);
+    }
+}
+
+.mago-log-time {
+    color: var(--mago-ink-muted, #9A918B);
+    flex: none;
+}
+
+// Skill menu (S14)
+.mago-menu {
+    background: var(--mago-panel, #FFFFFF);
+    border: 1px solid var(--mago-hairline, #E9E5E1);
+    border-radius: var(--mago-radius, 16px);
+    box-shadow: 0 18px 40px -22px rgba(26, 26, 29, .4);
+    overflow: hidden;
+    font-family: var(--mago-font, inherit);
+    letter-spacing: var(--mago-tracking, -0.01em);
+}
+
+.mago-menu-head {
+    padding: 11px 16px;
+    background: #FAFAFA;
+    border-bottom: 1px solid var(--mago-hairline, #E9E5E1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .mago-caption {
+        letter-spacing: 0.08em;
+    }
+}
+
+.mago-menu-hint {
+    font-size: 11.5px;
+    color: #B9B9C1;
+    white-space: nowrap;
+}
+
+.mago-menu-items {
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.mago-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--mago-track);
+    border-left: 2px solid transparent;
+    cursor: pointer;
+    transition: background .1s;
+
+    &:first-child {
+        border-top: none;
+    }
+
+    &:hover {
+        background: #FAFAFA;
+    }
+
+    &.is-active {
+        background: var(--mago-accent-bg);
+        border-left-color: var(--maggy-accent, #FF7A33);
+    }
+}
+
+.mago-risk {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+    flex: none;
+    background: var(--mago-ok-soft);
+
+    &.is-write {
+        background: var(--maggy-accent, #FF7A33);
+    }
+
+    &.is-irreversible {
+        background: var(--mago-danger);
+    }
+}
+
+.mago-menu-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.mago-menu-title {
+    font-size: 13.5px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--mago-ink, #373330);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mago-menu-desc {
+    font-size: 12.5px;
+    color: var(--mago-ink-muted, #9A918B);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mago-menu-risk {
+    color: #B9B9C1;
+    flex: none;
+}
