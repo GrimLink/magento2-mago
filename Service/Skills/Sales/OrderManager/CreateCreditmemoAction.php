@@ -118,7 +118,7 @@ class CreateCreditmemoAction implements ActionInterface
             return $result;
         }
 
-        $creditmemoId = is_numeric($result) ? (int)$result : ($result['id'] ?? $result);
+        $creditmemoId = $result['result'] ?? $result['id'] ?? null;
 
         return [
             'success' => true,

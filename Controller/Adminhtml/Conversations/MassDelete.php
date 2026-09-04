@@ -11,8 +11,6 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Controller\ResultInterface;
-use Magento\Ui\Component\MassAction\Filter;
-use MaggyAssistant\Base\Ui\DataProvider\ConversationsDataProvider;
 
 class MassDelete extends Action implements HttpPostActionInterface
 {
@@ -20,16 +18,13 @@ class MassDelete extends Action implements HttpPostActionInterface
 
     public function __construct(
         Context $context,
-        private readonly Filter $filter,
-        private readonly ResourceConnection $resourceConnection,
-        private readonly ConversationsDataProvider $dataProvider
+        private readonly ResourceConnection $resourceConnection
     ) {
         parent::__construct($context);
     }
 
     public function execute(): ResultInterface
     {
-        $collection = $this->filter->getComponent()->getContext()->getDataProvider();
         $selected = $this->getRequest()->getParam('selected', []);
         $excluded = $this->getRequest()->getParam('excluded', []);
 

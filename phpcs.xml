@@ -19,6 +19,22 @@
         <exclude-pattern>Controller/Adminhtml/Chat/Confirm.php</exclude-pattern>
     </rule>
 
+    <!-- Playwright installs and reports are not ours to lint -->
+    <exclude-pattern>Test/End-2-end/node_modules/*</exclude-pattern>
+    <exclude-pattern>Test/End-2-end/playwright-report/*</exclude-pattern>
+
+    <!-- Inline SVG icons: <path/>, <line/> and <polyline/> are void in SVG, which the sniff
+         only knows as non-void HTML elements -->
+    <rule ref="Magento2.Html.HtmlSelfClosingTags">
+        <exclude-pattern>*.js</exclude-pattern>
+    </rule>
+
+    <!-- Toggling the fulltext index around the bulk corpus load has no DDL abstraction; the
+         table name comes from getTableName(), never from input -->
+    <rule ref="Magento2.SQL.RawQuery">
+        <exclude-pattern>Model/Doc/Repository.php</exclude-pattern>
+    </rule>
+
     <rule ref="Generic.PHP.RequireStrictTypes">
         <severity>9</severity>
         <exclude-pattern>*.phtml</exclude-pattern>

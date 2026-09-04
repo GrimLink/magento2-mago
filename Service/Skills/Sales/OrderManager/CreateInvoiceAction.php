@@ -106,7 +106,7 @@ class CreateInvoiceAction implements ActionInterface
             return $result;
         }
 
-        $invoiceId = is_numeric($result) ? (int)$result : ($result['id'] ?? $result);
+        $invoiceId = $result['result'] ?? $result['id'] ?? null;
 
         return [
             'success' => true,

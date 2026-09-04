@@ -184,7 +184,7 @@ class CreateRuleAction implements ActionInterface
     private function getAllWebsiteIds(int $adminUserId): array
     {
         $result = $this->apiClient->get('store/websites', [], $adminUserId);
-        if (isset($result['error']) || !is_array($result)) {
+        if (isset($result['error'])) {
             return [1];
         }
 
