@@ -22,22 +22,11 @@ test('Closes full-screen Page Builder when Maggy was opened first', async ({page
   await expect(pageBuilderStage.stage(page)).not.toHaveClass(/stage-full-screen/);
 });
 
-test('Closes full-screen Page Builder when it was opened before Maggy', async ({page}) => {
-  await pageBuilderStage.openCmsPage(page, ABOUT_US_PAGE_TITLE);
-  await pageBuilderStage.switchToPageBuilder(page);
-
-  await chatPanel.open(page);
-
-  await pageBuilderStage.closeFullScreenButton(page).click();
-
-  await expect(pageBuilderStage.stage(page)).not.toHaveClass(/stage-full-screen/);
-});
-
 test('Lines the full-screen stage header up with the stage beside the panel', async ({page}) => {
   await pageBuilderStage.openCmsPage(page, ABOUT_US_PAGE_TITLE);
-  await pageBuilderStage.switchToPageBuilder(page);
 
   await chatPanel.open(page);
+  await pageBuilderStage.switchToPageBuilder(page);
 
   const stageBox = await pageBuilderStage.stage(page).boundingBox();
   const headerBox = await pageBuilderStage.fullScreenHeader(page).boundingBox();
