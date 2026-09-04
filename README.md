@@ -11,6 +11,7 @@ AI-powered admin assistant — chat with your store using the AI provider of you
 - **Extensible architecture** — third-party modules can register custom skills via DI
 - **ACL-based permissions** — read/write access controlled per admin role
 - **Write confirmation** — destructive actions always require explicit user approval
+- **Answer widgets** — stat cards, charts, tables and record lists in the answer where the data allows it (see [docs/ui-components.md](docs/ui-components.md))
 - **Multi-provider** — Anthropic, OpenAI, Azure, Google Gemini, DeepSeek, Hugging Face, OpenRouter, Ollama and LM Studio, through [MageOS_AiBase](https://github.com/mage-os-lab/module-ai-base)
 - **Documentation grounding** — answers admin how-to questions from Magento/Adobe Commerce docs, fetched into your database (optional)
 

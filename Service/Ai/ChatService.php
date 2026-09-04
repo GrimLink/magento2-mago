@@ -32,7 +32,8 @@ class ChatService implements ChatServiceInterface
         private readonly ErrorLogger $errorLogger,
         private readonly UsageLogger $usageLogger,
         private readonly AuthorizationInterface $authorization,
-        private readonly StoreScopeContext $storeScopeContext
+        private readonly StoreScopeContext $storeScopeContext,
+        private readonly AnswerWidgets $answerWidgets
     ) {
     }
 
@@ -535,37 +536,51 @@ class ChatService implements ChatServiceInterface
     }
 
     /**
-     * Put the configured system prompt first and make sure the store scope summary is in it.
+     * Put the configured system prompt first and make sure the store scope summary and the answer
+     * widget guide are in it.
      *
      * The scope summary is rebuilt on every request, so the assistant always checks a request
      * against the current website / store view layout before it decides whether an action belongs
-     * on the default scope or on a specific website or store view.
+     * on the default scope or on a specific website or store view. The widget guide tells it which
+     * ```mago blocks the panel can render; it is skipped when answer widgets are switched off.
      */
     private function prependSystemMessage(array $messages): array
     {
         $systemPrompt = $this->configRepository->getSystemPrompt();
         $firstSystemIndex = null;
         $hasStoreScope = false;
+        $hasWidgetGuide = false;
         foreach ($messages as $index => $msg) {
             if (($msg['role'] ?? '') !== 'system') {
                 continue;
             }
             $firstSystemIndex ??= (int)$index;
-            if (str_contains((string)($msg['content'] ?? ''), self::STORE_SCOPE_MARKER)) {
+            $content = (string)($msg['content'] ?? '');
+            if (str_contains($content, self::STORE_SCOPE_MARKER)) {
                 $hasStoreScope = true;
+            }
+            if (str_contains($content, AnswerWidgets::MARKER)) {
+                $hasWidgetGuide = true;
             }
         }
 
-        $scopeSection = $hasStoreScope ? '' : $this->getStoreScopeSection();
+        $sections = [];
+        if (!$hasStoreScope) {
+            $sections[] = $this->getStoreScopeSection();
+        }
+        if (!$hasWidgetGuide && $this->configRepository->isAnswerWidgetsEnabled()) {
+            $sections[] = $this->answerWidgets->toPromptSection();
+        }
+        $extra = implode("\n\n", array_filter($sections, static fn (string $section): bool => $section !== ''));
 
         if ($firstSystemIndex === null) {
-            $content = $scopeSection !== '' ? $systemPrompt . "\n\n" . $scopeSection : $systemPrompt;
+            $content = $extra !== '' ? $systemPrompt . "\n\n" . $extra : $systemPrompt;
             array_unshift($messages, ['role' => 'system', 'content' => $content]);
             return $messages;
         }
 
-        if ($scopeSection !== '') {
-            array_splice($messages, $firstSystemIndex + 1, 0, [['role' => 'system', 'content' => $scopeSection]]);
+        if ($extra !== '') {
+            array_splice($messages, $firstSystemIndex + 1, 0, [['role' => 'system', 'content' => $extra]]);
         }
 
         return $messages;

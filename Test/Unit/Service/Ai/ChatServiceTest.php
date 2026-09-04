@@ -13,6 +13,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
+use MaggyAssistant\Base\Service\Ai\AnswerWidgets;
 use MaggyAssistant\Base\Service\Ai\ChatService;
 use MaggyAssistant\Base\Service\Ai\Client;
 use MaggyAssistant\Base\Service\Skills\PermissionChecker;
@@ -89,7 +90,8 @@ final class ChatServiceTest extends TestCase
             new ErrorLogger(new FakeLogger(), $json),
             $this->createMock(UsageLogger::class),
             $authorization,
-            new StoreScopeContext($this->singleStoreManager())
+            new StoreScopeContext($this->singleStoreManager()),
+            new AnswerWidgets()
         );
     }
 
@@ -249,11 +251,52 @@ final class ChatServiceTest extends TestCase
         self::assertSame(self::SYSTEM_PROMPT, $this->sentMessages[0]['content']);
     }
 
-    private function serviceWith(StoreManagerInterface $storeManager, ?ErrorLogger $errorLogger = null): ChatService
+    #[Test]
+    public function itAppendsTheWidgetGuideAfterTheStoreScopeWhenAnswerWidgetsAreOn(): void
     {
+        $service = $this->serviceWith($this->singleStoreManager(), null, true);
+
+        $service->processMessage([['role' => 'user', 'content' => 'How did we do this week?']]);
+
+        $content = $this->sentMessages[0]['content'];
+        self::assertStringStartsWith(self::SYSTEM_PROMPT . "\n\n[Store scope]", $content);
+        self::assertStringContainsString("\n\n[Answer widgets]", $content);
+        self::assertStringContainsString('"type":"rankedBars"', $content);
+        self::assertSame('user', $this->sentMessages[1]['role']);
+    }
+
+    #[Test]
+    public function itLeavesTheWidgetGuideOutWhenAnswerWidgetsAreOff(): void
+    {
+        $service = $this->serviceWith($this->singleStoreManager());
+
+        $service->processMessage([['role' => 'user', 'content' => 'Hi']]);
+
+        self::assertStringNotContainsString('[Answer widgets]', $this->sentMessages[0]['content']);
+    }
+
+    #[Test]
+    public function itNeverInjectsTheWidgetGuideTwice(): void
+    {
+        $service = $this->serviceWith($this->singleStoreManager(), null, true);
+
+        $service->processMessage([
+            ['role' => 'system', 'content' => "Custom prompt\n\n[Store scope] here\n\n[Answer widgets] here"],
+            ['role' => 'user', 'content' => 'Hi'],
+        ]);
+
+        self::assertSame(['system', 'user'], array_column($this->sentMessages, 'role'));
+    }
+
+    private function serviceWith(
+        StoreManagerInterface $storeManager,
+        ?ErrorLogger $errorLogger = null,
+        bool $answerWidgets = false
+    ): ChatService {
         $configRepository = $this->createMock(RepositoryInterface::class);
         $configRepository->method('getSystemPrompt')->willReturn(self::SYSTEM_PROMPT);
         $configRepository->method('getMaxToolIterations')->willReturn(1);
+        $configRepository->method('isAnswerWidgetsEnabled')->willReturn($answerWidgets);
 
         $client = $this->createMock(Client::class);
         $client->method('resolve')->willReturn($this->createMock(AiClientInterface::class));
@@ -270,7 +313,8 @@ final class ChatServiceTest extends TestCase
             $errorLogger ?? $this->createMock(ErrorLogger::class),
             $this->createMock(UsageLogger::class),
             $this->createMock(AuthorizationInterface::class),
-            new StoreScopeContext($storeManager)
+            new StoreScopeContext($storeManager),
+            new AnswerWidgets()
         );
     }
 

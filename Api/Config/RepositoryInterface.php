@@ -30,6 +30,7 @@ interface RepositoryInterface
     public const XML_PATH_INTERNAL_URL = 'maggy/api/internal_url';
     public const XML_PATH_INTERNAL_SSL_VERIFY = 'maggy/api/internal_ssl_verify';
     public const XML_PATH_LANGUAGE = 'maggy/chat/language';
+    public const XML_PATH_ANSWER_WIDGETS = 'maggy/chat/answer_widgets';
     public const XML_PATH_DOCS_ENABLED = 'maggy/docs/enabled';
     public const XML_PATH_DOCS_SOURCE_REPO = 'maggy/docs/source_repo';
     public const XML_PATH_DOCS_REF = 'maggy/docs/ref';
@@ -131,6 +132,13 @@ interface RepositoryInterface
      * @return string
      */
     public function getLanguage(): string;
+
+    /**
+     * Whether the assistant may answer with the chat panel's widgets (```mago blocks)
+     *
+     * @return bool
+     */
+    public function isAnswerWidgetsEnabled(): bool;
 
     /**
      * @return string

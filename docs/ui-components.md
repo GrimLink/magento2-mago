@@ -58,6 +58,15 @@ falls back to a code block. `MagoUI.render(spec)` and `MagoUI.renderJson(json)`
 expose the same mapping for other callers. Event handlers cannot travel through
 JSON, so specs should use `href` for clickable items.
 
+The assistant learns this format from the `[Answer widgets]` section that
+`Service/Ai/AnswerWidgets` adds to the system prompt: the fence, the rules (tool
+data only, display strings for numbers, `href` for admin links, no HTML, at most
+three widgets per answer) and one example shape per type. Interactive cards are
+not offered to the model; the panel builds those from tool events. The section is
+controlled by *Stores > Configuration > Maggy Assistant > Chat Settings > Answer
+Widgets* (`maggy/chat/answer_widgets`, default Yes); switching it off keeps the
+renderer but stops the model from being told about it.
+
 ## Widgets (W01–W21)
 
 | # | Builder | Options |

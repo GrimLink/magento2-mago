@@ -121,6 +121,11 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
         return $this->getStoreValue(self::XML_PATH_LANGUAGE) ?: 'auto';
     }
 
+    public function isAnswerWidgetsEnabled(): bool
+    {
+        return $this->isSetFlag(self::XML_PATH_ANSWER_WIDGETS);
+    }
+
     public function getInternalUrl(): string
     {
         return trim((string)$this->getStoreValue(self::XML_PATH_INTERNAL_URL));
