@@ -20,7 +20,7 @@ class ModuleVersion extends AbstractSkill
         return 'Look up the installed version of a Magento module or third-party extension by name.';
     }
 
-    public function getMagentoAcl(): string
+    public function getMagentoAcl(array $input = []): string
     {
         return 'Magento_Config::dev';
     }

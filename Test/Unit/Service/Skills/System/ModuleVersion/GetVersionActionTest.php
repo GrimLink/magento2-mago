@@ -80,6 +80,22 @@ class GetVersionActionTest extends TestCase
     }
 
     #[Test]
+    public function itPassesThroughTheComposerJsonSourceWhenComposerDoesNotKnowThePackage(): void
+    {
+        $moduleInfoRepository = (new FakeModuleInfoRepository())->withModule(
+            'Acme_CustomShipping',
+            'acme/module-custom-shipping',
+            '2.4.0',
+            RepositoryInterface::VERSION_SOURCE_COMPOSER_JSON
+        );
+
+        $result = $this->executeWith($moduleInfoRepository, 'CustomShipping');
+
+        self::assertSame('2.4.0', $result['version']);
+        self::assertSame(RepositoryInterface::VERSION_SOURCE_COMPOSER_JSON, $result['version_source']);
+    }
+
+    #[Test]
     public function itReportsUnknownVersionWhenNeitherSourceHasOne(): void
     {
         $moduleInfoRepository = (new FakeModuleInfoRepository())->withModule('Acme_CustomShipping');

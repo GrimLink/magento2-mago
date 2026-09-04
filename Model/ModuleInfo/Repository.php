@@ -6,19 +6,27 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Model\ModuleInfo;
 
+use Magento\Framework\Component\ComponentRegistrar;
+use Magento\Framework\Component\ComponentRegistrarInterface;
 use Magento\Framework\Module\ModuleList\Loader as ModuleDeclarationLoader;
 use Magento\Framework\Module\ModuleListInterface;
 use Magento\Framework\Module\PackageInfo;
+use MaggyAssistant\Base\Api\ModuleInfo\InstalledPackagesInterface;
 use MaggyAssistant\Base\Api\ModuleInfo\RepositoryInterface;
 
 class Repository implements RepositoryInterface
 {
     private ?array $moduleDeclarations = null;
 
+    /** @var array<string, string> */
+    private array $packageNames = [];
+
     public function __construct(
         private readonly PackageInfo $packageInfo,
         private readonly ModuleDeclarationLoader $moduleDeclarationLoader,
-        private readonly ModuleListInterface $moduleList
+        private readonly ModuleListInterface $moduleList,
+        private readonly InstalledPackagesInterface $installedPackages,
+        private readonly ComponentRegistrarInterface $componentRegistrar
     ) {
     }
 
@@ -66,7 +74,28 @@ class Repository implements RepositoryInterface
 
     public function getPackageName(string $moduleName): string
     {
-        return (string)$this->packageInfo->getPackageName($moduleName);
+        if (!isset($this->packageNames[$moduleName])) {
+            $this->packageNames[$moduleName] = $this->resolvePackageName($moduleName);
+        }
+
+        return $this->packageNames[$moduleName];
+    }
+
+    /**
+     * Magento only knows the package of a module whose composer.json sits in the module directory
+     * itself, so modules registered from a subdirectory of their package fall back to Composer's
+     * own record of which package owns that directory.
+     */
+    private function resolvePackageName(string $moduleName): string
+    {
+        $packageName = (string)$this->packageInfo->getPackageName($moduleName);
+        if ($packageName !== '') {
+            return $packageName;
+        }
+
+        return $this->installedPackages->findPackageByPath(
+            (string)$this->componentRegistrar->getPath(ComponentRegistrar::MODULE, $moduleName)
+        );
     }
 
     public function isEnabled(string $moduleName): bool
@@ -76,9 +105,14 @@ class Repository implements RepositoryInterface
 
     public function getVersionInfo(string $moduleName): array
     {
-        $composerVersion = (string)$this->packageInfo->getVersion($moduleName);
-        if ($composerVersion !== '') {
-            return ['version' => $composerVersion, 'source' => self::VERSION_SOURCE_COMPOSER];
+        $installedVersion = $this->installedPackages->getVersion($this->getPackageName($moduleName));
+        if ($installedVersion !== '') {
+            return ['version' => $installedVersion, 'source' => self::VERSION_SOURCE_COMPOSER];
+        }
+
+        $declaredVersion = (string)$this->packageInfo->getVersion($moduleName);
+        if ($declaredVersion !== '') {
+            return ['version' => $declaredVersion, 'source' => self::VERSION_SOURCE_COMPOSER_JSON];
         }
 
         $setupVersion = (string)($this->getModuleDeclarations()[$moduleName]['setup_version'] ?? '');

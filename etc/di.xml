@@ -15,6 +15,7 @@
 
     <!-- Module Info Repository -->
     <preference for="MaggyAssistant\Base\Api\ModuleInfo\RepositoryInterface" type="MaggyAssistant\Base\Model\ModuleInfo\Repository"/>
+    <preference for="MaggyAssistant\Base\Api\ModuleInfo\InstalledPackagesInterface" type="MaggyAssistant\Base\Model\ModuleInfo\ComposerInstalledPackages"/>
 
     <!-- Tool Registry: inject all tools -->
     <type name="MaggyAssistant\Base\Service\Tool\ToolRegistry">

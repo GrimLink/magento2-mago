@@ -85,9 +85,11 @@ class GetVersionAction implements ActionInterface
     {
         return 'module_name is matched fuzzily: every word in it must appear somewhere in the module '
             . "name or its composer package name, so \"Channable\" or \"Magmodules Channable\" both work.\n"
-            . 'version_source is "composer" when the version comes from the module\'s composer.json, or '
-            . '"module.xml" when it falls back to the module\'s setup_version (common for in-house '
-            . 'app/code modules without a composer release version) — mention which one it is if asked. '
+            . 'version_source says where the number came from: "composer" is what Composer '
+            . 'actually installed and is the one to trust, "composer.json" is the version field '
+            . 'declared by the module itself, and "module.xml" is its setup_version (common for '
+            . 'in-house app/code modules Composer does not manage). Mention the source when it is '
+            . 'not "composer", because the other two can be stale. '
             . 'When the result has "ambiguous": true, ask the user which of the candidates they mean '
             . 'instead of guessing.';
     }
