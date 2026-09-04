@@ -113,6 +113,28 @@ class ToolRegistry
 
 Parameter schemas and the derived read-only action lists are memoized per tool for the lifetime of the registry (one request), so a tool's `getParameterSchema()` is built once no matter how often the registry consults it.
 
+#### `IrreversibleActionInterface` / `IrreversibleToolInterface`
+
+A write that has no reverse (a delete, an order cancellation, a refund) implements
+`MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface` instead of the plain
+`ActionInterface`. Its one extra method, `getImpacts(array $params, int $adminUserId): string[]`,
+describes what the call will do to the store in plain words, one consequence per line, reading
+the current state where that helps ("Order #100 (currently processing) is canceled ..."). It must
+never change anything.
+
+`AbstractSkill` implements the matching `IrreversibleToolInterface` by delegating to the action
+named in the input, so a skill needs no extra code. `ChatService` asks the tool before it sends a
+confirmation and adds `irreversible: true` plus the `impacts` to that tool in the `confirm` event;
+the chat panel then shows the "cannot be undone" card with an acknowledgement checkbox instead of
+a plain Allow button. Built-in irreversible actions: `order_manager` `cancel` and
+`create_creditmemo`, `url_rewrite_manager` `delete`.
+
+A `confirm` event also carries each tool call's `id`. With several writes in one turn the panel
+shows a tick list; the confirm request then sends the ticked ids as `tool_call_ids`, and
+`executeConfirmedTools()` answers every unticked call with `{"skipped": true, ...}` without
+running it. A tool that returns an `error` key is reported to the panel with a `tool_status` of
+`failed` and the error as `message`.
+
 #### `ActionScopedToolInterface`
 
 ```

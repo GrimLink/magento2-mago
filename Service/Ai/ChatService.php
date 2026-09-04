@@ -8,6 +8,7 @@ namespace MaggyAssistant\Base\Service\Ai;
 
 use MageOS\AiBase\Api\AiClientInterface;
 use MaggyAssistant\Base\Api\ChatServiceInterface;
+use MaggyAssistant\Base\Api\Tool\IrreversibleToolInterface;
 use MaggyAssistant\Base\Api\Tool\ToolInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Logger\DebugLogger;
@@ -161,10 +162,11 @@ class ChatService implements ChatServiceInterface
                             continue;
                         }
                         $confirmTools[] = [
+                            'id' => (string)($tc['id'] ?? ''),
                             'name' => $tc['name'],
                             'description' => $t->getDescription(),
                             'input' => $tc['input'] ?? [],
-                        ];
+                        ] + $this->describeRisk($t, $tc['input'] ?? [], $adminUserId);
                     }
                     $onChunk('confirm', ['tools' => $confirmTools]);
                     return [
@@ -200,10 +202,7 @@ class ChatService implements ChatServiceInterface
                 $result = $this->executeTool($toolCall, $adminUserId);
 
                 if ($reportStatus) {
-                    $onChunk('tool_status', [
-                        'name' => $toolCall['name'],
-                        'status' => 'done',
-                    ]);
+                    $onChunk('tool_status', $this->statusAfter($toolCall['name'], $result));
                 }
 
                 $messages[] = [
@@ -220,15 +219,33 @@ class ChatService implements ChatServiceInterface
     }
 
     /**
-     * Execute a confirmed write action
+     * Execute the confirmed write actions
+     *
+     * With a bulk confirmation the user can leave calls unticked; those are answered with a
+     * "skipped" tool result so the model knows they did not run, and nothing is executed for them.
      *
      * @param array $toolCalls
+     * @param int|null $adminUserId
+     * @param callable|null $onChunk
+     * @param string[]|null $selectedIds
      * @return array Results keyed by tool call ID
      */
-    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null, ?callable $onChunk = null): array
-    {
+    public function executeConfirmedTools(
+        array $toolCalls,
+        ?int $adminUserId = null,
+        ?callable $onChunk = null,
+        ?array $selectedIds = null
+    ): array {
         $results = [];
         foreach ($toolCalls as $toolCall) {
+            if ($selectedIds !== null && !in_array((string)($toolCall['id'] ?? ''), $selectedIds, true)) {
+                $results[$toolCall['id']] = [
+                    'skipped' => true,
+                    'reason' => 'The user chose not to run this action.',
+                ];
+                continue;
+            }
+
             $reportStatus = $onChunk && !$this->isToolCallDenied($toolCall, $adminUserId);
             if ($reportStatus) {
                 $statusMsg = $this->getToolStatusMessage(
@@ -246,13 +263,51 @@ class ChatService implements ChatServiceInterface
             $results[$toolCall['id']] = $this->executeTool($toolCall, $adminUserId);
 
             if ($reportStatus) {
-                $onChunk('tool_status', [
-                    'name' => $toolCall['name'],
-                    'status' => 'done',
-                ]);
+                $onChunk('tool_status', $this->statusAfter($toolCall['name'], $results[$toolCall['id']]));
             }
         }
         return $results;
+    }
+
+    /**
+     * The tool_status event that closes a call: "done", or "failed" with the tool's own error text
+     *
+     * @param string $toolName
+     * @param array<string, mixed> $result
+     * @return array<string, string>
+     */
+    private function statusAfter(string $toolName, array $result): array
+    {
+        if (isset($result['error'])) {
+            return ['name' => $toolName, 'status' => 'failed', 'message' => (string)$result['error']];
+        }
+
+        return ['name' => $toolName, 'status' => 'done'];
+    }
+
+    /**
+     * Irreversibility flag and impact list for the confirmation card, empty for a reversible write
+     *
+     * @param ToolInterface $tool
+     * @param array<string, mixed> $input
+     * @param int|null $adminUserId
+     * @return array{irreversible?: bool, impacts?: string[]}
+     */
+    private function describeRisk(ToolInterface $tool, array $input, ?int $adminUserId): array
+    {
+        if (!$tool instanceof IrreversibleToolInterface || !$tool->isIrreversibleAction($input)) {
+            return [];
+        }
+
+        try {
+            $impacts = $tool->getImpacts($input, (int)$adminUserId);
+        } catch (\Throwable $e) {
+            // The card still warns without the list; a broken impact lookup must not block the ask
+            $this->errorLogger->addLog('Tool Impacts', ['tool' => $tool->getName(), 'error' => $e->getMessage()]);
+            $impacts = [];
+        }
+
+        return ['irreversible' => true, 'impacts' => array_values(array_map('strval', $impacts))];
     }
 
     private function logUsage(

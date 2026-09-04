@@ -1479,6 +1479,14 @@
 
     &.is-list {
         padding-top: 8px;
+
+        .mago-ask-text.is-lead {
+            padding-top: 8px;
+        }
+
+        .mago-callout {
+            margin-top: 12px;
+        }
     }
 
     .mago-skill.is-running & {
@@ -1765,9 +1773,10 @@
     }
 }
 
+// The label keeps its words; the meta gives way first and ends in an ellipsis
 .mago-bulk-label {
-    flex: 1;
-    min-width: 0;
+    flex: 1 1 auto;
+    min-width: 45%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1775,7 +1784,13 @@
 
 .mago-bulk-meta {
     color: var(--mago-ink-muted, #9A918B);
-    flex: none;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12.5px;
 }
 
 // Plan timeline (S09)
@@ -1987,6 +2002,10 @@
 
     .is-ok & {
         background: var(--mago-ok-soft);
+    }
+
+    .is-muted & {
+        background: var(--mago-ramp-rest);
     }
 }
 

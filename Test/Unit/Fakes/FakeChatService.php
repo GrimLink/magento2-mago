@@ -45,10 +45,19 @@ final class FakeChatService implements ChatServiceInterface
         return ['content' => '', 'tool_calls' => []];
     }
 
-    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null, ?callable $onChunk = null): array
-    {
+    public function executeConfirmedTools(
+        array $toolCalls,
+        ?int $adminUserId = null,
+        ?callable $onChunk = null,
+        ?array $selectedIds = null
+    ): array {
         $results = [];
         foreach ($toolCalls as $toolCall) {
+            if ($selectedIds !== null && !in_array((string)($toolCall['id'] ?? ''), $selectedIds, true)) {
+                $results[$toolCall['id']] = ['skipped' => true, 'reason' => 'The user chose not to run this action.'];
+                continue;
+            }
+
             $this->toolCalls[] = $toolCall;
             if ($onChunk) {
                 $onChunk('tool_status', ['name' => $toolCall['name'], 'status' => 'running']);

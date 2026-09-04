@@ -51,7 +51,7 @@ final class AnswerWidgetsTest extends TestCase
     {
         $types = (new AnswerWidgets())->getTypes();
 
-        $cards = ['skillAsk', 'skillRunning', 'skillBulk', 'skillIrreversible', 'confirmWrite', 'paramPrompt'];
+        $cards = ['skillAsk', 'skillRunning', 'skillBulk', 'skillIrreversible', 'skillPlan', 'confirmWrite'];
         foreach ($cards as $card) {
             self::assertNotContains($card, $types);
         }

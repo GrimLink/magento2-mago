@@ -15,10 +15,18 @@ class FakeConfigRepository implements RepositoryInterface
     private string $internalUrl = '';
     private int $maxToolIterations = 0;
     private bool $answerWidgets = false;
+    private int $maxResponseTokens = 0;
 
     public function withMaxToolIterations(int $maxToolIterations): self
     {
         $this->maxToolIterations = $maxToolIterations;
+
+        return $this;
+    }
+
+    public function withMaxResponseTokens(int $maxResponseTokens): self
+    {
+        $this->maxResponseTokens = $maxResponseTokens;
 
         return $this;
     }
@@ -186,6 +194,6 @@ class FakeConfigRepository implements RepositoryInterface
 
     public function getMaxResponseTokens(): int
     {
-        return 0;
+        return $this->maxResponseTokens;
     }
 }

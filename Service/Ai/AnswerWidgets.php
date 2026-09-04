@@ -68,7 +68,11 @@ class AnswerWidgets
         'callout' => '{"type":"callout","tone":"warn|danger|ok|info","text":"Cache has not been refreshed for 6 '
             . 'days."} — a heads-up, an error or a success next to the answer.',
         'suggestions' => '{"type":"suggestions","chips":[{"label":"Split per country"},{"label":"Export CSV"}]} — '
-            . 'follow-up questions the user can click.',
+            . 'follow-up questions the user can click; a click sends the label as their next message.',
+        'paramPrompt' => '{"type":"paramPrompt","text":"Which price should it become?","prefix":"€",'
+            . '"placeholder":"69.00","chips":[{"label":"−10%","value":"71.10"},{"label":"Back to 79.00",'
+            . '"value":"79.00"}]} — use this, instead of a plain question, when exactly one value is missing '
+            . 'before a write can run; the value the user enters or picks comes back as their next message.',
         'empty' => '{"type":"empty","title":"Nothing found","text":"Every product in Lighting has an image."} — an '
             . 'empty result, instead of a bare sentence.',
     ];

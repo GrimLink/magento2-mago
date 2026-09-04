@@ -86,6 +86,9 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
             </div>
         </div>
         <div class="maggy-header-actions">
+            <button type="button" id="maggy-log" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Changes this session')) ?>">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+            </button>
             <button type="button" id="maggy-history" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Chat History')) ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
             </button>
@@ -101,6 +104,7 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
         </div>
     </div>
     <div id="maggy-history-list" class="maggy-history-list" style="display:none;"></div>
+    <div id="maggy-log-view" class="maggy-log-view" style="display:none;"></div>
     <div id="maggy-messages" class="maggy-messages">
         <!-- Welcome state: shown while the conversation is empty, hidden via .is-empty as soon as a message lands -->
         <div id="maggy-welcome" class="maggy-welcome">

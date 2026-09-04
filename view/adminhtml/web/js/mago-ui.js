@@ -1147,13 +1147,14 @@ define([], function () {
     }
 
     // S07 Irreversible: impact list and a ticked acknowledgement before the button arms.
-    // {title, tool, text, impacts: [...], ackLabel, confirmLabel, onConfirm, onCancel}
+    // {title, tool, text, params, impacts: [...], ackLabel, confirmLabel, onConfirm, onCancel, classes: {actions, confirm, cancel}}
     function skillIrreversible(opts) {
         var L = labels(opts);
+        var classes = opts.classes || {};
         var checkbox = el('input', 'mago-check-input');
         checkbox.type = 'checkbox';
         var ack = el('label', 'mago-check', [checkbox, el('span', 'mago-check-box', icon('check', 12, 3.2)), el('span', 'mago-check-label', opts.ackLabel || 'I understand this cannot be undone')]);
-        var confirm = button(opts.confirmLabel || L.confirm, 'is-danger', function (e) {
+        var confirm = button(opts.confirmLabel || L.confirm, 'is-danger' + (classes.confirm ? ' ' + classes.confirm : ''), function (e) {
             if (!checkbox.checked) {
                 return;
             }
@@ -1165,27 +1166,31 @@ define([], function () {
         checkbox.addEventListener('change', function () {
             confirm.disabled = !checkbox.checked;
         });
+        var cancel = button(opts.cancelLabel || L.cancel, 'is-outline-danger' + (classes.cancel ? ' ' + classes.cancel : ''), opts.onCancel);
         return el('div', 'mago-widget mago-skill is-danger is-flush', [
             skillHead({title: opts.title || L.cannotUndo, tool: opts.tool}, 'danger', el('span', 'mago-skill-icon', icon('alert', 16, 2.2))),
             el('div', 'mago-skill-body', [
                 el('div', 'mago-ask-text', content(opts.text)),
+                paramTable(opts.params),
                 opts.impacts && opts.impacts.length ? el('div', 'mago-impacts', opts.impacts.map(function (i) {
                     return el('div', 'mago-impact', [el('span', 'mago-impact-mark', '−'), content(i)]);
                 })) : null,
                 ack,
-                el('div', 'mago-actions is-tight', [confirm, button(L.cancel, 'is-outline-danger', opts.onCancel)])
+                el('div', 'mago-actions is-tight' + (classes.actions ? ' ' + classes.actions : ''), [confirm, cancel])
             ])
         ]);
     }
 
     // S08 Bulk with selection: tick the records to act on, the button counts them.
-    // {title, icon, items: [{id, label, meta, checked, disabled}], confirmLabel(n), onConfirm(selectedIds), onLater}
+    // {title, icon, text, items: [{id, label, meta, checked, disabled}], confirmLabel(n), onConfirm(selectedIds), onLater,
+    //  classes: {actions, confirm, later}}
     function skillBulk(opts) {
         var L = labels(opts);
+        var classes = opts.classes || {};
         var items = opts.items || [];
         var state = items.map(function (it) { return it.checked !== false && !it.disabled; });
         var counter = num('', 'mago-skill-count');
-        var confirm = button('', 'is-primary', function (e) {
+        var confirm = button('', 'is-primary' + (classes.confirm ? ' ' + classes.confirm : ''), function (e) {
             var selected = items.filter(function (it, i) { return state[i]; });
             if (opts.onConfirm) {
                 opts.onConfirm(selected.map(function (it) { return it.id !== undefined ? it.id : it.label; }), selected, e);
@@ -1227,8 +1232,13 @@ define([], function () {
                 counter
             ]),
             el('div', 'mago-skill-body is-list', [
+                opts.text ? el('div', 'mago-ask-text is-lead', content(opts.text)) : null,
+                opts.notice || null,
                 el('div', 'mago-bulk-rows', rows),
-                el('div', 'mago-actions is-tight', [confirm, button(L.later, 'is-ghost', opts.onLater)])
+                el('div', 'mago-actions is-tight' + (classes.actions ? ' ' + classes.actions : ''), [
+                    confirm,
+                    button(opts.laterLabel || L.later, 'is-ghost' + (classes.later ? ' ' + classes.later : ''), opts.onLater)
+                ])
             ])
         ]);
     }

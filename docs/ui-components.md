@@ -122,16 +122,31 @@ changes in place, it does not move.
 
 `chat-panel.js` wires the kit into the streaming flow:
 
-- a `confirm` event renders an S01 card with the tool's parameters; Allow turns
-  it into the S02 progress card, which collects the `tool_status` events of the
-  confirmed run and collapses into an S03 line with the duration when the run is
-  done. "Not now" leaves a muted line and makes no write call;
-- `tool_status` events for read-only tools render as S06 lines above the answer;
+- a `confirm` event with one reversible write renders the S01 card with the
+  tool's parameters. Allow turns it into the S02 progress card, which collects
+  the `tool_status` events of the confirmed run and collapses into an S03 line
+  with the duration when the run is done; a `tool_status` of `failed` (the tool
+  answered with an error) turns it into the S04 card with the tool's message
+  instead. "Not now" leaves a muted line and makes no write call;
+- a write whose action implements `IrreversibleActionInterface` arrives with
+  `irreversible: true` and an `impacts` list and renders as the S07 card: the
+  Allow button stays disabled until the acknowledgement is ticked;
+- several writes in one turn render as the S08 tick list; the ticked tool call
+  ids go to the confirm endpoint as `tool_call_ids`, unticked calls are answered
+  with a "skipped" tool result and never run;
+- `tool_status` events for read-only tools render as S06 lines above the answer,
+  a failed read shows the error in the line's tooltip;
 - `error` events render as a danger callout (W18);
 - the slash menu is the S14 skill menu, coloured green for read-only skills and
   orange for skills that write;
-- ```` ```mago ```` fenced blocks in an answer render as widgets.
+- ```` ```mago ```` fenced blocks in an answer render as widgets. Chips and
+  suggestion cards send their label as the next question; the S10 value prompt
+  sends the typed or picked value;
+- the list icon in the header opens the S12 session log: every write the
+  assistant ran, skipped or failed in this browser session, kept in
+  `sessionStorage`.
 
-"Always allow" (S01) has no backend yet and is therefore not offered in the
-panel; the builder supports it through `onAlways` for when per-user skill
-permissions land.
+Not wired yet: the S09 plan card (needs a planner that announces its steps up
+front) and the S11 undo callout (needs reversible tool results on the backend).
+Both builders exist for when that lands. "Always allow" (S01) has no backend
+either and is not offered; the builder supports it through `onAlways`.

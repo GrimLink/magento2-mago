@@ -6,11 +6,11 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Service\Skills\Sales\OrderManager;
 
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface;
 use MaggyAssistant\Base\Service\Api\InternalApiClient;
 use MaggyAssistant\Base\Service\Url\SecureAdminUrl;
 
-class CreateCreditmemoAction implements ActionInterface
+class CreateCreditmemoAction implements IrreversibleActionInterface
 {
     public function __construct(
         private readonly InternalApiClient $apiClient,
@@ -69,6 +69,26 @@ class CreateCreditmemoAction implements ActionInterface
     {
         return 'The order must be invoiced before a credit memo can be created. '
             . 'By default, a full credit memo (all items) is created.';
+    }
+
+    public function getImpacts(array $params, int $adminUserId): array
+    {
+        $orderNumber = (string)($params['order_number'] ?? '');
+        $label = $orderNumber !== '' ? 'Order #' . $orderNumber : 'The order';
+        $lines = [
+            $label . ' is refunded in full through the original payment method; the refund cannot be recalled.',
+        ];
+        if (isset($params['adjustment_positive']) && (float)$params['adjustment_positive'] > 0) {
+            $lines[] = 'An extra ' . (float)$params['adjustment_positive'] . ' is refunded on top of the order total.';
+        }
+        if (isset($params['adjustment_negative']) && (float)$params['adjustment_negative'] > 0) {
+            $lines[] = (float)$params['adjustment_negative'] . ' is withheld from the refund.';
+        }
+        $lines[] = !empty($params['notify_customer'])
+            ? 'The customer receives the credit memo by e-mail.'
+            : 'The customer is not notified.';
+
+        return $lines;
     }
 
     public function execute(array $params, int $adminUserId): array

@@ -762,6 +762,34 @@ html:has(body.maggy-active) {
     }
 }
 
+// Session log view (S12) — takes the place of the message list while open
+.maggy-log-view {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+}
+
+// The log button carries a dot once something was written this session
+#maggy-log {
+    position: relative;
+
+    &.has-entries::after {
+        content: '';
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--maggy-accent, #FF7A33);
+    }
+
+    &.is-active {
+        color: var(--mago-ink, #373330);
+        background: var(--mago-surface, #F7F5F3);
+    }
+}
+
 // History list
 .maggy-history-list {
     flex: 1;
