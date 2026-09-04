@@ -71,7 +71,7 @@ class ListRulesAction implements ActionInterface
 
         try {
             $collection = $this->collectionFactory->create();
-            $collection->addFieldToFilter('is_active', $isActive);
+            $collection->addFieldToFilter('is_active', (string)$isActive);
             $collection->setOrder('sort_order', 'ASC');
 
             $rules = [];

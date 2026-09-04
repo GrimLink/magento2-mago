@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Service\Skills\Content;
 
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use MaggyAssistant\Base\Api\Tool\ToolInterface;
 use MaggyAssistant\Base\Service\Store\StoreScopeContext;
@@ -145,7 +146,7 @@ class ContentGenerator implements ToolInterface
         return 'Magento_Catalog::products';
     }
 
-    private function saveContent($product, string $action, string $content, int $storeId): array
+    private function saveContent(ProductInterface $product, string $action, string $content, int $storeId): array
     {
         $field = match ($action) {
             'generate_description' => 'description',

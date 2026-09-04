@@ -27,7 +27,7 @@ class Index extends Action implements HttpGetActionInterface
     {
         $page = $this->pageFactory->create();
         $page->setActiveMenu('MaggyAssistant_Base::statistics');
-        $page->getConfig()->getTitle()->prepend(__('Admin Assistant Statistics'));
+        $page->getConfig()->getTitle()->prepend((string)__('Admin Assistant Statistics'));
         return $page;
     }
 }

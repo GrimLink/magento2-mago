@@ -90,7 +90,7 @@ class Confirm extends Action implements HttpPostActionInterface
                 $this->conversationRepository->addMessage(
                     $conversationId,
                     'tool',
-                    $this->json->serialize($result),
+                    (string)$this->json->serialize($result),
                     null,
                     false,
                     $toolCallId

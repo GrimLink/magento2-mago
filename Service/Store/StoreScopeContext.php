@@ -26,10 +26,10 @@ class StoreScopeContext
     /** Store code the REST API understands as "all store views" (admin store, id 0) */
     public const REST_ALL_STORES_CODE = 'all';
 
-    /** @var array<int, array<string, mixed>>|null */
+    /** @var array<int, array{id:int,code:string,name:string,is_default:bool,groups:array<int,array{id:int,name:string,is_default:bool,stores:array<int,array{id:int,code:string,name:string,is_default:bool,is_active:bool}>}>}>|null */
     private ?array $websites = null;
 
-    /** @var array<int, array<string, mixed>>|null */
+    /** @var array<int, array{id:int,code:string,name:string,is_default:bool,is_active:bool,website_id:int,website_name:string}>|null */
     private ?array $storeViews = null;
 
     public function __construct(

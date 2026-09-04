@@ -55,7 +55,7 @@ class ChatManagement implements ChatManagementInterface
                 $pendingConfirmation
             );
 
-            return $this->json->serialize([
+            return $this->toJson([
                 'conversation_id' => $conversationId,
                 'message_id' => $messageId,
                 'content' => $response['content'] ?? '',
@@ -64,7 +64,7 @@ class ChatManagement implements ChatManagementInterface
             ]);
         } catch (\Throwable $e) {
             $this->errorLogger->addLog('ChatManagement::sendMessage', $e->getMessage());
-            return $this->json->serialize(['error' => $e->getMessage()]);
+            return $this->toJson(['error' => $e->getMessage()]);
         }
     }
 
@@ -73,9 +73,9 @@ class ChatManagement implements ChatManagementInterface
         try {
             $adminUserId = $this->requireAdminUserId();
             $conversations = $this->conversationRepository->getListByUser($adminUserId);
-            return $this->json->serialize(['conversations' => $conversations]);
+            return $this->toJson(['conversations' => $conversations]);
         } catch (\Throwable $e) {
-            return $this->json->serialize(['error' => $e->getMessage()]);
+            return $this->toJson(['error' => $e->getMessage()]);
         }
     }
 
@@ -85,9 +85,9 @@ class ChatManagement implements ChatManagementInterface
             $adminUserId = $this->requireAdminUserId();
             $conversation = $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
             $conversation['messages'] = $this->conversationRepository->getMessages($conversationId);
-            return $this->json->serialize($conversation);
+            return $this->toJson($conversation);
         } catch (\Throwable $e) {
-            return $this->json->serialize(['error' => $e->getMessage()]);
+            return $this->toJson(['error' => $e->getMessage()]);
         }
     }
 
@@ -96,9 +96,9 @@ class ChatManagement implements ChatManagementInterface
         try {
             $adminUserId = $this->requireAdminUserId();
             $this->conversationRepository->delete($conversationId, $adminUserId);
-            return $this->json->serialize(['success' => true]);
+            return $this->toJson(['success' => true]);
         } catch (\Throwable $e) {
-            return $this->json->serialize(['error' => $e->getMessage()]);
+            return $this->toJson(['error' => $e->getMessage()]);
         }
     }
 
@@ -108,7 +108,7 @@ class ChatManagement implements ChatManagementInterface
             $adminUserId = $this->requireAdminUserId();
             $message = $this->conversationRepository->getMessageForUser($messageId, $adminUserId);
             if (empty($message['pending_confirmation'])) {
-                return $this->json->serialize(['error' => 'No pending confirmation for this message']);
+                return $this->toJson(['error' => 'No pending confirmation for this message']);
             }
 
             $toolCalls = $message['tool_calls'] ?? [];
@@ -128,7 +128,7 @@ class ChatManagement implements ChatManagementInterface
                 $this->conversationRepository->addMessage(
                     $conversationId,
                     'tool',
-                    $this->json->serialize($result)
+                    $this->toJson($result)
                 );
             }
 
@@ -143,7 +143,7 @@ class ChatManagement implements ChatManagementInterface
                 $response['content'] ?? ''
             );
 
-            return $this->json->serialize([
+            return $this->toJson([
                 'success' => true,
                 'message_id' => $responseMessageId,
                 'content' => $response['content'] ?? '',
@@ -151,7 +151,7 @@ class ChatManagement implements ChatManagementInterface
             ]);
         } catch (\Throwable $e) {
             $this->errorLogger->addLog('ChatManagement::confirmAction', $e->getMessage());
-            return $this->json->serialize(['error' => $e->getMessage()]);
+            return $this->toJson(['error' => $e->getMessage()]);
         }
     }
 
@@ -170,9 +170,9 @@ class ChatManagement implements ChatManagementInterface
                 'The action was rejected by the user. No changes were made.'
             );
 
-            return $this->json->serialize(['success' => true, 'message' => 'Action rejected']);
+            return $this->toJson(['success' => true, 'message' => 'Action rejected']);
         } catch (\Throwable $e) {
-            return $this->json->serialize(['error' => $e->getMessage()]);
+            return $this->toJson(['error' => $e->getMessage()]);
         }
     }
 
@@ -218,5 +218,12 @@ class ChatManagement implements ChatManagementInterface
             $formatted[] = $entry;
         }
         return $formatted;
+    }
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function toJson(array $payload): string
+    {
+        return (string)$this->json->serialize($payload);
     }
 }

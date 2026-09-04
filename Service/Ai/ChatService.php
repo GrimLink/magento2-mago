@@ -156,6 +156,9 @@ class ChatService implements ChatServiceInterface
                             continue;
                         }
                         $t = $this->toolRegistry->getTool($tc['name'], $adminUserId);
+                        if ($t === null) {
+                            continue;
+                        }
                         $confirmTools[] = [
                             'name' => $tc['name'],
                             'description' => $t->getDescription(),
@@ -450,7 +453,12 @@ class ChatService implements ChatServiceInterface
             return;
         }
 
-        $instructions = $this->toolRegistry->getTool($toolName, $adminUserId)->getInstructions();
+        $tool = $this->toolRegistry->getTool($toolName, $adminUserId);
+        if ($tool === null) {
+            return;
+        }
+
+        $instructions = $tool->getInstructions();
         if ($instructions) {
             $messages[] = [
                 'role' => 'system',
@@ -540,7 +548,7 @@ class ChatService implements ChatServiceInterface
             if (($msg['role'] ?? '') !== 'system') {
                 continue;
             }
-            $firstSystemIndex ??= $index;
+            $firstSystemIndex ??= (int)$index;
             if (str_contains((string)($msg['content'] ?? ''), self::STORE_SCOPE_MARKER)) {
                 $hasStoreScope = true;
             }

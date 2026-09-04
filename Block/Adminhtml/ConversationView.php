@@ -275,19 +275,19 @@ class ConversationView extends Template
         $html = $this->escaper->escapeHtml($text);
 
         // Code blocks: ```lang\ncode\n```
-        $html = preg_replace('/```\w*\n([\s\S]*?)```/m', '<pre><code>$1</code></pre>', $html);
+        $html = (string)preg_replace('/```\w*\n([\s\S]*?)```/m', '<pre><code>$1</code></pre>', $html);
 
         // Inline code: `code`
-        $html = preg_replace('/`([^`]+)`/', '<code>$1</code>', $html);
+        $html = (string)preg_replace('/`([^`]+)`/', '<code>$1</code>', $html);
 
         // Bold: **text**
-        $html = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $html);
+        $html = (string)preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $html);
 
         // Italic: *text*
-        $html = preg_replace('/(?<!\*)\*([^*]+)\*(?!\*)/', '<em>$1</em>', $html);
+        $html = (string)preg_replace('/(?<!\*)\*([^*]+)\*(?!\*)/', '<em>$1</em>', $html);
 
         // Markdown links: [text](url)
-        $html = preg_replace_callback(
+        $html = (string)preg_replace_callback(
             '/\[([^\]]+)\]\(((?:https?:\/\/[^ )]+|\/[^ )]+))\)/',
             function ($m) {
                 $linkText = $m[1];
@@ -301,15 +301,15 @@ class ConversationView extends Template
         );
 
         // Bare URLs not already in href
-        $html = preg_replace(
+        $html = (string)preg_replace(
             '/(?<!href="|">)(https?:\/\/[^\s<]+)/',
             '<a href="$1" target="_blank" rel="noopener">$1</a>',
             $html
         );
 
         // Paragraphs and line breaks
-        $html = str_replace("\n\n", '</p><p>', $html);
-        $html = str_replace("\n", '<br>', $html);
+        $html = (string)str_replace("\n\n", '</p><p>', $html);
+        $html = (string)str_replace("\n", '<br>', $html);
         $html = '<p>' . $html . '</p>';
 
         // Strip to allowed tags only

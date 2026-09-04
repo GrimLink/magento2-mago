@@ -27,7 +27,7 @@ class DebugLogger
         $message = $type . ': ';
 
         if (is_array($data) || is_object($data)) {
-            $message .= $this->json->serialize($data);
+            $message .= $this->json->serialize(is_object($data) ? (array)$data : $data);
         } else {
             $message .= (string)$data;
         }

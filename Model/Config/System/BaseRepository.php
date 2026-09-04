@@ -14,6 +14,7 @@ use Magento\Framework\App\ProductMetadataInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Component\ComponentRegistrarInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Filesystem\Driver\File as FileDriver;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Framework\Stdlib\DateTime\DateTime;
@@ -44,11 +45,11 @@ class BaseRepository
     ) {
     }
 
-    public function setConfigData($value, string $key, ?int $storeId = null): void
+    public function setConfigData(string|int|float|bool|null $value, string $key, ?int $storeId = null): void
     {
         $scope = $storeId ? 'stores' : 'default';
         $scopeId = $storeId ?: 0;
-        $this->config->saveConfig($key, $value, $scope, $scopeId);
+        $this->config->saveConfig($key, (string)$value, $scope, $scopeId);
     }
 
     protected function getStoreValueArray(string $path, ?int $storeId = null, ?string $scope = null): array
@@ -59,10 +60,12 @@ class BaseRepository
         }
 
         try {
-            return $this->json->unserialize($value);
+            $decoded = $this->json->unserialize($value);
         } catch (\Throwable $e) {
             return [];
         }
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     protected function getStoreValue(string $path, ?int $storeId = null, ?string $scope = null): string
@@ -85,7 +88,18 @@ class BaseRepository
             }
             return $store;
         } catch (\Throwable $e) {
-            return $this->storeManager->getDefaultStoreView() ?? reset($this->storeManager->getStores());
+            $defaultStore = $this->storeManager->getDefaultStoreView();
+            if ($defaultStore !== null) {
+                return $defaultStore;
+            }
+
+            $stores = $this->storeManager->getStores();
+            $firstStore = reset($stores);
+            if ($firstStore === false) {
+                throw new NoSuchEntityException(__('No store view is available.'));
+            }
+
+            return $firstStore;
         }
     }
 
@@ -96,9 +110,9 @@ class BaseRepository
             ->addFieldToFilter('path', $path);
 
         if ($storeId) {
-            $collection->addFieldToFilter('scope_id', $storeId)->addFieldToFilter('scope', 'stores');
+            $collection->addFieldToFilter('scope_id', (string)$storeId)->addFieldToFilter('scope', 'stores');
         } else {
-            $collection->addFieldToFilter('scope_id', 0)->addFieldToFilter('scope', 'default');
+            $collection->addFieldToFilter('scope_id', '0')->addFieldToFilter('scope', 'default');
         }
 
         return (string)$collection->getFirstItem()->getData('value');
@@ -136,9 +150,10 @@ class BaseRepository
         try {
             $filePath = $path . '/composer.json';
             if ($this->fileDriver->isExists($filePath)) {
-                $this->composerData = $this->json->unserialize(
+                $decoded = $this->json->unserialize(
                     $this->fileDriver->fileGetContents($filePath)
                 );
+                $this->composerData = is_array($decoded) ? $decoded : [];
             }
         } catch (\Throwable $e) {
             $this->composerData = [];

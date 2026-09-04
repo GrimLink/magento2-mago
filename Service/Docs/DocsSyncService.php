@@ -51,7 +51,8 @@ class DocsSyncService
             }
 
             $sha = $tree['sha'];
-            $storedSha = (string)$this->flagManager->getFlagData(self::FLAG_SHA);
+            $storedShaFlag = $this->flagManager->getFlagData(self::FLAG_SHA);
+            $storedSha = is_string($storedShaFlag) ? $storedShaFlag : '';
             $count = $this->docRepository->count();
 
             if (!$force && $sha !== '' && $sha === $storedSha && $count > 0) {
