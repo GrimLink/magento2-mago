@@ -8,9 +8,9 @@ namespace MaggyAssistant\Base\Service\Skills;
 
 use Magento\Framework\AuthorizationInterface;
 use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
+use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
 
-abstract class AbstractSkill implements ToolInterface
+abstract class AbstractSkill implements ActionScopedToolInterface
 {
     /** @var ActionInterface[] */
     private readonly array $actions;
@@ -31,20 +31,47 @@ abstract class AbstractSkill implements ToolInterface
 
     public function getDescription(): string
     {
+        return $this->buildDescription($this->actions);
+    }
+
+    public function getDescriptionForActions(array $actionNames): string
+    {
+        return $this->buildDescription($this->selectActions($actionNames));
+    }
+
+    public function getParameterSchema(): array
+    {
+        return $this->buildParameterSchema($this->actions);
+    }
+
+    public function getParameterSchemaForActions(array $actionNames): array
+    {
+        return $this->buildParameterSchema($this->selectActions($actionNames));
+    }
+
+    /**
+     * @param ActionInterface[] $actions
+     */
+    private function buildDescription(array $actions): string
+    {
         $parts = [];
-        foreach ($this->actions as $action) {
+        foreach ($actions as $action) {
             $parts[] = '"' . $action->getName() . '" (' . $action->getDescription() . ')';
         }
 
         return $this->getBaseDescription() . ' Actions: ' . implode(', ', $parts) . '.';
     }
 
-    public function getParameterSchema(): array
+    /**
+     * @param ActionInterface[] $actions
+     * @return array<string, mixed>
+     */
+    private function buildParameterSchema(array $actions): array
     {
         $actionNames = [];
         $properties = [];
 
-        foreach ($this->actions as $action) {
+        foreach ($actions as $action) {
             $actionNames[] = $action->getName();
             foreach ($action->getParameterSchema() as $paramName => $paramSchema) {
                 if (!isset($properties[$paramName])) {
@@ -69,6 +96,24 @@ abstract class AbstractSkill implements ToolInterface
             'properties' => $properties,
             'required' => ['action'],
         ];
+    }
+
+    /**
+     * Registered actions whose name is in the given list, in registration order
+     *
+     * @param string[] $actionNames
+     * @return ActionInterface[]
+     */
+    private function selectActions(array $actionNames): array
+    {
+        $selected = [];
+        foreach ($this->actions as $action) {
+            if (in_array($action->getName(), $actionNames, true)) {
+                $selected[] = $action;
+            }
+        }
+
+        return $selected;
     }
 
     public function execute(array $params): array

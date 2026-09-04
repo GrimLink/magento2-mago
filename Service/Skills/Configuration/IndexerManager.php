@@ -8,10 +8,17 @@ namespace MaggyAssistant\Base\Service\Skills\Configuration;
 
 use Magento\Framework\Indexer\IndexerRegistry;
 use Magento\Indexer\Model\Indexer\CollectionFactory;
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
+use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
 
-class IndexerManager implements ToolInterface
+class IndexerManager implements ActionScopedToolInterface
 {
+    private const ACTION_DESCRIPTIONS = [
+        'status' => 'list all indexers with status',
+        'reindex' => 'reindex a specific indexer by ID, e.g. "catalog_product_price", "catalogsearch_fulltext"',
+        'reindex_all' => 'reindex all indexers',
+        'set_mode' => 'set indexer mode to "realtime" or "schedule"',
+    ];
+
     public function __construct(
         private readonly CollectionFactory $indexerCollectionFactory,
         private readonly IndexerRegistry $indexerRegistry
@@ -25,32 +32,52 @@ class IndexerManager implements ToolInterface
 
     public function getDescription(): string
     {
-        return 'Manage Magento indexers. Actions: "status" (list all indexers with status), '
-            . '"reindex" (reindex a specific indexer by ID, e.g. "catalog_product_price", "catalogsearch_fulltext"), '
-            . '"reindex_all" (reindex all indexers), '
-            . '"set_mode" (set indexer mode to "realtime" or "schedule").';
+        return $this->getDescriptionForActions(array_keys(self::ACTION_DESCRIPTIONS));
+    }
+
+    public function getDescriptionForActions(array $actionNames): string
+    {
+        $parts = [];
+        foreach (self::ACTION_DESCRIPTIONS as $name => $description) {
+            if (in_array($name, $actionNames, true)) {
+                $parts[] = '"' . $name . '" (' . $description . ')';
+            }
+        }
+
+        return 'Manage Magento indexers. Actions: ' . implode(', ', $parts) . '.';
     }
 
     public function getParameterSchema(): array
     {
+        return $this->getParameterSchemaForActions(array_keys(self::ACTION_DESCRIPTIONS));
+    }
+
+    public function getParameterSchemaForActions(array $actionNames): array
+    {
+        $properties = [
+            'action' => [
+                'type' => 'string',
+                'description' => 'The action to perform',
+                'enum' => array_values(array_intersect(array_keys(self::ACTION_DESCRIPTIONS), $actionNames)),
+            ],
+        ];
+        if (array_intersect(['reindex', 'set_mode'], $actionNames) !== []) {
+            $properties['indexer_id'] = [
+                'type' => 'string',
+                'description' => 'Indexer ID for reindex/set_mode actions (e.g. "catalog_product_price", "catalogsearch_fulltext", "catalog_category_product")',
+            ];
+        }
+        if (in_array('set_mode', $actionNames, true)) {
+            $properties['mode'] = [
+                'type' => 'string',
+                'description' => 'Indexer mode for set_mode action',
+                'enum' => ['realtime', 'schedule'],
+            ];
+        }
+
         return [
             'type' => 'object',
-            'properties' => [
-                'action' => [
-                    'type' => 'string',
-                    'description' => 'The action to perform',
-                    'enum' => ['status', 'reindex', 'reindex_all', 'set_mode'],
-                ],
-                'indexer_id' => [
-                    'type' => 'string',
-                    'description' => 'Indexer ID for reindex/set_mode actions (e.g. "catalog_product_price", "catalogsearch_fulltext", "catalog_category_product")',
-                ],
-                'mode' => [
-                    'type' => 'string',
-                    'description' => 'Indexer mode for set_mode action',
-                    'enum' => ['realtime', 'schedule'],
-                ],
-            ],
+            'properties' => $properties,
             'required' => ['action'],
         ];
     }

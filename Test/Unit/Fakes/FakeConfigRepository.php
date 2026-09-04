@@ -13,6 +13,14 @@ class FakeConfigRepository implements RepositoryInterface
 {
     private bool $isInternalSslVerifyEnabled = true;
     private string $internalUrl = '';
+    private int $maxToolIterations = 0;
+
+    public function withMaxToolIterations(int $maxToolIterations): self
+    {
+        $this->maxToolIterations = $maxToolIterations;
+
+        return $this;
+    }
 
     public function withInternalSslVerifyEnabled(bool $isEnabled): self
     {
@@ -110,7 +118,7 @@ class FakeConfigRepository implements RepositoryInterface
 
     public function getMaxToolIterations(): int
     {
-        return 0;
+        return $this->maxToolIterations;
     }
 
     public function getAccentColor(): string
