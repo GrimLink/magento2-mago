@@ -98,7 +98,7 @@ TEXT;
             [],
             $adminUserId
         );
-        $setCodes = array_column(is_array($setAttributes) ? $setAttributes : [], 'attribute_code');
+        $setCodes = array_column($setAttributes, 'attribute_code');
         foreach ($attributeCodes as $code) {
             if ($setCodes && !in_array($code, $setCodes, true)) {
                 return ['error' => 'Attribute "' . $code . '" is not part of attribute set ' . $attributeSetId

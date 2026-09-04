@@ -254,7 +254,7 @@ class ConversationView extends Template
         $tools = [];
         if (preg_match_all('/\*{0,2}Using tool:\s*(\w+)\*{0,2}/i', $content, $matches)) {
             $tools = array_unique($matches[1]);
-            $content = preg_replace('/\*{0,2}Using tool:\s*\w+\*{0,2}\s*/i', '', $content);
+            $content = (string)preg_replace('/\*{0,2}Using tool:\s*\w+\*{0,2}\s*/i', '', $content);
             $content = trim($content);
         }
         return $tools;

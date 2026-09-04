@@ -203,7 +203,7 @@ class Confirm extends Action implements HttpPostActionInterface
     }
 
     /**
-     * @SuppressWarnings(PHPMD.ExitExpression)
+     * @SuppressWarnings("PHPMD.ExitExpression")
      */
     private function terminateResponse(): never
     {

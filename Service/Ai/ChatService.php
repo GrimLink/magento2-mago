@@ -441,7 +441,7 @@ class ChatService implements ChatServiceInterface
         array &$messages,
         array &$instructedTools
     ): void {
-        $toolName = $toolCall['name'];
+        $toolName = (string)$toolCall['name'];
         if (isset($instructedTools[$toolName])) {
             return;
         }
