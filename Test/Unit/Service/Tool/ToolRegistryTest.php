@@ -10,6 +10,8 @@ use Magento\Framework\AuthorizationInterface;
 use MaggyAssistant\Base\Service\Skills\PermissionChecker;
 use MaggyAssistant\Base\Service\Tool\ToolRegistry;
 use MaggyAssistant\Base\Test\Unit\Fakes\FakeAction;
+use MaggyAssistant\Base\Test\Unit\Fakes\FakeAuthorization;
+use MaggyAssistant\Base\Test\Unit\Fakes\FakePermissionChecker;
 use MaggyAssistant\Base\Test\Unit\Fakes\FakeSkill;
 use MaggyAssistant\Base\Test\Unit\Fakes\FakeTool;
 use PHPUnit\Framework\Attributes\Test;
@@ -135,5 +137,187 @@ final class ToolRegistryTest extends TestCase
         );
 
         return new ToolRegistry($checker, [$this->cmsData, $this->cacheManager]);
+    }
+
+    private const ADMIN_USER_ID = 42;
+
+    private function readOnlySkill(): FakeSkill
+    {
+        return new FakeSkill('read_only_skill', new FakeAuthorization(), [
+            'view' => new FakeAction('view', true),
+        ]);
+    }
+
+    private function writeOnlySkill(): FakeSkill
+    {
+        return new FakeSkill('write_only_skill', new FakeAuthorization(), [
+            'do' => new FakeAction('do', false),
+        ]);
+    }
+
+    private function mixedSkill(): FakeSkill
+    {
+        return new FakeSkill('mixed_skill', new FakeAuthorization(), [
+            'view' => new FakeAction('view', true),
+            'do' => new FakeAction('do', false),
+        ]);
+    }
+
+    #[Test]
+    public function itHidesAReadOnlyToolWhenTheGrantIsDisabled(): void
+    {
+        $tool = $this->readOnlySkill();
+        $permissionChecker = (new FakePermissionChecker())->withDecision('read_only_skill', 'read', false);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertSame([], $registry->getEnabledTools(self::ADMIN_USER_ID));
+        self::assertNull($registry->getTool('read_only_skill', self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itShowsAReadOnlyToolWithOnlyAReadGrant(): void
+    {
+        $tool = $this->readOnlySkill();
+        $permissionChecker = (new FakePermissionChecker())->withDecision('read_only_skill', 'read', true);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertSame(['read_only_skill' => $tool], $registry->getEnabledTools(self::ADMIN_USER_ID));
+        self::assertSame($tool, $registry->getTool('read_only_skill', self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itHidesAWriteOnlyToolWhenTheUserOnlyHasReadGrant(): void
+    {
+        $tool = $this->writeOnlySkill();
+        $permissionChecker = (new FakePermissionChecker())
+            ->withDecision('write_only_skill', 'read', true)
+            ->withDecision('write_only_skill', 'write', false);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertSame([], $registry->getEnabledTools(self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itShowsAWriteOnlyToolOnlyWithAWriteGrant(): void
+    {
+        $tool = $this->writeOnlySkill();
+        $permissionChecker = (new FakePermissionChecker())->withDecision('write_only_skill', 'write', true);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertSame(['write_only_skill' => $tool], $registry->getEnabledTools(self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itShowsAMixedToolWithOnlyAReadGrant(): void
+    {
+        $tool = $this->mixedSkill();
+        $permissionChecker = (new FakePermissionChecker())->withDecision('mixed_skill', 'read', true);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertSame(['mixed_skill' => $tool], $registry->getEnabledTools(self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itFiltersTheActionEnumOfAMixedToolToReadActionsWithoutWriteGrant(): void
+    {
+        $tool = $this->mixedSkill();
+        $permissionChecker = (new FakePermissionChecker())
+            ->withDecision('mixed_skill', 'read', true)
+            ->withDecision('mixed_skill', 'write', false);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        $definitions = $registry->getToolDefinitions(self::ADMIN_USER_ID);
+
+        self::assertSame(['view'], $definitions[0]['parameters']['properties']['action']['enum']);
+    }
+
+    #[Test]
+    public function itKeepsTheFullActionEnumOfAMixedToolWithAWriteGrant(): void
+    {
+        $tool = $this->mixedSkill();
+        $permissionChecker = (new FakePermissionChecker())
+            ->withDecision('mixed_skill', 'read', true)
+            ->withDecision('mixed_skill', 'write', true);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        $definitions = $registry->getToolDefinitions(self::ADMIN_USER_ID);
+
+        self::assertSame(['view', 'do'], $definitions[0]['parameters']['properties']['action']['enum']);
+    }
+
+    #[Test]
+    public function itAllowsAReadActionOnAMixedToolWithOnlyAReadGrant(): void
+    {
+        $tool = $this->mixedSkill();
+        $permissionChecker = (new FakePermissionChecker())
+            ->withDecision('mixed_skill', 'read', true)
+            ->withDecision('mixed_skill', 'write', false);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertTrue($registry->isCallAllowed($tool, ['action' => 'view'], self::ADMIN_USER_ID));
+        self::assertFalse($registry->isCallAllowed($tool, ['action' => 'do'], self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itTreatsAMissingActionOnAMixedToolAsWrite(): void
+    {
+        $tool = $this->mixedSkill();
+        $permissionChecker = (new FakePermissionChecker())
+            ->withDecision('mixed_skill', 'read', true)
+            ->withDecision('mixed_skill', 'write', false);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertFalse($registry->isCallAllowed($tool, [], self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itTreatsAnUnknownActionOnAMixedToolAsWrite(): void
+    {
+        $tool = $this->mixedSkill();
+        $permissionChecker = (new FakePermissionChecker())
+            ->withDecision('mixed_skill', 'read', true)
+            ->withDecision('mixed_skill', 'write', false);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertFalse($registry->isCallAllowed($tool, ['action' => 'bogus'], self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itAlwaysChecksReadForAReadOnlyToolRegardlessOfInput(): void
+    {
+        $tool = $this->readOnlySkill();
+        $permissionChecker = (new FakePermissionChecker())->withDecision('read_only_skill', 'read', true);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertTrue($registry->isCallAllowed($tool, [], self::ADMIN_USER_ID));
+        self::assertTrue($registry->isCallAllowed($tool, ['action' => 'bogus'], self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itAlwaysChecksWriteForAWriteOnlyToolRegardlessOfInput(): void
+    {
+        $tool = $this->writeOnlySkill();
+        $permissionChecker = (new FakePermissionChecker())
+            ->withDecision('write_only_skill', 'read', true)
+            ->withDecision('write_only_skill', 'write', false);
+        $registry = new ToolRegistry($permissionChecker, [$tool]);
+
+        self::assertFalse($registry->isCallAllowed($tool, [], self::ADMIN_USER_ID));
+        self::assertFalse($registry->isCallAllowed($tool, ['action' => 'do'], self::ADMIN_USER_ID));
+    }
+
+    #[Test]
+    public function itAllowsEverythingWhenNoPermissionCheckerIsWired(): void
+    {
+        $tool = $this->mixedSkill();
+        $registry = new ToolRegistry(null, [$tool]);
+
+        self::assertSame(['mixed_skill' => $tool], $registry->getEnabledTools(self::ADMIN_USER_ID));
+        self::assertSame($tool, $registry->getTool('mixed_skill', self::ADMIN_USER_ID));
+        self::assertTrue($registry->isCallAllowed($tool, ['action' => 'view'], self::ADMIN_USER_ID));
+        self::assertTrue($registry->isCallAllowed($tool, ['action' => 'do'], self::ADMIN_USER_ID));
+
+        $definitions = $registry->getToolDefinitions(self::ADMIN_USER_ID);
+        self::assertSame(['view', 'do'], $definitions[0]['parameters']['properties']['action']['enum']);
     }
 }
