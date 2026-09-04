@@ -119,7 +119,11 @@ define([], function () {
 
     // Content can arrive as a node, as trusted HTML ({html: ...}) or as plain
     // text (anything else). Plain text is the default so a stray string from a
-    // tool result cannot inject markup.
+    // tool result cannot inject markup. While a spec from an answer is being
+    // rendered (renderJson) HTML is refused altogether, because that spec was
+    // written by the model.
+    var allowHtml = true;
+
     function content(value) {
         if (value === undefined || value === null) {
             return null;
@@ -128,11 +132,44 @@ define([], function () {
             return value;
         }
         if (typeof value === 'object' && typeof value.html === 'string') {
+            if (!allowHtml) {
+                return document.createTextNode(value.html.replace(/<[^>]*>/g, ''));
+            }
             var wrap = el('span');
             wrap.innerHTML = value.html;
             return wrap;
         }
+        if (typeof value === 'object' && typeof value.text === 'string') {
+            return document.createTextNode(value.text);
+        }
         return document.createTextNode(String(value));
+    }
+
+    // Links from specs may only point at web or in-admin URLs; anything else
+    // (javascript:, data:) is dropped so a clickable row cannot run code.
+    function safeHref(href) {
+        if (typeof href !== 'string') {
+            return null;
+        }
+        var trimmed = href.trim();
+        return /^(https?:\/\/|\/|#|\?)/i.test(trimmed) ? trimmed : null;
+    }
+
+    // Colours from specs are limited to literal colours and kit tokens, so a
+    // "color" cannot smuggle a url() into an inline style.
+    function safeColor(color, fallback) {
+        if (typeof color === 'string' && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]*\)|hsla?\([\d\s.,%]*\)|var\(--[\w-]+\)|[a-z]{3,20})$/i.test(color.trim())) {
+            return color.trim();
+        }
+        return fallback;
+    }
+
+    function setHref(node, href) {
+        var safe = safeHref(href);
+        if (safe) {
+            node.href = safe;
+        }
+        return !!safe;
     }
 
     function icon(name, size, strokeWidth) {
@@ -275,7 +312,7 @@ define([], function () {
     function legendRow(items, className) {
         return el('div', 'mago-legend' + (className ? ' ' + className : ''), items.map(function (it, i) {
             var swatch = el('span', 'mago-swatch' + (it.line ? ' is-line' : ''));
-            swatch.style.background = it.color || rampColor(i, items.length);
+            swatch.style.background = safeColor(it.color, rampColor(i, items.length));
             return el('div', 'mago-legend-item', [
                 swatch,
                 it.label,
@@ -396,7 +433,9 @@ define([], function () {
         svg.setAttribute('aria-hidden', 'true');
         svg.innerHTML = '<circle cx="44" cy="44" r="' + r + '" class="mago-ring-track"/>'
             + '<circle cx="44" cy="44" r="' + r + '" class="mago-ring-value" stroke-dasharray="' + (c * pct / 100).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 44 44)"/>'
-            + '<text x="44" y="49" text-anchor="middle" class="mago-ring-text">' + (opts.valueText || Math.round(pct) + '%') + '</text>';
+            + '<text x="44" y="49" text-anchor="middle" class="mago-ring-text"></text>';
+        // The label is caller data, so it goes in as text rather than markup.
+        svg.querySelector('text').textContent = opts.valueText || Math.round(pct) + '%';
         return card('mago-ring', [
             caption(opts.label),
             el('div', 'mago-ring-row', [
@@ -414,7 +453,7 @@ define([], function () {
         var bar = el('div', 'mago-composition-bar', segs.map(function (s, i) {
             var part = el('div', 'mago-composition-seg');
             part.style.width = pctOf(s.value, total).toFixed(2) + '%';
-            part.style.background = s.color || rampColor(i, segs.length);
+            part.style.background = safeColor(s.color, rampColor(i, segs.length));
             part.title = s.label + ' ' + formatNumber(s.value);
             return part;
         }));
@@ -422,7 +461,7 @@ define([], function () {
             caption(opts.label),
             bar,
             legendRow(segs.map(function (s, i) {
-                return {label: s.label, value: s.valueText || formatNumber(s.value), color: s.color || rampColor(i, segs.length)};
+                return {label: s.label, value: s.valueText || formatNumber(s.value), color: safeColor(s.color, rampColor(i, segs.length))};
             }), 'is-wrap')
         ]);
     }
@@ -441,7 +480,7 @@ define([], function () {
             el('div', 'mago-ranked-rows', items.map(function (it, i) {
                 var fill = el('div', 'mago-bar-fill');
                 fill.style.width = pctOf(it.value, max).toFixed(1) + '%';
-                fill.style.background = it.color || rampColor(i, items.length);
+                fill.style.background = safeColor(it.color, rampColor(i, items.length));
                 var row = el('div', 'mago-ranked-row', [
                     el('div', 'mago-ranked-label', it.label),
                     el('div', 'mago-bar-track', fill),
@@ -532,7 +571,7 @@ define([], function () {
         var points = opts.points || [];
         var totals = points.map(function (p) { return (p.values || []).reduce(function (s, v) { return s + v; }, 0); });
         var max = maxOf(totals);
-        var colors = series.map(function (s, i) { return s.color || (i === 0 ? 'var(--mago-ramp-1)' : 'var(--mago-ramp-3)'); });
+        var colors = series.map(function (s, i) { return safeColor(s.color, i === 0 ? 'var(--mago-ramp-1)' : 'var(--mago-ramp-3)'); });
         return card('mago-stacked', [
             el('div', 'mago-widget-head', [
                 caption(opts.label, 'is-grow'),
@@ -624,24 +663,26 @@ define([], function () {
         var items = opts.items || [];
         var list = el('div', 'mago-entities', items.map(function (it) {
             var thumb;
-            if (it.thumb) {
+            if (safeHref(it.thumb)) {
                 thumb = el('img', 'mago-entity-thumb');
-                thumb.src = it.thumb;
+                thumb.src = safeHref(it.thumb);
                 thumb.alt = '';
             } else {
                 thumb = el('div', 'mago-entity-thumb is-empty', icon('imageOff', 18, 2));
             }
             var action = null;
             if (it.action) {
-                action = it.action.href ? el('a', 'mago-entity-action', it.action.label) : el('span', 'mago-entity-action', it.action.label);
-                if (it.action.href) {
-                    action.href = it.action.href;
+                var actionHref = safeHref(it.action.href);
+                action = el(actionHref ? 'a' : 'span', 'mago-entity-action', it.action.label);
+                if (actionHref) {
+                    action.href = actionHref;
                 }
                 if (it.action.onClick) {
                     action.addEventListener('click', function (e) { e.stopPropagation(); it.action.onClick(e, it); });
                 }
             }
-            var row = el(it.href ? 'a' : 'div', 'mago-entity', [
+            var rowHref = safeHref(it.href);
+            var row = el(rowHref ? 'a' : 'div', 'mago-entity', [
                 thumb,
                 el('div', 'mago-entity-text', [
                     el('div', 'mago-entity-title', it.title),
@@ -649,18 +690,19 @@ define([], function () {
                 ]),
                 action
             ]);
-            if (it.href) {
-                row.href = it.href;
+            if (rowHref) {
+                row.href = rowHref;
             }
             return clickable(row, it.onClick ? function (e) { it.onClick(e, it); } : null);
         }));
         if (opts.more) {
-            var more = el(opts.more.href ? 'a' : 'div', 'mago-entity-more', [
+            var moreHref = safeHref(opts.more.href);
+            var more = el(moreHref ? 'a' : 'div', 'mago-entity-more', [
                 opts.more.label || tpl(labels(opts).showMore, opts.more.count),
                 icon('chevronDown', 14, 2.2)
             ]);
-            if (opts.more.href) {
-                more.href = opts.more.href;
+            if (moreHref) {
+                more.href = moreHref;
             }
             list.appendChild(clickable(more, opts.more.onClick));
         }
@@ -789,10 +831,8 @@ define([], function () {
         var iconName = tone === 'ok' ? 'checkCircle' : tone === 'danger' ? 'xCircle' : tone === 'warn' ? 'alert' : 'infoCircle';
         var body = el('div', 'mago-callout-text', content(opts.text));
         if (opts.action) {
-            var a = el(opts.action.href ? 'a' : 'span', 'mago-callout-link', opts.action.label);
-            if (opts.action.href) {
-                a.href = opts.action.href;
-            }
+            var a = el(safeHref(opts.action.href) ? 'a' : 'span', 'mago-callout-link', opts.action.label);
+            setHref(a, opts.action.href);
             if (opts.action.onClick) {
                 a.addEventListener('click', opts.action.onClick);
             }
@@ -810,14 +850,12 @@ define([], function () {
     // W19 Suggestion cards and follow-up chips.
     // {cards: [{label, icon, onClick, href}], chips: [{label, onClick}]}
     function suggestionCard(opts) {
-        var node = el(opts.href ? 'a' : 'div', 'mago-suggestion', [
+        var node = el(safeHref(opts.href) ? 'a' : 'div', 'mago-suggestion', [
             el('span', 'mago-suggestion-icon', icon(opts.icon || 'sparkle', 19, 2)),
             el('span', 'mago-suggestion-label', opts.label),
             icon('chevronRight', 16, 2.2)
         ]);
-        if (opts.href) {
-            node.href = opts.href;
-        }
+        setHref(node, opts.href);
         return clickable(node, opts.onClick);
     }
 
@@ -844,12 +882,13 @@ define([], function () {
     function answerFooter(opts) {
         var primary = null;
         if (opts.primary) {
-            primary = el(opts.primary.href ? 'a' : 'button', 'mago-btn is-ink', [
+            var primaryHref = safeHref(opts.primary.href);
+            primary = el(primaryHref ? 'a' : 'button', 'mago-btn is-ink', [
                 opts.primary.label,
                 icon(opts.primary.external === false ? 'arrowRight' : 'arrowUpRight', 14, 2.2)
             ]);
-            if (opts.primary.href) {
-                primary.href = opts.primary.href;
+            if (primaryHref) {
+                primary.href = primaryHref;
                 if (opts.primary.external) {
                     primary.target = '_blank';
                     primary.rel = 'noopener';
@@ -1411,13 +1450,19 @@ define([], function () {
         var specs = Array.isArray(spec) ? spec : [spec];
         var wrap = el('div', 'mago-answer');
         var built = 0;
-        specs.forEach(function (s) {
-            var node = render(s);
-            if (node) {
-                wrap.appendChild(node);
-                built++;
-            }
-        });
+        // The spec came out of the model's answer: no raw HTML from it.
+        allowHtml = false;
+        try {
+            specs.forEach(function (s) {
+                var node = render(s);
+                if (node) {
+                    wrap.appendChild(node);
+                    built++;
+                }
+            });
+        } finally {
+            allowHtml = true;
+        }
         return built ? wrap.outerHTML : null;
     }
 
