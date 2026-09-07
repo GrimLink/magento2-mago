@@ -19,6 +19,7 @@ use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 use MaggyAssistant\Base\Service\Ai\Client;
+use MaggyAssistant\Base\Service\Command\CommandRunner;
 
 class Stream extends Action implements HttpPostActionInterface
 {
@@ -35,7 +36,8 @@ class Stream extends Action implements HttpPostActionInterface
         private readonly Json $json,
         private readonly ErrorLogger $errorLogger,
         private readonly DebugLogger $debugLogger,
-        private readonly FormKey $formKey
+        private readonly FormKey $formKey,
+        private readonly CommandRunner $commandRunner
     ) {
         parent::__construct($context);
     }
@@ -85,6 +87,14 @@ class Stream extends Action implements HttpPostActionInterface
                 $this->terminateResponse();
             }
 
+            $adminUserId = (int)$user->getId();
+            $adminName = $user->getFirstName() ?: $user->getUserName();
+
+            // Slash commands run against Magento directly and need no AI provider
+            if ($this->commandRunner->isCommand($message)) {
+                $this->runCommand($message, $conversationId, $adminUserId, $adminName);
+            }
+
             // Before the conversation row exists: an unconfigured store would otherwise persist the
             // question and then fail, leaving a conversation nobody ever got an answer to.
             try {
@@ -95,17 +105,7 @@ class Stream extends Action implements HttpPostActionInterface
                 $this->terminateResponse();
             }
 
-            $adminUserId = (int)$user->getId();
-            $adminName = $user->getFirstName() ?: $user->getUserName();
-
-            if (!$conversationId) {
-                $title = mb_substr($message, 0, 50);
-                $conversationId = $this->conversationRepository->create($adminUserId, $title);
-            } else {
-                // Reject posting into another admin's conversation
-                $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
-            }
-
+            $conversationId = $this->resolveConversation($conversationId, $adminUserId, $message);
             $this->conversationRepository->addMessage($conversationId, 'user', $message);
 
             $messages = $this->conversationRepository->getMessages($conversationId);
@@ -218,6 +218,54 @@ class Stream extends Action implements HttpPostActionInterface
         }
 
         $this->terminateResponse();
+    }
+
+    /**
+     * Answer a slash command: persist the exchange like a normal turn, then stream the reply as one
+     * text chunk. The command's tool_status events pass straight through to the panel.
+     */
+    private function runCommand(string $message, ?int $conversationId, int $adminUserId, string $adminName): never
+    {
+        $conversationId = $this->resolveConversation($conversationId, $adminUserId, $message);
+        $this->conversationRepository->addMessage($conversationId, 'user', $message);
+
+        $this->sendSse('conversation', [
+            'conversation_id' => $conversationId,
+            'admin_user' => $adminName,
+        ]);
+
+        $content = $this->commandRunner->run(
+            $message,
+            $adminUserId,
+            function (string $type, array $data) {
+                $this->sendSse($type, $data);
+            }
+        );
+        $this->debugLogger->addLog('Slash Command', ['message' => $message, 'content_length' => strlen($content)]);
+
+        $this->sendSse('text', ['text' => $content]);
+        $messageId = $this->conversationRepository->addMessage($conversationId, 'assistant', $content);
+        $this->sendSse('done', [
+            'message_id' => $messageId,
+            'conversation_id' => $conversationId,
+            'pending_confirmation' => false,
+        ], true);
+        $this->terminateResponse();
+    }
+
+    /**
+     * Existing conversation of this admin, or a new one titled after the message
+     */
+    private function resolveConversation(?int $conversationId, int $adminUserId, string $message): int
+    {
+        if (!$conversationId) {
+            return $this->conversationRepository->create($adminUserId, mb_substr($message, 0, 50));
+        }
+
+        // Reject posting into another admin's conversation
+        $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
+
+        return $conversationId;
     }
 
     private function sendSse(string $event, array $data, bool $pad = false): void
