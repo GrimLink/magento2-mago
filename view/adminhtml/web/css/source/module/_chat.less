@@ -790,6 +790,9 @@ html:has(body.maggy-active) {
     background: var(--maggy-accent, #FF7A33);
     color: var(--maggy-accent-text, #FFFFFF);
     border: none;
+    // The admin theme gives every <button> horizontal padding; on a 40px
+    // border-box that leaves an 8px content box and squashes the icon.
+    padding: 0;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -797,6 +800,12 @@ html:has(body.maggy-active) {
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(var(--maggy-accent-rgb, 255, 122, 51), 0.35);
     transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+
+    svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+    }
 
     &:hover {
         background: var(--maggy-accent-hover, #E65000);
