@@ -179,31 +179,23 @@
         slashActive = true;
         slashMenu.innerHTML = '';
         // S14 skill menu: one row per entry with its risk colour. Commands and skills
-        // get their own menu block when both kinds survive the filter, so the group
-        // headings the command list needs stay visible.
-        var hasBoth = filteredItems.some(function(i) { return i.type === 'command'; })
-            && filteredItems.some(function(i) { return i.type === 'skill'; });
-        var groups = hasBoth
-            ? [
-                {title: 'Commands', items: filteredItems.filter(function(i) { return i.type === 'command'; })},
-                {title: 'Skills', items: filteredItems.filter(function(i) { return i.type === 'skill'; })}
-            ]
-            : [{title: null, items: filteredItems}];
-        groups.forEach(function(group) {
-            slashMenu.appendChild(UI.skillMenu({
-                itemClass: 'maggy-slash-item',
-                title: group.title,
-                skills: group.items.map(function(item) {
-                    return {
-                        name: item.full,
-                        title: item.label,
-                        description: item.description,
-                        risk: item.readOnly ? 'read' : 'write'
-                    };
-                }),
-                onSelect: function(entry, i) { selectSlashItem(group.items[i]); }
-            }));
-        });
+        // get a group heading inside the one menu when both kinds survive the filter.
+        var hasCommands = filteredItems.some(function(i) { return i.type === 'command'; });
+        var hasSkills = filteredItems.some(function(i) { return i.type === 'skill'; });
+        slashMenu.appendChild(UI.skillMenu({
+            itemClass: 'maggy-slash-item',
+            title: hasCommands ? (hasSkills ? 'Commands and skills' : 'Commands') : 'Skills',
+            skills: filteredItems.map(function(item) {
+                return {
+                    name: item.full,
+                    title: item.label,
+                    description: item.description,
+                    risk: item.readOnly ? 'read' : 'write',
+                    group: hasCommands && hasSkills ? (item.type === 'command' ? 'Commands' : 'Skills') : null
+                };
+            }),
+            onSelect: function(entry, i) { selectSlashItem(filteredItems[i]); }
+        }));
         slashMenu.classList.add('is-visible');
     }
 

@@ -1362,14 +1362,25 @@ define([], function () {
     }
 
     // S14 Skill menu: what Mago can do, with a risk colour per skill.
-    // {skills: [{name, title, description, risk: 'read'|'write'|'irreversible'}], activeIndex, onSelect, itemClass}
+    // {skills: [{name, title, description, risk: 'read'|'write'|'irreversible', group}],
+    //  activeIndex, onSelect, itemClass}
+    // A "group" on an entry opens a heading row above it, so one menu can hold several
+    // kinds of entry; activeIndex and the onSelect index stay flat over all of them.
     // Returns the menu; call menu.magoSetActive(i) to move the highlight.
     function skillMenu(opts) {
         var L = labels(opts);
         var skillsList = opts.skills || [];
-        var items = skillsList.map(function (s, i) {
+        var activeIndex = opts.activeIndex || 0;
+        var items = [];
+        var listChildren = [];
+        var openGroup = null;
+        skillsList.forEach(function (s, i) {
+            if (s.group && s.group !== openGroup) {
+                openGroup = s.group;
+                listChildren.push(el('div', 'mago-menu-group', s.group));
+            }
             var risk = s.risk || 'read';
-            var row = el('div', 'mago-menu-item' + (opts.itemClass ? ' ' + opts.itemClass : '') + (i === (opts.activeIndex || 0) ? ' is-active' : ''), [
+            var row = el('div', 'mago-menu-item' + (opts.itemClass ? ' ' + opts.itemClass : '') + (i === activeIndex ? ' is-active' : ''), [
                 el('span', 'mago-risk is-' + risk),
                 el('div', 'mago-menu-text', [
                     el('div', 'mago-menu-title', s.title || s.name),
@@ -1378,11 +1389,14 @@ define([], function () {
                 mono(s.riskLabel || L.risk[risk] || risk, 'mago-menu-risk')
             ]);
             row.setAttribute('role', 'option');
-            return clickable(row, opts.onSelect ? function (e) { opts.onSelect(s, i, e); } : null);
+            row.setAttribute('aria-selected', i === activeIndex ? 'true' : 'false');
+            clickable(row, opts.onSelect ? function (e) { opts.onSelect(s, i, e); } : null);
+            items.push(row);
+            listChildren.push(row);
         });
         var node = el('div', 'mago-menu', [
             opts.hideHead ? null : el('div', 'mago-menu-head', [el('div', 'mago-caption is-grow', opts.title || L.skills), el('div', 'mago-menu-hint', opts.hint || L.menuHint)]),
-            el('div', 'mago-menu-items', items)
+            el('div', 'mago-menu-items', listChildren)
         ]);
         node.setAttribute('role', 'listbox');
         node.magoSetActive = function (index) {
