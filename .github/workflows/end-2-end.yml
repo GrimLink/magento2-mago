@@ -52,8 +52,9 @@ jobs:
       - name: Activate the extension
         run: |
           docker exec mage-os-community-edition ./retry "php bin/magento module:enable MageOS_AiBase MaggyAssistant_Base"
-          # Its modal covers the whole admin on first login and swallows every click.
-          docker exec mage-os-community-edition ./retry "php bin/magento module:disable Magento_AdminAnalytics"
+          # Two dashboard modals cover the whole admin on first login and swallow every click:
+          # the admin usage tracking modal and the release notification banner.
+          docker exec mage-os-community-edition ./retry "php bin/magento module:disable Magento_AdminAnalytics Magento_ReleaseNotification"
           docker exec mage-os-community-edition ./retry "php bin/magento setup:upgrade --keep-generated --no-interaction"
 
       - name: Configure Mage-OS

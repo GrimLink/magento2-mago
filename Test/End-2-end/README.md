@@ -42,12 +42,19 @@ An AI service has to be configured too, or the panel answers every question with
 backend tests set one up below; for the browser-level tests any row will do, since they never
 reach a provider.
 
-On a freshly installed store, Magento's admin usage tracking modal covers the screen on first
-login and swallows every click. Either answer it once by hand or disable the module:
+On a freshly installed store, two dashboard modals cover the screen on first login and swallow
+every click: Magento's admin usage tracking modal and the release notification banner. Either
+answer both once by hand or disable the modules:
 
 ```bash
-bin/magento module:disable Magento_AdminAnalytics
+bin/magento module:disable Magento_AdminAnalytics Magento_ReleaseNotification
+bin/magento cache:flush
 ```
+
+`ddev maggy-e2e` disables `Magento_ReleaseNotification` for you before every run, if it is
+enabled, and reports what it did. `Magento_AdminAnalytics` depends on it, so the script disables
+that one too when it is still enabled, since Magento refuses to disable a module something else
+still depends on. The CI workflow (`.github/workflows/end-2-end.yml`) disables both on every run.
 
 The `setup` project logs in once and stores the session in `.auth/backend.json`,
 which every other test reuses. It fails with an explicit message if the panel is missing.
