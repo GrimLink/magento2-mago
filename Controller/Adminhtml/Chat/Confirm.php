@@ -80,9 +80,19 @@ class Confirm extends Action implements HttpPostActionInterface
                 $toolCalls = $this->json->unserialize($toolCalls);
             }
 
-            $results = $this->chatService->executeConfirmedTools($toolCalls, $adminUserId, function (string $type, array $data) {
-                $this->sendSse($type, $data);
-            });
+            // A bulk confirmation sends the ticked tool call ids; without the field everything runs
+            $selectedIds = isset($postData['tool_call_ids']) && is_array($postData['tool_call_ids'])
+                ? array_values(array_map('strval', $postData['tool_call_ids']))
+                : null;
+
+            $results = $this->chatService->executeConfirmedTools(
+                $toolCalls,
+                $adminUserId,
+                function (string $type, array $data) {
+                    $this->sendSse($type, $data);
+                },
+                $selectedIds
+            );
             $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId);
 
             $conversationId = (int)$message['conversation_id'];

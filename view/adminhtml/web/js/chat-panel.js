@@ -3,6 +3,8 @@
     var formKey = config.formKey;
     var skills = config.skills;
     var commands = config.commands || [];
+    // Widget and skill-card builders (js/mago-ui.js); loaded before this file by panel.phtml.
+    var UI = window.MagoUI;
     var conversationId = null;
     var busy = false;
     var showingHistory = false;
@@ -89,6 +91,7 @@
         expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
         syncToggleLabel();
         if (showingHistory) hideHistory();
+        if (showingLog) hideLog();
         hideSlashMenu();
         saveState();
     }
@@ -116,6 +119,7 @@
     };
     qs('#maggy-new').onclick = function() {
         if (showingHistory) hideHistory();
+        if (showingLog) hideLog();
         clearMsgs();
         conversationId = null;
         showGreeting();
@@ -174,30 +178,102 @@
         slashIndex = 0;
         slashActive = true;
         slashMenu.innerHTML = '';
-        var hasBoth = filteredItems.some(function(i) { return i.type === 'command'; })
-            && filteredItems.some(function(i) { return i.type === 'skill'; });
-        var lastType = null;
-        filteredItems.forEach(function(item, i) {
-            if (hasBoth && item.type !== lastType) {
-                var group = document.createElement('div');
-                group.className = 'maggy-slash-group';
-                group.textContent = item.type === 'command' ? 'Commands' : 'Skills';
-                slashMenu.appendChild(group);
-                lastType = item.type;
-            }
-            var div = document.createElement('div');
-            div.className = 'maggy-slash-item' + (i === 0 ? ' is-active' : '');
-            var badge = item.readOnly
-                ? '<span class="maggy-slash-item-badge maggy-slash-item-badge--read">read</span>'
-                : '<span class="maggy-slash-item-badge maggy-slash-item-badge--write">write</span>';
-            var shortDesc = item.description.length > 60 ? item.description.substring(0, 60) + '...' : item.description;
-            div.innerHTML = '<span class="maggy-slash-item-name">' + esc(item.label) + '</span>'
-                + '<span class="maggy-slash-item-desc">' + esc(shortDesc) + '</span>'
-                + badge;
-            div.onclick = function() { selectSlashItem(item); };
-            slashMenu.appendChild(div);
-        });
+        // S14 skill menu: one row per entry with its risk colour. Commands and skills
+        // get a group heading inside the one menu when both kinds survive the filter.
+        var hasCommands = filteredItems.some(function(i) { return i.type === 'command'; });
+        var hasSkills = filteredItems.some(function(i) { return i.type === 'skill'; });
+        slashMenu.appendChild(UI.skillMenu({
+            itemClass: 'maggy-slash-item',
+            title: hasCommands ? (hasSkills ? 'Commands and skills' : 'Commands') : 'Skills',
+            skills: filteredItems.map(function(item) {
+                return {
+                    name: item.full,
+                    title: item.label,
+                    description: item.description,
+                    risk: item.readOnly ? 'read' : 'write',
+                    group: hasCommands && hasSkills ? (item.type === 'command' ? 'Commands' : 'Skills') : null
+                };
+            }),
+            onSelect: function(entry, i) { selectSlashItem(filteredItems[i]); }
+        }));
         slashMenu.classList.add('is-visible');
+    }
+
+    // "cms_data" reads as "Cms data" in a card title; the mono badge keeps the real name.
+    function skillTitle(toolName) {
+        var t = String(toolName || '').replace(/_/g, ' ');
+        return t.charAt(0).toUpperCase() + t.slice(1);
+    }
+
+    // "Cms data · create_page": how one tool call is named in a list.
+    function toolLabel(tool) {
+        var action = tool.input && tool.input.action ? ' · ' + tool.input.action : '';
+        return skillTitle(tool.name) + action;
+    }
+
+    // The first few parameters on one line, for a bulk row: "identifier: summer-sale, title: Summer Sale".
+    function summarizeInput(input) {
+        var parts = [];
+        Object.keys(input || {}).forEach(function(k) {
+            if (k === 'action' || parts.length >= 3) return;
+            var v = input[k];
+            if (v === null || v === undefined || v === '') return;
+            v = typeof v === 'object' ? JSON.stringify(v) : String(v);
+            parts.push(k + ': ' + (v.length > 40 ? v.slice(0, 37) + '…' : v));
+        });
+        return parts.join(', ');
+    }
+
+    // S12: every write the assistant ran (or skipped, or that failed) in this browser session,
+    // kept in sessionStorage so it survives the page loads an admin makes between questions.
+    var SS_KEY_LOG = 'maggy_log';
+    var logBtn = qs('#maggy-log');
+    var logView = qs('#maggy-log-view');
+    var showingLog = false;
+
+    function readLog() {
+        try { return JSON.parse(sessionStorage.getItem(SS_KEY_LOG) || '[]'); } catch(e) { return []; }
+    }
+
+    function logWrite(title, action, state) {
+        var entries = readLog();
+        entries.unshift({
+            text: title + (action ? ' · ' + action : '') + (state === 'skipped' ? ' (not run)' : state === 'failed' ? ' (failed)' : ''),
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
+            tone: state === 'failed' ? 'danger' : state === 'skipped' ? 'muted' : undefined
+        });
+        try { sessionStorage.setItem(SS_KEY_LOG, JSON.stringify(entries.slice(0, 50))); } catch(e) {}
+        if (logBtn) logBtn.classList.toggle('has-entries', entries.length > 0);
+    }
+
+    function showLog() {
+        if (!logView) return;
+        if (showingHistory) hideHistory();
+        showingLog = true;
+        var entries = readLog();
+        logView.innerHTML = '';
+        logView.appendChild(entries.length
+            ? UI.sessionLog({title: 'Changes this session', entries: entries})
+            : UI.empty({title: 'No changes yet', text: 'Every write the assistant runs in this session is listed here.', icon: 'list'}));
+        msgs.style.display = 'none';
+        loading.style.display = 'none';
+        inputArea.style.display = 'none';
+        logView.style.display = '';
+        if (logBtn) logBtn.classList.add('is-active');
+    }
+
+    function hideLog() {
+        if (!logView) return;
+        showingLog = false;
+        logView.style.display = 'none';
+        msgs.style.display = '';
+        inputArea.style.display = '';
+        if (logBtn) logBtn.classList.remove('is-active');
+    }
+
+    if (logBtn) {
+        logBtn.onclick = function() { if (showingLog) hideLog(); else showLog(); };
+        logBtn.classList.toggle('has-entries', readLog().length > 0);
     }
 
     function hideSlashMenu() {
@@ -307,6 +383,7 @@
     }
 
     function loadHistory() {
+        if (showingLog) hideLog();
         showingHistory = true;
         msgs.style.display = 'none';
         loading.style.display = 'none';
@@ -433,6 +510,17 @@
             var html = marked.Renderer.prototype.table.call(this, token);
             return '<div class="maggy-table-wrap">' + html + '</div>';
         };
+        // A ```mago fenced block holds a widget spec ({"type": "stat", ...} or a
+        // list of them) and renders as the matching widget. While the block is
+        // still streaming in, the JSON is incomplete and a skeleton holds its place.
+        markedRenderer.code = function(token) {
+            var lang = typeof token === 'object' ? token.lang : arguments[1];
+            if (lang === 'mago' && UI) {
+                var code = typeof token === 'object' ? token.text : token;
+                return UI.renderJson(code) || UI.skeleton().outerHTML;
+            }
+            return marked.Renderer.prototype.code.apply(this, arguments);
+        };
         marked.use({ renderer: markedRenderer, gfm: true, breaks: true });
     }
 
@@ -496,7 +584,10 @@
         var timeHtml = timestamp ? '<div class="maggy-msg-time">' + esc(formatTime(timestamp)) + '</div>' : '';
         var div = document.createElement('div');
         div.className = 'maggy-message ' + cls;
+        // Tool tags, then the read-only trace (S06), then the answer itself, as in
+        // the design: what Mago looked up sits above what it concluded.
         div.innerHTML = '<div class="maggy-tool-tags"></div>'
+            + '<div class="maggy-tool-trace mago-trace is-tight"></div>'
             + '<div class="maggy-message-content">' + html + '</div>' + timeHtml;
         chat.classList.remove('is-empty');
         msgs.insertBefore(div, loading);
@@ -504,32 +595,65 @@
         return div;
     }
 
-    function clearDoneStatuses(msgEl) {
-        var done = msgEl.querySelectorAll('.maggy-tool-status.is-done');
-        for (var i = 0; i < done.length; i++) done[i].remove();
-    }
-
+    // S06: a read-only call is one quiet line above the answer — spinner while
+    // it runs, a check when it is done. The lines stay for as long as the answer
+    // is on screen, so it is always clear what Mago looked up.
     function updateToolStatus(msgEl, toolName, status, message) {
         if (status === 'running') {
-            var el = document.createElement('div');
-            el.className = 'maggy-tool-status';
+            var el = UI.readLine({text: message || ('Running ' + toolName + '…'), tool: toolName, state: 'active'});
+            el.classList.add('maggy-tool-status');
             el.setAttribute('data-tool', toolName);
-            el.innerHTML = '<span class="maggy-tool-status-spinner"></span><span class="maggy-tool-status-text">' + esc(message || ('Running ' + toolName + '...')) + '</span>';
-            var contentEl = msgEl.querySelector('.maggy-message-content');
-            contentEl.after(el);
+            var trace = msgEl.querySelector('.maggy-tool-trace');
+            if (trace) {
+                trace.appendChild(el);
+            } else {
+                msgEl.querySelector('.maggy-message-content').before(el);
+            }
             msgs.scrollTop = msgs.scrollHeight;
-        } else if (status === 'done') {
+        } else if (status === 'done' || status === 'failed') {
             var statusEl = msgEl.querySelector('.maggy-tool-status[data-tool="' + toolName + '"]:not(.is-done)');
             if (statusEl) {
-                var spinner = statusEl.querySelector('.maggy-tool-status-spinner');
-                if (spinner) {
-                    spinner.className = 'maggy-tool-status-check';
-                    spinner.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                statusEl.magoSetState(status);
+                statusEl.classList.add('maggy-tool-status', 'mago-readline', 'is-done');
+                if (status === 'failed' && message) {
+                    statusEl.title = message;
                 }
-                statusEl.classList.add('is-done');
             }
         }
     }
+
+    // Answer widgets arrive as static HTML from the markdown renderer, so their
+    // interactions are wired here once: a chip or suggestion card asks its label,
+    // a value prompt (S10) sends the value the admin typed or picked.
+    function askFromWidget(text) {
+        if (!text || busy) return;
+        input.value = text;
+        input.dispatchEvent(new Event('input'));
+        send();
+    }
+
+    msgs.addEventListener('click', function(e) {
+        var scope = e.target.closest('.maggy-message-content');
+        if (!scope) return;
+        var chip = e.target.closest('.mago-chip, .mago-suggestion:not([href])');
+        if (chip) {
+            e.preventDefault();
+            askFromWidget(chip.textContent.trim());
+            return;
+        }
+        var submit = e.target.closest('.mago-field-row .mago-btn');
+        if (submit) {
+            var field = submit.parentNode.querySelector('.mago-field-input');
+            if (field && field.value.trim()) askFromWidget(field.value.trim());
+        }
+    });
+
+    msgs.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.classList.contains('mago-field-input') && e.target.closest('.maggy-message-content')) {
+            e.preventDefault();
+            if (e.target.value.trim()) askFromWidget(e.target.value.trim());
+        }
+    });
 
     function addToolTag(msgEl, toolName) {
         var tags = msgEl.querySelector('.maggy-tool-tags');
@@ -541,22 +665,10 @@
         tags.appendChild(tag);
     }
 
-    function formatConfirmMessage(tools) {
-        if (!tools || !tools.length) return 'I want to perform an action. Allow this?';
-        var parts = [];
-        tools.forEach(function(t) {
-            var line = '**' + t.name + '**';
-            if (t.input) {
-                var params = Object.keys(t.input).map(function(k) {
-                    var v = t.input[k];
-                    if (v !== null && typeof v === 'object') { v = JSON.stringify(v); }
-                    return k + ': `' + v + '`';
-                });
-                if (params.length) line += ' — ' + params.join(', ');
-            }
-            parts.push(line);
-        });
-        return 'I want to perform the following action:\n\n' + parts.join('\n') + '\n\nAllow this?';
+    // Errors land as a callout (W18) under whatever text already streamed.
+    function showError(msgEl, text) {
+        msgEl.appendChild(UI.callout({tone: 'danger', text: text || 'Unknown error'}));
+        msgs.scrollTop = msgs.scrollHeight;
     }
 
     function showGreeting() {
@@ -618,7 +730,6 @@
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
-                        clearDoneStatuses(msg);
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='conversation') { conversationId=d.conversation_id; saveState(); }
@@ -633,17 +744,15 @@
                     else if (evt==='confirm') {
                         writeToolDetected = true;
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
-                        var desc = formatConfirmMessage(d.tools || []);
-                        content.innerHTML = renderMd(desc);
                         setBusy(false);
-                        showConfirmButtons(msg, conversationId);
+                        showConfirmButtons(msg, conversationId, d.tools || []);
                     }
                     else if (evt==='done') {
                         gotDone = true;
                         if(d.conversation_id) conversationId=d.conversation_id;
                         saveState(); setBusy(false);
                         if (d.pending_confirmation && msg && !writeToolDetected) {
-                            showConfirmButtons(msg, d.message_id || conversationId);
+                            showConfirmButtons(msg, d.message_id || conversationId, []);
                         }
                         if (!d.pending_confirmation && writeToolDetected) {
                             writeToolDetected = false;
@@ -651,7 +760,7 @@
                     }
                     else if (evt==='error') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
-                        full+='\n\nError: '+(d.error||'Unknown'); content.innerHTML=renderMd(full);
+                        showError(msg, d.error);
                     }
                 }
             }
@@ -670,19 +779,91 @@
         }).catch(function(e) {
             setBusy(false);
             if (!msg) { msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
-            content.innerHTML='<em>Connection error: '+esc(e.message)+'</em>';
+            showError(msg, 'Connection error: ' + e.message);
         });
     }
-    function showConfirmButtons(msgEl, messageIdOrConvId) {
-        // Prevent duplicate confirm buttons
+
+    // S01: a write action asks first. The card names the skill, lists the
+    // parameters it will run with and offers Allow / Not now. Once allowed it
+    // turns into the S02 progress card, and when the run finishes into the S03
+    // collapsed line; "Not now" leaves a muted line and no call is made.
+    function showConfirmButtons(msgEl, messageIdOrConvId, tools) {
+        // Prevent duplicate confirm cards
         if (msgEl.querySelector('.maggy-confirm-actions')) return;
 
-        var actions = document.createElement('div');
-        actions.className = 'maggy-confirm-actions';
-        actions.innerHTML = '<button type="button" class="maggy-btn maggy-btn--confirm">Confirm</button>'
-            + '<button type="button" class="maggy-btn maggy-btn--reject">Reject</button>';
-        msgEl.appendChild(actions);
+        tools = tools || [];
+        var first = tools[0] || null;
+        var title = first ? skillTitle(first.name) : 'Confirm action';
+        var text = first && first.description ? first.description : 'I want to perform an action. Allow this?';
+        var hooks = {actions: 'maggy-confirm-actions', allow: 'maggy-btn--confirm', confirm: 'maggy-btn--confirm', later: 'maggy-btn--reject', cancel: 'maggy-btn--reject'};
+        var irreversible = tools.filter(function(t) { return t.irreversible; });
+        var card;
+
+        if (tools.length > 1) {
+            // S08: several writes in one turn become a tick list; only the ticked ones run.
+            title = tools.length + ' actions';
+            card = UI.skillBulk({
+                title: title,
+                text: 'Choose which of these to run.',
+                notice: irreversible.length ? UI.callout({tone: 'danger', text: irreversible.length + ' of these cannot be undone: ' + irreversible.map(function(t) { return toolLabel(t); }).join(', ') + '.'}) : null,
+                items: tools.map(function(t, i) {
+                    return {id: t.id || String(i), label: toolLabel(t), meta: summarizeInput(t.input)};
+                }),
+                confirmLabel: function(n) { return 'Run ' + n; },
+                classes: hooks,
+                onConfirm: function(ids) { decide(true, ids); },
+                onLater: function() { decide(false); }
+            });
+        } else if (first && first.irreversible) {
+            // S07: the write has no undo, so it asks with its impact list and a ticked acknowledgement.
+            card = UI.skillIrreversible({
+                title: title,
+                tool: first.name,
+                text: text,
+                params: UI.paramsFromInput(first.input),
+                impacts: first.impacts || [],
+                ackLabel: 'I understand this cannot be undone',
+                confirmLabel: 'Allow',
+                classes: hooks,
+                onConfirm: function() { decide(true); },
+                onCancel: function() { decide(false); }
+            });
+        } else {
+            // S01: a reversible write asks with its parameters and a plain Allow.
+            card = UI.skillAsk({
+                title: title,
+                tool: first ? first.name : null,
+                text: text,
+                params: first ? UI.paramsFromInput(first.input) : [],
+                classes: hooks,
+                onAllow: function() { decide(true); },
+                onLater: function() { decide(false); }
+            });
+        }
+        var actions = card.querySelector('.maggy-confirm-actions');
+        msgEl.appendChild(card);
         msgs.scrollTop = msgs.scrollHeight;
+
+        function decide(allowed, selectedIds) {
+            actions.innerHTML = '';
+            actions.appendChild(UI.spinner());
+            getMessageId(function(mid) {
+                if (allowed) {
+                    var running = UI.skillRunning({title: title, progress: 30});
+                    card.replaceWith(running);
+                    var run = {card: running, title: title, tools: tools, startedAt: Date.now()};
+                    if (selectedIds) {
+                        run.selected = selectedIds;
+                        run.skipped = tools.filter(function(t, i) { return selectedIds.indexOf(t.id || String(i)) === -1; });
+                    }
+                    handleConfirm(mid, run);
+                } else {
+                    card.replaceWith(UI.skillLine({title: title, action: first && first.input ? first.input.action : null, state: 'skipped'}));
+                    logWrite(title, first && first.input ? first.input.action : null, 'skipped');
+                    handleReject(mid);
+                }
+            });
+        }
 
         function getMessageId(callback) {
             // If we already have a message_id from the done event, use it
@@ -707,43 +888,68 @@
                 setTimeout(function() { getMessageId(callback); }, 1000);
             });
         }
-
-        actions.querySelector('.maggy-btn--confirm').onclick = function() {
-            actions.innerHTML = '<span style="color:#999;font-size:12px;">Processing...</span>';
-            getMessageId(function(mid) {
-                actions.remove();
-                handleConfirm(mid);
-            });
-        };
-        actions.querySelector('.maggy-btn--reject').onclick = function() {
-            actions.innerHTML = '<span style="color:#999;font-size:12px;">Processing...</span>';
-            getMessageId(function(mid) {
-                actions.remove();
-                handleReject(mid);
-            });
-        };
     }
 
-    function handleConfirm(messageId) {
+    // run = {card, title, tools, startedAt}: the S02 card that replaced the
+    // question; tool_status events feed its step list and "done" collapses it.
+    function handleConfirm(messageId, run) {
         setBusy(true);
         var msg = null, content = null, full = '';
+
+        var failureMessage = '';
+
+        // The S02 card ends as the S03 line (done) or the S04 card (failed); the log gets a row either way.
+        function finishRun(state) {
+            if (!run || !run.card || !run.card.parentNode) return;
+            var first = run.tools && run.tools[0];
+            var action = run.tools && run.tools.length === 1 && first && first.input ? first.input.action : null;
+            var seconds = ((Date.now() - run.startedAt) / 1000).toFixed(1).replace('.', ',') + 's';
+            if (state === 'failed') {
+                run.card.replaceWith(UI.skillFailed({
+                    title: run.title + ' failed',
+                    text: failureMessage || 'The action did not complete.',
+                    code: first && run.tools.length === 1 ? first.name : null
+                }));
+            } else {
+                run.card.replaceWith(UI.skillLine({
+                    title: run.title,
+                    action: action,
+                    duration: seconds,
+                    state: state,
+                    request: run.tools && run.tools.length === 1 && first ? first.input : undefined
+                }));
+            }
+            (run.tools || []).forEach(function(t, i) {
+                var skipped = run.skipped && run.skipped.indexOf(t) !== -1;
+                logWrite(skillTitle(t.name), t.input ? t.input.action : null, skipped ? 'skipped' : state);
+            });
+            run.card = null;
+        }
+
+        var body = {message_id: messageId, form_key: formKey};
+        if (run && run.selected) {
+            body.tool_call_ids = run.selected;
+        }
 
         fetch(config.confirmUrl, {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
-            body: JSON.stringify({message_id: messageId, form_key: formKey}),
+            body: JSON.stringify(body),
             credentials: 'same-origin'
         }).then(function(r) {
             var ct = r.headers.get('content-type') || '';
             if (ct.indexOf('text/event-stream') === -1) {
                 return r.json().then(function(d) {
                     setBusy(false);
-                    if (d.error) addMsg('assistant', renderMd('Error: ' + d.error));
+                    finishRun(d.error ? 'failed' : 'done');
+                    if (d.error) showError(addMsg('assistant', ''), d.error);
                 });
             }
             var reader = r.body.getReader();
             var dec = new TextDecoder();
             var buf = '', evt = '';
+            var failed = false;
+            var activeStep = null;
 
             function processLine(ln) {
                 ln = ln.trim();
@@ -752,7 +958,6 @@
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
-                        clearDoneStatuses(msg);
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='tool_call') {
@@ -760,19 +965,38 @@
                         addToolTag(msg, d.name);
                     }
                     else if (evt==='tool_status') {
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
-                        updateToolStatus(msg, d.name, d.status, d.message);
+                        // The confirmed write reports into the progress card; anything
+                        // after it (follow-up reads) goes under the new answer.
+                        if (run && run.card) {
+                            if (d.status === 'running') {
+                                activeStep = run.card.magoAddStep({label: d.message || d.name, state: 'active'});
+                            } else if (d.status === 'failed') {
+                                failed = true;
+                                failureMessage = d.message || failureMessage;
+                                if (activeStep) { activeStep.magoSetState('failed'); activeStep = null; }
+                            } else if (d.status === 'done' && activeStep) {
+                                activeStep.magoSetState('done');
+                                activeStep = null;
+                                run.card.magoUpdate({progress: 90});
+                            }
+                        } else {
+                            if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                            updateToolStatus(msg, d.name, d.status, d.message);
+                        }
                     }
                     else if (evt==='done') {
                         if (d.conversation_id) conversationId=d.conversation_id;
                         saveState(); setBusy(false);
+                        finishRun(failed ? 'failed' : 'done');
                         if (d.pending_confirmation && msg) {
-                            showConfirmButtons(msg, d.message_id || conversationId);
+                            showConfirmButtons(msg, d.message_id || conversationId, []);
                         }
                     }
                     else if (evt==='error') {
+                        failed = true;
+                        failureMessage = failureMessage || d.error || '';
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
-                        full+='\n\nError: '+(d.error||'Unknown'); content.innerHTML=renderMd(full);
+                        showError(msg, d.error);
                     }
                 }
             }
@@ -785,6 +1009,7 @@
                         lines.forEach(processLine);
                     }
                     setBusy(false);
+                    finishRun(failed ? 'failed' : 'done');
                     return;
                 }
                 buf += dec.decode(res.value, {stream:true});
@@ -795,7 +1020,8 @@
             return reader.read().then(read);
         }).catch(function(e) {
             setBusy(false);
-            addMsg('assistant', renderMd('Error confirming action: ' + e.message));
+            finishRun('failed');
+            showError(addMsg('assistant', ''), 'Error confirming action: ' + e.message);
         });
     }
 
@@ -808,7 +1034,7 @@
         }).then(function(r) { return r.json(); }).then(function(d) {
             addMsg('assistant', renderMd('Action rejected. No changes were made.'));
         }).catch(function(e) {
-            addMsg('assistant', renderMd('Error: ' + e.message));
+            showError(addMsg('assistant', ''), e.message);
         });
     }
 

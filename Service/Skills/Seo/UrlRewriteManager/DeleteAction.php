@@ -8,9 +8,9 @@ namespace MaggyAssistant\Base\Service\Skills\Seo\UrlRewriteManager;
 
 use Magento\UrlRewrite\Model\ResourceModel\UrlRewrite as UrlRewriteResource;
 use Magento\UrlRewrite\Model\UrlRewriteFactory;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface;
 
-class DeleteAction implements ActionInterface
+class DeleteAction implements IrreversibleActionInterface
 {
     public function __construct(
         private readonly UrlRewriteFactory $urlRewriteFactory,
@@ -51,6 +51,31 @@ class DeleteAction implements ActionInterface
     public function getInstructions(): string
     {
         return '';
+    }
+
+    public function getImpacts(array $params, int $adminUserId): array
+    {
+        $rewriteId = (int)($params['url_rewrite_id'] ?? 0);
+        $lines = [];
+        try {
+            $urlRewrite = $this->urlRewriteFactory->create();
+            $this->urlRewriteResource->load($urlRewrite, $rewriteId);
+            if ($urlRewrite->getId()) {
+                $lines[] = 'Rewrite "' . $urlRewrite->getData('request_path') . '" (ID ' . $rewriteId . ') is removed; '
+                    . 'visitors on that URL get a 404 until a new rewrite exists.';
+                if ($urlRewrite->getData('entity_type') !== 'custom') {
+                    $lines[] = 'This is an auto-generated rewrite, so the delete will be refused.';
+                }
+            }
+        } catch (\Exception $e) {
+            $lines[] = 'The rewrite could not be inspected: ' . $e->getMessage();
+        }
+        if ($lines === []) {
+            $lines[] = 'URL rewrite ' . $rewriteId . ' is removed; visitors on its URL get a 404.';
+        }
+        $lines[] = 'There is no trash bin; restoring it means recreating it by hand.';
+
+        return $lines;
     }
 
     public function execute(array $params, int $adminUserId): array

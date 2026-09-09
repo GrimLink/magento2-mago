@@ -10,7 +10,8 @@ AI-powered admin assistant — chat with your store using the AI provider of you
 - **Slash commands** — `/cache flush`, `/cache clean <type>`, `/index status`, `/index reindex` run directly against Magento, no AI round-trip
 - **Extensible architecture** — third-party modules can register custom skills via DI
 - **ACL-based permissions** — read/write access controlled per admin role
-- **Write confirmation** — destructive actions always require explicit user approval
+- **Write confirmation** — every write asks first; irreversible actions (cancel, refund, delete) show their impact and need an explicit acknowledgement, several writes in one turn become a tick list
+- **Answer widgets** — stat cards, charts, tables and record lists in the answer where the data allows it (see [docs/ui-components.md](docs/ui-components.md))
 - **Multi-provider** — Anthropic, OpenAI, Azure, Google Gemini, DeepSeek, Hugging Face, OpenRouter, Ollama and LM Studio, through [MageOS_AiBase](https://github.com/mage-os-lab/module-ai-base)
 - **Documentation grounding** — answers admin how-to questions from Magento/Adobe Commerce docs, fetched into your database (optional)
 
@@ -80,6 +81,8 @@ Typing `/` in the chat shows the available commands. These run without the AI pr
 | `/help` | List the commands you may use |
 
 Write commands need the `MaggyAssistant_Base::assistant_write` ACL resource plus a write grant on the underlying skill. See [docs/skills-architecture.md](docs/skills-architecture.md#slash-commands) for registering your own commands.
+
+The answer widgets and skill cards the chat panel renders are documented in [docs/ui-components.md](docs/ui-components.md); [docs/ui-components-examples.md](docs/ui-components-examples.md) shows every component with sample data and the call behind it.
 
 ## Documentation grounding
 

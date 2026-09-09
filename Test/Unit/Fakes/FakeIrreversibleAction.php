@@ -6,20 +6,20 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Test\Unit\Fakes;
 
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface;
 
-final class FakeAction implements ActionInterface
+/**
+ * A write action that cannot be undone, with a fixed impact list
+ */
+final class FakeIrreversibleAction implements IrreversibleActionInterface
 {
     /**
-     * @param array<string, array<string, mixed>> $parameterSchema
-     * @param array<string, mixed>|null $result What execute() answers; null for the default echo
+     * @param string[] $impacts
      */
     public function __construct(
         private readonly string $name,
-        private readonly bool $isReadOnly,
-        private readonly array $parameterSchema = [],
-        private readonly string $instructions = '',
-        private readonly ?array $result = null
+        private readonly array $impacts = [],
+        private readonly ?\Throwable $impactsFailure = null
     ) {
     }
 
@@ -35,7 +35,7 @@ final class FakeAction implements ActionInterface
 
     public function getParameterSchema(): array
     {
-        return $this->parameterSchema;
+        return [];
     }
 
     public function getAclResource(): ?string
@@ -45,16 +45,25 @@ final class FakeAction implements ActionInterface
 
     public function isReadOnly(): bool
     {
-        return $this->isReadOnly;
+        return false;
     }
 
     public function execute(array $params, int $adminUserId): array
     {
-        return $this->result ?? ['executed' => $this->name, 'admin_user_id' => $adminUserId];
+        return ['executed' => $this->name];
     }
 
     public function getInstructions(): string
     {
-        return $this->instructions;
+        return '';
+    }
+
+    public function getImpacts(array $params, int $adminUserId): array
+    {
+        if ($this->impactsFailure) {
+            throw $this->impactsFailure;
+        }
+
+        return $this->impacts;
     }
 }

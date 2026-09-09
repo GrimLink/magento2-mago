@@ -8,9 +8,11 @@ namespace MaggyAssistant\Base\Service\Skills;
 
 use Magento\Framework\AuthorizationInterface;
 use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface;
 use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
+use MaggyAssistant\Base\Api\Tool\IrreversibleToolInterface;
 
-abstract class AbstractSkill implements ActionScopedToolInterface
+abstract class AbstractSkill implements ActionScopedToolInterface, IrreversibleToolInterface
 {
     /** @var ActionInterface[] */
     private readonly array $actions;
@@ -152,6 +154,28 @@ abstract class AbstractSkill implements ActionScopedToolInterface
         }
 
         return $this->isReadOnly();
+    }
+
+    public function isIrreversibleAction(array $input): bool
+    {
+        return $this->irreversibleAction($input) !== null;
+    }
+
+    public function getImpacts(array $input, int $adminUserId): array
+    {
+        $action = $this->irreversibleAction($input);
+
+        return $action ? array_values($action->getImpacts($input, $adminUserId)) : [];
+    }
+
+    /**
+     * The action named in $input, when it declares itself irreversible
+     */
+    private function irreversibleAction(array $input): ?IrreversibleActionInterface
+    {
+        $action = $this->actions[$input['action'] ?? ''] ?? null;
+
+        return $action instanceof IrreversibleActionInterface ? $action : null;
     }
 
     public function getInstructions(): string

@@ -13,6 +13,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface;
 use MaggyAssistant\Base\Logger\DebugLogger;
 use MaggyAssistant\Base\Logger\ErrorLogger;
+use MaggyAssistant\Base\Service\Ai\AnswerWidgets;
 use MaggyAssistant\Base\Service\Ai\ChatService;
 use MaggyAssistant\Base\Service\Ai\Client;
 use MaggyAssistant\Base\Service\Skills\PermissionChecker;
@@ -22,6 +23,7 @@ use MaggyAssistant\Base\Service\Usage\UsageLogger;
 use MaggyAssistant\Base\Test\Unit\Fakes\BuildsStoreLayouts;
 use MaggyAssistant\Base\Test\Unit\Fakes\FakeAction;
 use MaggyAssistant\Base\Test\Unit\Fakes\FakeConfigRepository;
+use MaggyAssistant\Base\Test\Unit\Fakes\FakeIrreversibleAction;
 use MaggyAssistant\Base\Test\Unit\Fakes\FakeLogger;
 use MaggyAssistant\Base\Test\Unit\Fakes\FakeSkill;
 use PHPUnit\Framework\Attributes\Test;
@@ -51,14 +53,26 @@ final class ChatServiceTest extends TestCase
 
     protected function setUp(): void
     {
+        $this->grants = ['cms_data' => 'read'];
+        $this->chatService = $this->buildChatService();
+    }
+
+    /**
+     * The service under test: a cms_data skill with one read and one write action, plus whatever
+     * extra skills a test needs (an irreversible order action, a tool that fails, ...).
+     *
+     * @param FakeSkill[] $extraSkills
+     */
+    private function buildChatService(array $extraSkills = []): ChatService
+    {
         $authorization = $this->createMock(AuthorizationInterface::class);
         $authorization->method('isAllowed')->willReturn(true);
 
         $cmsData = new FakeSkill('cms_data', $authorization, [
             'list_pages' => new FakeAction('list_pages', true, [], 'Always mention the page count.'),
             'update_page' => new FakeAction('update_page', false, ['content' => ['type' => 'string']]),
+            'check_links' => new FakeAction('check_links', true, [], '', ['error' => 'Link checker is offline']),
         ]);
-        $this->grants = ['cms_data' => 'read'];
 
         $checker = $this->createMock(PermissionChecker::class);
         $checker->method('isAllowed')->willReturnCallback(
@@ -81,16 +95,142 @@ final class ChatServiceTest extends TestCase
         });
 
         $json = new Json();
-        $this->chatService = new ChatService(
-            (new FakeConfigRepository())->withMaxToolIterations(5),
+        return new ChatService(
+            (new FakeConfigRepository())->withMaxToolIterations(5)->withMaxResponseTokens(4000),
             $client,
-            new ToolRegistry($checker, [$cmsData]),
+            new ToolRegistry($checker, array_merge([$cmsData], $extraSkills)),
             new DebugLogger(new FakeLogger(), $json),
             new ErrorLogger(new FakeLogger(), $json),
             $this->createMock(UsageLogger::class),
             $authorization,
-            new StoreScopeContext($this->singleStoreManager())
+            new StoreScopeContext($this->singleStoreManager()),
+            new AnswerWidgets()
         );
+    }
+
+    /**
+     * An order_manager skill whose "cancel" action cannot be undone
+     */
+    private function orderManagerSkill(?\Throwable $impactsFailure = null): FakeSkill
+    {
+        $authorization = $this->createMock(AuthorizationInterface::class);
+        $authorization->method('isAllowed')->willReturn(true);
+
+        return new FakeSkill('order_manager', $authorization, [
+            'cancel' => new FakeIrreversibleAction(
+                'cancel',
+                ['Order #100 is canceled and cannot be reopened.', 'Reserved stock returns to inventory.'],
+                $impactsFailure
+            ),
+        ]);
+    }
+
+    #[Test]
+    public function confirmationNamesEachToolCallAndMarksIrreversibleActions(): void
+    {
+        $this->grants = ['cms_data' => 'write', 'order_manager' => 'write'];
+        $service = $this->buildChatService([$this->orderManagerSkill()]);
+        $this->responses = [[
+            'content' => '',
+            'tool_calls' => [
+                ['id' => 'call_1', 'name' => 'cms_data', 'input' => ['action' => 'update_page', 'content' => 'x']],
+                ['id' => 'call_2', 'name' => 'order_manager', 'input' => ['action' => 'cancel', 'order_number' => '100']],
+            ],
+        ]];
+        $confirm = null;
+        $onChunk = static function (string $type, array $data) use (&$confirm): void {
+            if ($type === 'confirm') {
+                $confirm = $data;
+            }
+        };
+
+        $service->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertNotNull($confirm);
+        self::assertSame(['call_1', 'call_2'], array_column($confirm['tools'], 'id'));
+        self::assertArrayNotHasKey('irreversible', $confirm['tools'][0]);
+        self::assertTrue($confirm['tools'][1]['irreversible']);
+        self::assertSame(
+            ['Order #100 is canceled and cannot be reopened.', 'Reserved stock returns to inventory.'],
+            $confirm['tools'][1]['impacts']
+        );
+    }
+
+    #[Test]
+    public function aBrokenImpactLookupStillAsksWithAnEmptyImpactList(): void
+    {
+        $this->grants = ['order_manager' => 'write'];
+        $service = $this->buildChatService([$this->orderManagerSkill(new \RuntimeException('orders API down'))]);
+        $this->responses = [[
+            'content' => '',
+            'tool_calls' => [['id' => 'call_2', 'name' => 'order_manager', 'input' => ['action' => 'cancel']]],
+        ]];
+        $confirm = null;
+        $onChunk = static function (string $type, array $data) use (&$confirm): void {
+            if ($type === 'confirm') {
+                $confirm = $data;
+            }
+        };
+
+        $service->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertTrue($confirm['tools'][0]['irreversible']);
+        self::assertSame([], $confirm['tools'][0]['impacts']);
+    }
+
+    #[Test]
+    public function executeConfirmedToolsSkipsTheCallsTheUserLeftUnticked(): void
+    {
+        $this->grants = ['cms_data' => 'write'];
+        $this->chatService = $this->buildChatService();
+        $events = [];
+        $onChunk = static function (string $type, array $data) use (&$events): void {
+            $events[] = $type . ':' . ($data['status'] ?? '');
+        };
+
+        $results = $this->chatService->executeConfirmedTools(
+            [
+                ['id' => 'call_1', 'name' => 'cms_data', 'input' => ['action' => 'update_page', 'content' => 'a']],
+                ['id' => 'call_2', 'name' => 'cms_data', 'input' => ['action' => 'update_page', 'content' => 'b']],
+            ],
+            self::ADMIN_ID,
+            $onChunk,
+            ['call_2']
+        );
+
+        fwrite(STDERR, var_export($results, true));
+        self::assertTrue($results['call_1']['skipped']);
+        self::assertSame('update_page', $results['call_2']['executed']);
+        self::assertSame(['tool_status:running', 'tool_status:done'], $events);
+    }
+
+    #[Test]
+    public function executeConfirmedToolsRunsEverythingWhenNoSelectionIsGiven(): void
+    {
+        $this->grants = ['cms_data' => 'write'];
+        $this->chatService = $this->buildChatService();
+
+        $results = $this->chatService->executeConfirmedTools([
+            ['id' => 'call_1', 'name' => 'cms_data', 'input' => ['action' => 'update_page']],
+            ['id' => 'call_2', 'name' => 'cms_data', 'input' => ['action' => 'update_page']],
+        ], self::ADMIN_ID);
+
+        self::assertSame('update_page', $results['call_1']['executed']);
+        self::assertSame('update_page', $results['call_2']['executed']);
+    }
+
+    #[Test]
+    public function aToolThatAnswersWithAnErrorIsAnnouncedAsFailed(): void
+    {
+        $this->responses = [$this->toolCallResponse('check_links')];
+        $events = [];
+        $onChunk = static function (string $type, array $data) use (&$events): void {
+            $events[] = $type . ':' . ($data['status'] ?? '') . ($data['status'] === 'failed' ? ':' . $data['message'] : '');
+        };
+
+        $this->chatService->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertSame(['tool_status:running', 'tool_status:failed:Link checker is offline'], $events);
     }
 
     #[Test]
@@ -249,11 +389,52 @@ final class ChatServiceTest extends TestCase
         self::assertSame(self::SYSTEM_PROMPT, $this->sentMessages[0]['content']);
     }
 
-    private function serviceWith(StoreManagerInterface $storeManager, ?ErrorLogger $errorLogger = null): ChatService
+    #[Test]
+    public function itAppendsTheWidgetGuideAfterTheStoreScopeWhenAnswerWidgetsAreOn(): void
     {
+        $service = $this->serviceWith($this->singleStoreManager(), null, true);
+
+        $service->processMessage([['role' => 'user', 'content' => 'How did we do this week?']]);
+
+        $content = $this->sentMessages[0]['content'];
+        self::assertStringStartsWith(self::SYSTEM_PROMPT . "\n\n[Store scope]", $content);
+        self::assertStringContainsString("\n\n[Answer widgets]", $content);
+        self::assertStringContainsString('"type":"rankedBars"', $content);
+        self::assertSame('user', $this->sentMessages[1]['role']);
+    }
+
+    #[Test]
+    public function itLeavesTheWidgetGuideOutWhenAnswerWidgetsAreOff(): void
+    {
+        $service = $this->serviceWith($this->singleStoreManager());
+
+        $service->processMessage([['role' => 'user', 'content' => 'Hi']]);
+
+        self::assertStringNotContainsString('[Answer widgets]', $this->sentMessages[0]['content']);
+    }
+
+    #[Test]
+    public function itNeverInjectsTheWidgetGuideTwice(): void
+    {
+        $service = $this->serviceWith($this->singleStoreManager(), null, true);
+
+        $service->processMessage([
+            ['role' => 'system', 'content' => "Custom prompt\n\n[Store scope] here\n\n[Answer widgets] here"],
+            ['role' => 'user', 'content' => 'Hi'],
+        ]);
+
+        self::assertSame(['system', 'user'], array_column($this->sentMessages, 'role'));
+    }
+
+    private function serviceWith(
+        StoreManagerInterface $storeManager,
+        ?ErrorLogger $errorLogger = null,
+        bool $answerWidgets = false
+    ): ChatService {
         $configRepository = $this->createMock(RepositoryInterface::class);
         $configRepository->method('getSystemPrompt')->willReturn(self::SYSTEM_PROMPT);
         $configRepository->method('getMaxToolIterations')->willReturn(1);
+        $configRepository->method('isAnswerWidgetsEnabled')->willReturn($answerWidgets);
 
         $client = $this->createMock(Client::class);
         $client->method('resolve')->willReturn($this->createMock(AiClientInterface::class));
@@ -270,7 +451,8 @@ final class ChatServiceTest extends TestCase
             $errorLogger ?? $this->createMock(ErrorLogger::class),
             $this->createMock(UsageLogger::class),
             $this->createMock(AuthorizationInterface::class),
-            new StoreScopeContext($storeManager)
+            new StoreScopeContext($storeManager),
+            new AnswerWidgets()
         );
     }
 
