@@ -46,6 +46,16 @@
         </arguments>
     </type>
 
+    <!-- Slash commands: "/name subcommand" messages that run without the AI provider -->
+    <type name="MaggyAssistant\Base\Service\Command\CommandRegistry">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="cache" xsi:type="object">MaggyAssistant\Base\Service\Command\CacheCommand</item>
+                <item name="index" xsi:type="object">MaggyAssistant\Base\Service\Command\IndexCommand</item>
+            </argument>
+        </arguments>
+    </type>
+
     <!-- Skill Actions: CouponManager -->
     <type name="MaggyAssistant\Base\Service\Skills\Marketing\CouponManager">
         <arguments>

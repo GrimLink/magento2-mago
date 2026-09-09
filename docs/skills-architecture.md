@@ -1,7 +1,7 @@
 # Skills Architecture
 
 > **Status:** Draft — `MaggyAssistant_Base` v1.0.0
-> **Last updated:** 2026-09-03
+> **Last updated:** 2026-09-07
 
 ## Table of Contents
 
@@ -283,75 +283,81 @@ The module ships with 10 tools grouped into 4 skill areas:
 
 ## Slash Commands
 
-Slash commands give admins a discoverable way to see what the assistant can do. Typing `/` in the chat input shows an autocomplete list of available commands. Each command expands to a pre-built prompt that invokes the right tools with sensible defaults.
+Typing `/` in the chat input opens an autocomplete menu with two kinds of entries:
 
-This serves two purposes:
-1. **Discoverability** — new users immediately see what's possible without guessing
-2. **Consistency** — common tasks always use the same prompt structure, producing reliable results
+1. **Commands** — `/cache flush`, `/index status`, … These run directly against Magento through the
+   assistant's tools, without a round-trip to the AI provider. They work even when no provider is
+   configured and answer in a deterministic Markdown format.
+2. **Skills** — `/cache_manager`, `/sales_data`, … Selecting one expands to a prompt
+   ("Use the cache_manager skill to ") that the admin completes and sends to the assistant.
+
+Both lists are filtered by what the admin types next and by what the admin is allowed to do.
 
 ### Built-in Commands
 
-| Command | Expands to | Tools used |
-|---------|-----------|------------|
-| `/revenue` | "Show me a revenue summary for the last 30 days including top products and order count." | `sales_data` |
-| `/revenue today` | "Show me today's revenue summary including top products and order count." | `sales_data` |
-| `/low-stock` | "Show me products with stock below 5 units." | `product_data` |
-| `/low-stock 20` | "Show me products with stock below 20 units." | `product_data` |
-| `/orders` | "Show me the 10 most recent orders with their status." | `sales_data` |
-| `/customers` | "Show me customer statistics: total count, new signups this month, and top spenders." | `customer_data` |
-| `/config <path>` | "Read the Magento config value at `<path>` for the default scope." | `config_reader` |
-| `/cms-pages` | "List all CMS pages with their status and URL key." | `cms_data` |
-| `/describe <sku>` | "Generate a product description for SKU `<sku>`." | `content_generator`, `product_data` |
-| `/health` | "Give me a store health check: orders today, low stock count, and any disabled products." | `sales_data`, `product_data` |
+| Command | Does | Tool action |
+|---------|------|-------------|
+| `/cache flush` | Flushes all caches, including the cache storage | `cache_manager.flush` |
+| `/cache clean <type> [type...]` | Cleans the given cache types, e.g. `config full_page` | `cache_manager.flush_type` per type |
+| `/cache status` | Lists all cache types and whether they are enabled | `cache_manager.status` |
+| `/index list` | Lists all indexers with their ID and mode | `indexer_manager.status` |
+| `/index status` | Shows the status of all indexers and how many need a reindex | `indexer_manager.status` |
+| `/index reindex [indexer_id...]` | Reindexes all indexers, or only the given indexer IDs | `indexer_manager.reindex_all` / `reindex` per ID |
+| `/help` | Lists the commands available to the current admin | — |
 
-### Command with Arguments
+A command without a subcommand (`/cache`) or with an unknown one prints its usage. Command
+and subcommand names are case-insensitive. A slash message that matches no registered command
+(`/revenue today`) is sent to the assistant as a normal prompt.
 
-Commands accept optional arguments after the command name. The argument replaces a placeholder in the expanded prompt:
+### How a Command Runs
 
 ```
-/revenue this_year       → revenue summary for this year
-/low-stock 50            → products with stock below 50
-/config general/locale   → read the locale config path
-/describe SKU-12345      → generate description for specific SKU
+Admin types "/cache clean config"
+        │
+        ▼
+Controller\Adminhtml\Chat\Stream ── CommandRunner::isCommand() ── yes ──▶ CommandRunner::run()
+        │                                                                       │
+        │  persists the user message and the reply                              ▼
+        │  like a normal turn; streams the reply as one "text" chunk    CacheCommand::execute('clean', ['config'])
+        │                                                                       │
+        ▼                                                                       ▼
+   SSE: conversation → tool_status → text → done            ChatServiceInterface::executeConfirmedTools()
+                                                              ├─ skill permission (PermissionChecker)
+                                                              ├─ native Magento ACL (getMagentoAcl)
+                                                              └─ cache_manager->execute([...])
 ```
 
-If no argument is provided, the command uses its default value.
+The admin typed the exact action, so a write command needs no confirmation card. Everything else
+is enforced exactly as for an AI-initiated tool call:
 
-### Registering Custom Commands (Planned)
+- `MaggyAssistant_Base::assistant_write` is required for write subcommands (`flush`, `clean`, `reindex`)
+- the skill grant on the underlying tool decides which subcommands exist for the admin
+  (a read grant on `cache_manager` shows only `/cache status`)
+- the tool's native Magento ACL (`Magento_Backend::flush_cache_storage`, `Magento_Indexer::invalidate`, …)
+  is checked on execution and returned as an error when missing
 
-> **Status: Planned** — `CommandRegistry` via DI is not yet implemented. Slash commands are currently fed from `ToolRegistry::getEnabledTools($adminUserId)` in the frontend.
+### Registering Custom Commands
 
-Third-party modules will register commands via `di.xml`, similar to tools:
+Implement `MaggyAssistant\Base\Api\Command\CommandInterface` and add it to the
+`CommandRegistry` via `di.xml`:
 
 ```xml
-<type name="MaggyAssistant\Base\Service\Chat\CommandRegistry">
+<type name="MaggyAssistant\Base\Service\Command\CommandRegistry">
     <arguments>
         <argument name="commands" xsi:type="array">
-            <item name="server" xsi:type="array">
-                <item name="label" xsi:type="string">Server status</item>
-                <item name="description" xsi:type="string">Check server performance metrics</item>
-                <item name="prompt" xsi:type="string">Show me current server performance: CPU, memory, disk usage, and PHP worker status.</item>
-                <item name="acl" xsi:type="string">Vendor_HostingIntegration::server_status</item>
-            </item>
-            <item name="payments" xsi:type="array">
-                <item name="label" xsi:type="string">Payment overview</item>
-                <item name="description" xsi:type="string">Today's payment method breakdown</item>
-                <item name="prompt" xsi:type="string">Show me today's orders grouped by payment method with success/failure rates.</item>
-                <item name="acl" xsi:type="string">Vendor_Payments::overview</item>
-            </item>
+            <item name="server" xsi:type="object">Vendor\HostingIntegration\Command\ServerCommand</item>
         </argument>
     </arguments>
 </type>
 ```
 
-Commands inherit ACL from their config — if the admin doesn't have the required role, the command doesn't appear in autocomplete. The `prompt` field is what gets sent to the LLM; the admin can edit it before sending.
+When the command wraps one of the assistant's tools, extend
+`MaggyAssistant\Base\Service\Command\AbstractToolCommand`: declare `getToolName()`, list the
+subcommands with `getSubcommands()` (name, argument hint, description, read/write) and map each
+subcommand to a tool input in `execute()` through `runTool()`. Permission filtering, the
+`tool_status` events and error rendering come for free; `renderTable()` formats tabular results.
 
-### UX Behavior
-
-- **Autocomplete:** Typing `/` opens a dropdown with all available commands, filtered by what the admin types next
-- **Preview:** Each command shows its `label` and `description` in the dropdown
-- **Editable:** The expanded prompt appears in the input field — the admin can modify it before sending
-- **ACL-filtered:** Commands are only shown if the admin has the required permissions
+`CacheCommand` and `IndexCommand` are the reference implementations.
 
 ---
 

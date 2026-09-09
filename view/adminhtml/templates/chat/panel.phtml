@@ -154,6 +154,7 @@ window.MAGGY_CONFIG.adminUser = '<?= $escaper->escapeJs($adminName) ?>';
 window.MAGGY_CONFIG.assistantName = '<?= $escaper->escapeJs($assistantName) ?>';
 window.MAGGY_CONFIG.formKey = '<?= $escaper->escapeJs($block->getFormKey()) ?>';
 window.MAGGY_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
+window.MAGGY_CONFIG.commands = <?= /* @noEscape */ $block->getCommandsJson() ?>;
 </script>
 <script>
 require(['marked'], function(marked) {

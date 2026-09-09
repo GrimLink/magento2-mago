@@ -1,0 +1,72 @@
+<?php
+/**
+ * Copyright © Maggy Assistant
+ */
+declare(strict_types=1);
+
+namespace MaggyAssistant\Base\Test\Unit\Fakes;
+
+use MaggyAssistant\Base\Api\ChatServiceInterface;
+
+/**
+ * Records the tool calls handed to executeConfirmedTools() and answers them from a callback,
+ * so command tests can assert what a command asks the tool for without a provider or DI.
+ */
+final class FakeChatService implements ChatServiceInterface
+{
+    /** @var list<array<string, mixed>> Tool calls received, in order */
+    public array $toolCalls = [];
+
+    /** @var list<array{type: string, data: array<string, mixed>}> Chunks emitted through $onChunk */
+    public array $chunks = [];
+
+    /** @var callable(array<string, mixed>): array<string, mixed> */
+    private $resultFor;
+
+    /**
+     * @param callable(array<string, mixed>): array<string, mixed> $resultFor Tool call => tool result
+     */
+    public function __construct(callable $resultFor)
+    {
+        $this->resultFor = $resultFor;
+    }
+
+    public function processMessage(array $messages, ?int $conversationId = null, ?int $adminUserId = null): array
+    {
+        return ['content' => '', 'tool_calls' => []];
+    }
+
+    public function processMessageStreaming(
+        array $messages,
+        callable $onChunk,
+        ?int $conversationId = null,
+        ?int $adminUserId = null
+    ): array {
+        return ['content' => '', 'tool_calls' => []];
+    }
+
+    public function executeConfirmedTools(array $toolCalls, ?int $adminUserId = null, ?callable $onChunk = null): array
+    {
+        $results = [];
+        foreach ($toolCalls as $toolCall) {
+            $this->toolCalls[] = $toolCall;
+            if ($onChunk) {
+                $onChunk('tool_status', ['name' => $toolCall['name'], 'status' => 'running']);
+                $onChunk('tool_status', ['name' => $toolCall['name'], 'status' => 'done']);
+            }
+            $results[$toolCall['id']] = ($this->resultFor)($toolCall);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Inputs of the recorded tool calls, e.g. [['action' => 'flush']]
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function inputs(): array
+    {
+        return array_map(static fn (array $call): array => $call['input'], $this->toolCalls);
+    }
+}

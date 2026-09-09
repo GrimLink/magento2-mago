@@ -11,6 +11,8 @@ use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Model\Auth\Session as AdminSession;
 use Magento\Framework\Serialize\Serializer\Json;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
+use MaggyAssistant\Base\Service\Command\CommandRegistry;
+use MaggyAssistant\Base\Service\Command\CommandRunner;
 use MaggyAssistant\Base\Service\Tool\ToolRegistry;
 
 class ChatPanel extends Template
@@ -23,6 +25,8 @@ class ChatPanel extends Template
         private readonly AdminSession $adminSession,
         private readonly Json $json,
         private readonly ToolRegistry $toolRegistry,
+        private readonly CommandRegistry $commandRegistry,
+        private readonly CommandRunner $commandRunner,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -80,6 +84,35 @@ class ChatPanel extends Template
             ];
         }
         return (string)$this->json->serialize($skills);
+    }
+
+    /**
+     * Slash commands for the menu: only the subcommands the current admin may run.
+     */
+    public function getCommandsJson(): string
+    {
+        $adminUserId = $this->getAdminUserId();
+        $commands = [];
+        foreach ($this->commandRegistry->getAvailable($adminUserId) as $command) {
+            $subcommands = [];
+            foreach ($this->commandRunner->getAvailableSubcommands($command, $adminUserId) as $name => $definition) {
+                $subcommands[] = [
+                    'name' => $name,
+                    'args' => $definition['args'],
+                    'description' => $definition['description'],
+                    'readOnly' => $definition['readOnly'],
+                ];
+            }
+            if ($subcommands === []) {
+                continue;
+            }
+            $commands[] = [
+                'name' => $command->getName(),
+                'description' => $command->getDescription(),
+                'subcommands' => $subcommands,
+            ];
+        }
+        return (string)$this->json->serialize($commands);
     }
 
     private function getAdminUserId(): ?int

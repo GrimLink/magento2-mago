@@ -2,12 +2,13 @@
     var config = window.MAGGY_CONFIG;
     var formKey = config.formKey;
     var skills = config.skills;
+    var commands = config.commands || [];
     var conversationId = null;
     var busy = false;
     var showingHistory = false;
     var slashActive = false;
     var slashIndex = 0;
-    var filteredSkills = [];
+    var filteredItems = [];
     var SS_KEY_OPEN = 'maggy_open';
     var SS_KEY_CONV = 'maggy_conv';
     var SS_KEY_FULL = 'maggy_fullsize';
@@ -128,30 +129,72 @@
         }
     };
 
-    // Slash command logic
+    // Slash menu: two kinds of entries. Commands ("/cache flush") run directly against
+    // Magento and are sent as typed; skills expand to a prompt for the assistant.
+    var slashItems = [];
+    commands.forEach(function(c) {
+        c.subcommands.forEach(function(sub) {
+            slashItems.push({
+                type: 'command',
+                command: c.name,
+                full: c.name + ' ' + sub.name,
+                label: '/' + c.name + ' ' + sub.name + (sub.args ? ' ' + sub.args : ''),
+                description: sub.description,
+                readOnly: sub.readOnly
+            });
+        });
+    });
+    skills.forEach(function(s) {
+        slashItems.push({
+            type: 'skill',
+            full: s.name,
+            label: '/' + s.name,
+            description: s.description,
+            readOnly: s.readOnly,
+            skill: s
+        });
+    });
+
+    function matchesSlashItem(item, q) {
+        if (!q) return true;
+        if (item.type === 'command') {
+            // Once arguments follow the command the entry drops out, so Enter sends instead of completing.
+            return item.full.indexOf(q) !== -1;
+        }
+        return item.full.indexOf(q) !== -1 || item.description.toLowerCase().indexOf(q) !== -1;
+    }
+
     function showSlashMenu(filter) {
         var q = (filter || '').toLowerCase();
-        filteredSkills = skills.filter(function(s) {
-            return !q || s.name.indexOf(q) !== -1 || s.description.toLowerCase().indexOf(q) !== -1;
-        });
-        if (!filteredSkills.length) {
+        filteredItems = slashItems.filter(function(item) { return matchesSlashItem(item, q); });
+        if (!filteredItems.length) {
             hideSlashMenu();
             return;
         }
         slashIndex = 0;
         slashActive = true;
         slashMenu.innerHTML = '';
-        filteredSkills.forEach(function(s, i) {
+        var hasBoth = filteredItems.some(function(i) { return i.type === 'command'; })
+            && filteredItems.some(function(i) { return i.type === 'skill'; });
+        var lastType = null;
+        filteredItems.forEach(function(item, i) {
+            if (hasBoth && item.type !== lastType) {
+                var group = document.createElement('div');
+                group.className = 'maggy-slash-group';
+                group.textContent = item.type === 'command' ? 'Commands' : 'Skills';
+                slashMenu.appendChild(group);
+                lastType = item.type;
+            }
             var div = document.createElement('div');
             div.className = 'maggy-slash-item' + (i === 0 ? ' is-active' : '');
-            var badge = s.readOnly
+            var badge = item.readOnly
                 ? '<span class="maggy-slash-item-badge maggy-slash-item-badge--read">read</span>'
                 : '<span class="maggy-slash-item-badge maggy-slash-item-badge--write">write</span>';
-            var shortDesc = s.description.length > 60 ? s.description.substring(0, 60) + '...' : s.description;
-            div.innerHTML = '<span class="maggy-slash-item-name">/' + esc(s.name) + '</span>'
+            var shortDesc = item.description.length > 60 ? item.description.substring(0, 60) + '...' : item.description;
+            div.innerHTML = '<span class="maggy-slash-item-name">' + esc(item.label) + '</span>'
                 + '<span class="maggy-slash-item-desc">' + esc(shortDesc) + '</span>'
                 + badge;
-            div.onclick = function() { selectSlashSkill(s); };
+            div.onclick = function() { selectSlashItem(item); };
             slashMenu.appendChild(div);
         });
         slashMenu.classList.add('is-visible');
@@ -163,11 +206,21 @@
         slashMenu.innerHTML = '';
     }
 
-    function selectSlashSkill(skill) {
-        input.value = 'Use the ' + skill.name + ' skill to ';
+    function selectSlashItem(item) {
+        input.value = item.type === 'command'
+            ? '/' + item.full + ' '
+            : 'Use the ' + item.skill.name + ' skill to ';
         autoGrow();
         hideSlashMenu();
         input.focus();
+    }
+
+    // The input already holds a complete command ("/cache flush") or a bare command name
+    // ("/cache", which the backend answers with its usage), so Enter should send, not complete.
+    function isTypedCommand(item) {
+        if (!item || item.type !== 'command') return false;
+        var typed = input.value.trim().toLowerCase();
+        return typed === '/' + item.full || typed === '/' + item.command;
     }
 
     function updateSlashHighlight() {
@@ -211,13 +264,19 @@
             }
             if (e.keyCode === 40) { // down
                 e.preventDefault();
-                slashIndex = Math.min(filteredSkills.length - 1, slashIndex + 1);
+                slashIndex = Math.min(filteredItems.length - 1, slashIndex + 1);
                 updateSlashHighlight();
+                return;
+            }
+            if (e.keyCode === 13 && isTypedCommand(filteredItems[slashIndex])) { // enter on a complete command runs it
+                e.preventDefault();
+                hideSlashMenu();
+                send();
                 return;
             }
             if (e.keyCode === 13 || e.keyCode === 9) { // enter or tab
                 e.preventDefault();
-                if (filteredSkills[slashIndex]) selectSlashSkill(filteredSkills[slashIndex]);
+                if (filteredItems[slashIndex]) selectSlashItem(filteredItems[slashIndex]);
                 return;
             }
             if (e.keyCode === 27) { // escape

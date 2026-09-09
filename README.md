@@ -7,6 +7,7 @@ AI-powered admin assistant — chat with your store using the AI provider of you
 - **Natural language chat** in the Magento admin panel
 - **Real-time streaming** responses via SSE
 - **Built-in skills** for sales analytics, store configuration, content management, and admin navigation
+- **Slash commands** — `/cache flush`, `/cache clean <type>`, `/index status`, `/index reindex` run directly against Magento, no AI round-trip
 - **Extensible architecture** — third-party modules can register custom skills via DI
 - **ACL-based permissions** — read/write access controlled per admin role
 - **Write confirmation** — destructive actions always require explicit user approval
@@ -63,6 +64,22 @@ These calls verify the TLS certificate by default. If the internal URL points at
 | Documentation | `docs_search` | Read |
 
 See [docs/skills-examples.md](docs/skills-examples.md) for example prompts per skill and [docs/skills-roadmap.md](docs/skills-roadmap.md) for the full roadmap of planned skills.
+
+### Slash commands
+
+Typing `/` in the chat shows the available commands. These run without the AI provider and reply instantly:
+
+| Command | Does |
+|---|---|
+| `/cache flush` | Flush all caches |
+| `/cache clean <type> [type...]` | Clean specific cache types |
+| `/cache status` | List cache types and their status |
+| `/index list` | List all indexers |
+| `/index status` | Show indexer status |
+| `/index reindex [indexer_id...]` | Reindex all indexers, or only the given IDs |
+| `/help` | List the commands you may use |
+
+Write commands need the `MaggyAssistant_Base::assistant_write` ACL resource plus a write grant on the underlying skill. See [docs/skills-architecture.md](docs/skills-architecture.md#slash-commands) for registering your own commands.
 
 ## Documentation grounding
 
