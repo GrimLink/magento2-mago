@@ -1,5 +1,46 @@
-(function() {
+define([
+    'MagoAssistant_Mago/js/chat/text',
+    'MagoAssistant_Mago/js/chat/i18n',
+    'MagoAssistant_Mago/js/chat/navigate-intent',
+    'MagoAssistant_Mago/js/chat/session-log',
+    'MagoAssistant_Mago/js/chat/confirm-text'
+], function (text, createTranslator, navigateIntent, createSessionLog, createConfirmText) {
+    'use strict';
+
+    var isPlainObject = text.isPlainObject;
+    var esc = text.esc;
+    var skillTitle = text.skillTitle;
+    var toolLabel = text.toolLabel;
+    var summarizeInput = text.summarizeInput;
+    var formatDate = text.formatDate;
+    var formatTime = text.formatTime;
+    var escapeForMarkdown = text.escapeForMarkdown;
+    var codeSpan = text.codeSpan;
+    var previewValue = text.previewValue;
+
     var config = window.MAGO_CONFIG;
+    var storeNavigateIntent = navigateIntent.store;
+    var takeStoredNavigateIntent = navigateIntent.take;
+    var isExpiredNavigateIntent = navigateIntent.isExpired;
+    var translator = createTranslator(config);
+    var t = translator.t;
+    var entityLabel = translator.entityLabel;
+    var describeEntity = translator.describeEntity;
+    var fieldCountText = translator.fieldCountText;
+    var confirmText = createConfirmText(function () { return formBridge; }, translator, text);
+    var findLiveField = confirmText.findLiveField;
+    var liveForm = confirmText.liveForm;
+    var isNavigatingWrite = confirmText.isNavigatingWrite;
+    var describeLiveForm = confirmText.describeLiveForm;
+    var formatFieldChangeLine = confirmText.formatFieldChangeLine;
+    var formatWriteFieldsHeading = confirmText.formatWriteFieldsHeading;
+    var formatWriteFieldsConfirmMessage = confirmText.formatWriteFieldsConfirmMessage;
+    var formatToolConfirmMessage = confirmText.formatToolConfirmMessage;
+    var formatConfirmMessage = confirmText.formatConfirmMessage;
+    var formatTargetDescription = confirmText.formatTargetDescription;
+    var formatRefusalMessage = confirmText.formatRefusalMessage;
+    var failedLabels = confirmText.failedLabels;
+    var formatApplyOutcomeMessage = confirmText.formatApplyOutcomeMessage;
     var formKey = config.formKey;
     var skills = config.skills;
     var commands = config.commands || [];
@@ -14,7 +55,6 @@
     var SS_KEY_OPEN = 'mago_open';
     var SS_KEY_CONV = 'mago_conv';
     var SS_KEY_FULL = 'mago_fullsize';
-    var SS_KEY_NAVIGATE_INTENT = 'mago_navigate_intent';
     var DIRECTIVE_TYPE_FORM_WRITE = 'form_write';
     var DIRECTIVE_TYPE_FORM_NAVIGATE = 'form_navigate';
 
@@ -23,7 +63,6 @@
     // left behind by a crashed tab or an abandoned confirmation can plausibly fire later. The form
     // itself is waited for separately, bounded by NAVIGATE_INTENT_FORM_TIMEOUT_MS below, since a UI
     // component form registers well after the page's own load event.
-    var NAVIGATE_INTENT_TTL_MS = 60000;
     var NAVIGATE_INTENT_FORM_TIMEOUT_MS = 8000;
     var NAVIGATE_STATUS_CLASS = 'mago-navigate-status';
 
@@ -52,12 +91,6 @@
         return snapshot;
     }
 
-    // A tool result can carry a client_directive payload that the server forwards untouched as a
-    // form_apply event; this is the only place that dispatches on its shape. An unknown type or a
-    // non-object payload is dropped rather than applied, and never breaks the surrounding message.
-    function isPlainObject(value) {
-        return !!value && typeof value === 'object' && !Array.isArray(value);
-    }
 
     // apply() itself waits on a real signal (its form's provider component, task 009) before
     // writing a single field, so it reports its outcome through a callback rather than a return
@@ -147,75 +180,13 @@
         setBusy(false);
     }
 
-    // Only the target and the approved changes are worth carrying across the navigation this
-    // directive is about to trigger; everything else (the field labels, the previous values) is
-    // re-derived live from whatever form actually loads, the same way an ordinary confirmation
-    // prompt already does, rather than trusted from before the navigation happened.
-    function storeNavigateIntent(directive) {
-        try {
-            sessionStorage.setItem(SS_KEY_NAVIGATE_INTENT, JSON.stringify({
-                target: directive.target,
-                changes: directive.changes || [],
-                expiresAt: Date.now() + NAVIGATE_INTENT_TTL_MS
-            }));
-        } catch (e) {}
-    }
 
-    // Reading and clearing happen together, deliberately: whatever this returns is the only chance
-    // the intent ever gets. A page that finds one here has already consumed it, so a later reload,
-    // a back button, or simply not having a matching form never hands the same intent out twice.
-    function takeStoredNavigateIntent() {
-        var raw;
-        try {
-            raw = sessionStorage.getItem(SS_KEY_NAVIGATE_INTENT);
-            sessionStorage.removeItem(SS_KEY_NAVIGATE_INTENT);
-        } catch (e) {
-            return null;
-        }
-        if (!raw) return null;
-        try {
-            return JSON.parse(raw);
-        } catch (e) {
-            return null;
-        }
-    }
 
-    function isExpiredNavigateIntent(intent) {
-        return typeof intent.expiresAt !== 'number' || Date.now() > intent.expiresAt;
-    }
 
-    // Every sentence shown to the administrator goes through here. The English source is the key,
-    // Block\Adminhtml\ChatPanel publishes the translations, and %1, %2 are substituted in order.
-    function t(sentence) {
-        var translations = (config && config.i18n) || {};
-        var text = translations[sentence] || sentence;
-        var values = Array.prototype.slice.call(arguments, 1);
 
-        return text.replace(/%(\d+)/g, function (match, index) {
-            var value = values[parseInt(index, 10) - 1];
-            return typeof value === 'undefined' ? match : String(value);
-        });
-    }
 
-    var ENTITY_LABELS = {cms_page: 'CMS page', cms_block: 'CMS block'};
 
-    // entityType and entityId come from the model's own tool input (or from the URL), not from
-    // anything this panel controls, and the result is rendered through marked into innerHTML, so
-    // they are escaped here like every other value on the card.
-    function entityLabel(entityType) {
-        if (!entityType) return 'item';
-        return ENTITY_LABELS[entityType] ? t(ENTITY_LABELS[entityType]) : escapeForMarkdown(String(entityType).replace(/_/g, ' '));
-    }
 
-    function describeEntity(entityType, entityId) {
-        return entityId
-            ? t('%1 #%2', entityLabel(entityType), escapeForMarkdown(entityId))
-            : t('a new %1', entityLabel(entityType));
-    }
-
-    function fieldCountText(count) {
-        return count === 1 ? t('%1 field', count) : t('%1 fields', count);
-    }
 
     function formatNavigateTimeoutMessage(target) {
         return t('Navigated to %1, but its form did not load in time. Nothing was changed. Ask me again now that the page is open.', formatTargetDescription(target));
@@ -261,47 +232,9 @@
         });
     }
 
-    // The model's own reply is generated before the browser has applied anything (Confirm.php
-    // streams the follow-up turn as soon as the tool result exists, not after form_apply runs), so
-    // it can never know which fields actually took the value. This is the panel's own report,
-    // appended as a separate message once the bridge has finished, never a second server round trip.
-    // A directive whose target no longer matches the form now open (task 008: the administrator
-    // navigated to a different entity, store view or form between proposal and confirmation) is
-    // named by what it was meant for, so the administrator understands why nothing happened rather
-    // than assuming the assistant silently did nothing.
-    function formatTargetDescription(target) {
-        var entityType = target && target.entity_type;
-        if (!target || !target.entity_id) return t('a new, unsaved %1', entityLabel(entityType));
-        return describeEntity(entityType, target.entity_id);
-    }
 
-    function formatRefusalMessage(target) {
-        return t('That change was meant for %1, but a different form is open now. Nothing was changed. Go back to that page and ask me again.', formatTargetDescription(target));
-    }
 
-    function failedLabels(result) {
-        return result.failed.map(function (f) { return escapeForMarkdown(f.label); }).join(', ');
-    }
 
-    function formatApplyOutcomeMessage(result) {
-        if (result.refused) return formatRefusalMessage(result.target);
-
-        var total = result.applied.length + result.failed.length;
-        var text;
-
-        if (!total) return null;
-        if (!result.applied.length) return t('Could not stage %1. Nothing was changed.', failedLabels(result));
-
-        text = t('Staged %1 of %2 %3. Not saved yet: click Save on the page to keep %4.',
-            result.applied.length, total, fieldCountText(total).replace(/^\d+ /, ''),
-            total === 1 ? t('this change') : t('these changes'));
-
-        if (result.failed.length) {
-            text += ' ' + t('Could not set: %1.', failedLabels(result));
-        }
-
-        return text;
-    }
 
     function reportApplyOutcome(result) {
         if (!result) return;
@@ -500,62 +433,25 @@
         slashMenu.classList.add('is-visible');
     }
 
-    // "cms_data" reads as "Cms data" in a card title; the mono badge keeps the real name.
-    function skillTitle(toolName) {
-        var t = String(toolName || '').replace(/_/g, ' ');
-        return t.charAt(0).toUpperCase() + t.slice(1);
-    }
 
-    // "Cms data · create_page": how one tool call is named in a list.
-    function toolLabel(tool) {
-        var action = tool.input && tool.input.action ? ' · ' + tool.input.action : '';
-        return skillTitle(tool.name) + action;
-    }
 
-    // The first few parameters on one line, for a bulk row: "identifier: summer-sale, title: Summer Sale".
-    function summarizeInput(input) {
-        var parts = [];
-        Object.keys(input || {}).forEach(function(k) {
-            if (k === 'action' || parts.length >= 3) return;
-            var v = input[k];
-            if (v === null || v === undefined || v === '') return;
-            v = typeof v === 'object' ? JSON.stringify(v) : String(v);
-            parts.push(k + ': ' + (v.length > 40 ? v.slice(0, 37) + '…' : v));
-        });
-        return parts.join(', ');
-    }
 
     // S12: every write the assistant ran (or skipped, or that failed) in this browser session,
     // kept in sessionStorage so it survives the page loads an admin makes between questions.
-    var SS_KEY_LOG = 'mago_log';
     var logBtn = qs('#mago-log');
     var logView = qs('#mago-log-view');
+    var sessionLog = createSessionLog(logBtn, UI);
     var showingLog = false;
 
-    function readLog() {
-        try { return JSON.parse(sessionStorage.getItem(SS_KEY_LOG) || '[]'); } catch(e) { return []; }
-    }
 
-    function logWrite(title, action, state) {
-        var entries = readLog();
-        entries.unshift({
-            text: title + (action ? ' · ' + action : '') + (state === 'skipped' ? ' (not run)' : state === 'failed' ? ' (failed)' : ''),
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
-            tone: state === 'failed' ? 'danger' : state === 'skipped' ? 'muted' : undefined
-        });
-        try { sessionStorage.setItem(SS_KEY_LOG, JSON.stringify(entries.slice(0, 50))); } catch(e) {}
-        if (logBtn) logBtn.classList.toggle('has-entries', entries.length > 0);
-    }
 
     function showLog() {
         if (!logView) return;
         if (showingHistory) hideHistory();
         showingLog = true;
-        var entries = readLog();
+        var entries = sessionLog.read();
         logView.innerHTML = '';
-        logView.appendChild(entries.length
-            ? UI.sessionLog({title: 'Changes this session', entries: entries})
-            : UI.empty({title: 'No changes yet', text: 'Every write the assistant runs in this session is listed here.', icon: 'list'}));
+        logView.appendChild(sessionLog.render(entries));
         msgs.style.display = 'none';
         loading.style.display = 'none';
         inputArea.style.display = 'none';
@@ -574,7 +470,7 @@
 
     if (logBtn) {
         logBtn.onclick = function() { if (showingLog) hideLog(); else showLog(); };
-        logBtn.classList.toggle('has-entries', readLog().length > 0);
+        logBtn.classList.toggle('has-entries', sessionLog.hasEntries());
     }
 
     function hideSlashMenu() {
@@ -666,22 +562,7 @@
     };
     sendBtn.onclick = send;
 
-    function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-    function formatDate(dateStr) {
-        if (!dateStr) return '';
-        var d = new Date(dateStr.replace(' ', 'T') + 'Z');
-        var now = new Date();
-        var diff = now - d;
-        if (diff < 86400000) {
-            return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        }
-        if (diff < 604800000) {
-            var days = Math.floor(diff / 86400000);
-            return days + 'd ago';
-        }
-        return d.toLocaleDateString([], {month:'short', day:'numeric'});
-    }
 
     function loadHistory() {
         if (showingLog) hideLog();
@@ -874,11 +755,6 @@
         }
     }
 
-    function formatTime(dateStr) {
-        if (!dateStr) return '';
-        var d = new Date(dateStr.replace(' ', 'T') + 'Z');
-        return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    }
 
     function addMsg(role, html, timestamp) {
         var cls = role === 'user' ? 'is-user' : 'is-assistant';
@@ -972,130 +848,19 @@
         msgs.scrollTop = msgs.scrollHeight;
     }
 
-    // The old value is deliberately not part of the tool input (task 006): looking it up here,
-    // through form-bridge, shows what is on the form right now rather than replaying a value the
-    // model may have seen several turns ago. A path form-bridge cannot find is shown as-is, which
-    // is itself informative: it means the target has moved since the model proposed the write.
-    function findLiveField(path) {
-        if (!formBridge) return null;
-        var snapshot = formBridge.snapshot();
-        if (!snapshot.hasForm) return null;
-        var match = null;
-        (snapshot.fields || []).forEach(function(field) {
-            if (field.path === path) match = field;
-        });
-        return match;
-    }
 
-    // Field labels and values come straight out of the open form, which means straight out of the
-    // database: a product description an import wrote is rendered here through marked, into
-    // innerHTML. Backticks are not an escape (a value containing one closes the code span and the
-    // rest is raw HTML), so everything markdown or HTML could act on is turned into an entity, and
-    // the value is shown in a <code> element marked passes through untouched.
-    function escapeForMarkdown(text) {
-        return String(text === null || typeof text === 'undefined' ? '' : text).replace(/[&<>"'`*_\[\]~\\]/g, function (ch) {
-            return '&#' + ch.charCodeAt(0) + ';';
-        });
-    }
 
-    function codeSpan(text) {
-        return '<code>' + escapeForMarkdown(text) + '</code>';
-    }
 
-    // A description can be hundreds of characters; the card is a review, not the value itself.
-    var MAX_CONFIRM_VALUE_PREVIEW = 80;
 
-    function previewValue(value) {
-        var text = value === null || typeof value === 'undefined' ? '' : String(value);
-        return text.length > MAX_CONFIRM_VALUE_PREVIEW ? text.slice(0, MAX_CONFIRM_VALUE_PREVIEW) + '...' : text;
-    }
 
-    function formatFieldChangeLine(change) {
-        var field = findLiveField(change.path);
-        if (!field) return escapeForMarkdown(change.path) + ': ' + codeSpan(previewValue(change.value));
-        var previous = field.redacted ? t('(hidden)') : codeSpan(previewValue(field.value));
-        return escapeForMarkdown(field.label) + ': ' + previous + ' → ' + codeSpan(previewValue(change.value));
-    }
 
-    // A translation pass can touch ten to thirty fields (task 010); thirty full "Label: old → new"
-    // lines is a wall of text, not a review. Showing the first few and summarizing the rest keeps
-    // the prompt something an administrator can actually read before confirming.
-    var MAX_CONFIRM_FIELD_LINES = 10;
 
-    function liveForm() {
-        var snapshot = formBridge ? formBridge.snapshot() : null;
-        return snapshot && snapshot.hasForm ? snapshot : null;
-    }
 
-    function isNavigatingWrite(input, live) {
-        if (!input.entity_type) return false;
-        if (!live) return true;
-        return input.entity_type !== live.entityType || (input.entity_id || '') !== live.entityId;
-    }
 
-    function describeLiveForm(live) {
-        var text = describeEntity(live.entityType, live.entityId);
-        if (live.storeId) text += ' (' + t('store view %1', escapeForMarkdown(live.storeId)) + ')';
-        return text;
-    }
 
-    // The heading says where the values go: the form on screen, another entity, or a New form,
-    // in which case the administrator is also told the browser will leave this page, and that
-    // unsaved edits here will be lost when the open form has any.
-    function formatWriteFieldsHeading(input, changes) {
-        var live = liveForm();
-        var count = fieldCountText(changes.length);
-        var notes;
 
-        if (!isNavigatingWrite(input, live)) {
-            return t('Stage %1 on %2:', count, live ? describeLiveForm(live) : t('the form on screen'));
-        }
 
-        notes = [t('You will leave this page.')];
-        if (live && formBridge && typeof formBridge.hasUnsavedChanges === 'function' && formBridge.hasUnsavedChanges()) {
-            notes.push(t('Unsaved edits on %1 will be lost.', describeLiveForm(live)));
-        }
 
-        return t('Open %1 and stage %2 there:', describeEntity(input.entity_type, input.entity_id), count)
-            + '\n\n**' + notes.join(' ') + '**\n';
-    }
-
-    function formatWriteFieldsConfirmMessage(tool) {
-        var input = tool.input || {};
-        var changes = input.changes || [];
-        var visibleChanges = changes.slice(0, MAX_CONFIRM_FIELD_LINES);
-        var remaining = changes.length - visibleChanges.length;
-        var lines = visibleChanges.map(formatFieldChangeLine).map(function(l) { return '- ' + l; });
-
-        if (remaining > 0) {
-            lines.push('- ' + (remaining === 1 ? t('...and %1 more field.', remaining) : t('...and %1 more fields.', remaining)));
-        }
-
-        return formatWriteFieldsHeading(input, changes) + '\n' + lines.join('\n')
-            + '\n\n' + t('Nothing is saved until you click Save on the page.');
-    }
-
-    function formatToolConfirmMessage(tool) {
-        if (tool.name === 'page_form' && tool.input && tool.input.action === 'write_fields') {
-            return formatWriteFieldsConfirmMessage(tool);
-        }
-        var line = '**' + escapeForMarkdown(tool.name) + '**';
-        if (tool.input) {
-            var params = Object.keys(tool.input).map(function(k) {
-                var value = tool.input[k];
-                if (value !== null && typeof value === 'object') { value = JSON.stringify(value); }
-                return escapeForMarkdown(k) + ': ' + codeSpan(value);
-            });
-            if (params.length) line += ': ' + params.join(', ');
-        }
-        return line;
-    }
-
-    function formatConfirmMessage(tools) {
-        if (!tools || !tools.length) return t('I want to perform an action. Allow this?');
-        var parts = tools.map(formatToolConfirmMessage);
-        return t('I want to perform the following action:') + '\n\n' + parts.join('\n') + '\n\n' + t('Allow this?');
-    }
 
     function showGreeting() {
         chat.classList.add('is-empty');
@@ -1238,6 +1003,10 @@
     // parameters it will run with and offers Allow / Not now. Once allowed it
     // turns into the S02 progress card, and when the run finishes into the S03
     // collapsed line; "Not now" leaves a muted line and no call is made.
+    function isFormWrite(tool) {
+        return !!tool && tool.name === 'page_form' && !!tool.input && tool.input.action === 'write_fields';
+    }
+
     function showConfirmButtons(msgEl, messageIdOrConvId, tools) {
         // Prevent duplicate confirm cards
         if (msgEl.querySelector('.mago-confirm-actions')) return;
@@ -1246,6 +1015,15 @@
         var first = tools[0] || null;
         var title = first ? skillTitle(first.name) : 'Confirm action';
         var text = first && first.description ? first.description : 'I want to perform an action. Allow this?';
+
+        /* A form write is the one confirmation the tool's own description cannot describe: what
+           matters is which fields change and from what, read off the form open right now. That
+           sentence is built in chat/confirm-text.js and rendered as markdown here, so it replaces
+           both the description and the parameter table, which would otherwise show the raw
+           directive JSON. Every other tool keeps the generic card. */
+        var formWriteMessage = isFormWrite(first)
+            ? {html: renderMd(formatConfirmMessage(tools))}
+            : null;
         var hooks = {actions: 'mago-confirm-actions', allow: 'mago-btn--confirm', confirm: 'mago-btn--confirm', later: 'mago-btn--reject', cancel: 'mago-btn--reject'};
         var irreversible = tools.filter(function(t) { return t.irreversible; });
         var card;
@@ -1284,8 +1062,8 @@
             card = UI.skillAsk({
                 title: title,
                 tool: first ? first.name : null,
-                text: text,
-                params: first ? UI.paramsFromInput(first.input) : [],
+                text: formWriteMessage || text,
+                params: formWriteMessage || !first ? [] : UI.paramsFromInput(first.input),
                 classes: hooks,
                 onAllow: function() { decide(true); },
                 onLater: function() { decide(false); }
@@ -1310,7 +1088,7 @@
                     handleConfirm(mid, run);
                 } else {
                     card.replaceWith(UI.skillLine({title: title, action: first && first.input ? first.input.action : null, state: 'skipped'}));
-                    logWrite(title, first && first.input ? first.input.action : null, 'skipped');
+                    sessionLog.write(title, first && first.input ? first.input.action : null, 'skipped');
                     handleReject(mid);
                 }
             });
@@ -1372,7 +1150,7 @@
             }
             (run.tools || []).forEach(function(t, i) {
                 var skipped = run.skipped && run.skipped.indexOf(t) !== -1;
-                logWrite(skillTitle(t.name), t.input ? t.input.action : null, skipped ? 'skipped' : state);
+                sessionLog.write(skillTitle(t.name), t.input ? t.input.action : null, skipped ? 'skipped' : state);
             });
             run.card = null;
         }
@@ -1535,4 +1313,4 @@
             openPanel();
         }
     } catch(e) {}
-})();
+});
