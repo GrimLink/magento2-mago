@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Api\Skill;
+namespace MagoAssistant\Mago\Api\Skill;
 
 /**
  * Skill action interface — individual action within a skill tool

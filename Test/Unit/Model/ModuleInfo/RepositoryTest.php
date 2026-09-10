@@ -1,18 +1,18 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Model\ModuleInfo;
+namespace MagoAssistant\Mago\Test\Unit\Model\ModuleInfo;
 
-use MaggyAssistant\Base\Api\ModuleInfo\RepositoryInterface;
-use MaggyAssistant\Base\Model\ModuleInfo\Repository;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeComponentRegistrar;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeInstalledPackages;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeModuleDeclarationLoader;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeModuleList;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakePackageInfo;
+use MagoAssistant\Mago\Api\ModuleInfo\RepositoryInterface;
+use MagoAssistant\Mago\Model\ModuleInfo\Repository;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeComponentRegistrar;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeInstalledPackages;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeModuleDeclarationLoader;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeModuleList;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakePackageInfo;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -37,14 +37,14 @@ class RepositoryTest extends TestCase
     public function itPrefersComposerOverAStaleVersionFieldInTheModuleComposerJson(): void
     {
         $repository = $this->repository(
-            (new FakePackageInfo())->withModule('MaggyAssistant_Base', 'maggy-assistant/magento2-base', '1.0.0'),
-            (new FakeModuleDeclarationLoader())->withModule('MaggyAssistant_Base'),
-            (new FakeInstalledPackages())->withPackage('maggy-assistant/magento2-base', '1.1.0')
+            (new FakePackageInfo())->withModule('MagoAssistant_Mago', 'mago-assistant/mago', '1.0.0'),
+            (new FakeModuleDeclarationLoader())->withModule('MagoAssistant_Mago'),
+            (new FakeInstalledPackages())->withPackage('mago-assistant/mago', '1.1.0')
         );
 
         self::assertSame(
             ['version' => '1.1.0', 'source' => RepositoryInterface::VERSION_SOURCE_COMPOSER],
-            $repository->getVersionInfo('MaggyAssistant_Base')
+            $repository->getVersionInfo('MagoAssistant_Mago')
         );
     }
 

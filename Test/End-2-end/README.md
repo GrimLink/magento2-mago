@@ -6,7 +6,7 @@ Layout and configuration follow [mollie/magento2](https://github.com/mollie/mage
 ## How the AI is kept out of the loop
 
 The browser never talks to an AI provider. It reads an SSE stream of
-`text` / `tool_call` / `confirm` / `done` / `error` events from `maggy/chat/stream`.
+`text` / `tool_call` / `confirm` / `done` / `error` events from `mago/chat/stream`.
 `ChatMock` intercepts that endpoint and replays the fixtures in `fixtures/scenarios.ts`,
 so every run is deterministic, free and offline. No API key is needed and no test ever
 calls a model.
@@ -34,7 +34,7 @@ To keep values in a file instead, uncomment the dotenv lines at the top of
 The module has to be switched on, otherwise the panel is not rendered at all:
 
 ```bash
-bin/magento config:set maggy/general/enabled 1
+bin/magento config:set mago/general/enabled 1
 bin/magento cache:flush
 ```
 
@@ -51,7 +51,7 @@ bin/magento module:disable Magento_AdminAnalytics Magento_ReleaseNotification
 bin/magento cache:flush
 ```
 
-`ddev maggy-e2e` disables `Magento_ReleaseNotification` for you before every run, if it is
+`ddev mago-e2e` disables `Magento_ReleaseNotification` for you before every run, if it is
 enabled, and reports what it did. `Magento_AdminAnalytics` depends on it, so the script disables
 that one too when it is still enabled, since Magento refuses to disable a module something else
 still depends on. The CI workflow (`.github/workflows/end-2-end.yml`) disables both on every run.
@@ -124,7 +124,7 @@ tests/*.spec.ts                     the tests
 Add an entry to `fixtures/scenarios.ts` describing the events the backend would emit,
 then drive it with `chatMock.install(page, scenario)`. A write action needs a `confirm`
 event plus a `status` payload, because the frontend resolves the message id through
-`maggy/chat/status` when it only has a conversation id.
+`mago/chat/status` when it only has a conversation id.
 
 For a backend scenario (real controller and tools, only the provider mocked) add a mapping file
 under `wiremock/mappings/` and its SSE bodies under `wiremock/__files/`. Key each scenario on a

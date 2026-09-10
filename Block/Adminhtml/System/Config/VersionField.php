@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Block\Adminhtml\System\Config;
+namespace MagoAssistant\Mago\Block\Adminhtml\System\Config;
 
 use Magento\Backend\Block\Template\Context;
 use Magento\Config\Block\System\Config\Form\Field;
 use Magento\Framework\Data\Form\Element\AbstractElement;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
 
 class VersionField extends Field
 {

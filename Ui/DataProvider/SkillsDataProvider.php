@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Ui\DataProvider;
+namespace MagoAssistant\Mago\Ui\DataProvider;
 
 use Magento\Framework\Api\Filter;
 use Magento\Framework\Api\Search\SearchResultInterface;
@@ -17,7 +17,7 @@ use Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider;
 use Magento\Framework\Api\Search\ReportingInterface;
 use Magento\Framework\Api\Search\SearchCriteriaBuilder;
 use Magento\Framework\Api\FilterBuilder;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 
 class SkillsDataProvider extends DataProvider
 {
@@ -81,7 +81,7 @@ class SkillsDataProvider extends DataProvider
     private function getAssignedUsers(): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $permTable = $this->resourceConnection->getTableName('maggy_skill_permission');
+        $permTable = $this->resourceConnection->getTableName('mago_skill_permission');
         $userTable = $this->resourceConnection->getTableName('admin_user');
 
         $select = $connection->select()

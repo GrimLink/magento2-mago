@@ -1,4 +1,4 @@
-# Maggy Assistant — Skills & Example Prompts
+# Mago Assistant — Skills & Example Prompts
 
 Overview of all available skills and example prompts to get the most out of the assistant.
 

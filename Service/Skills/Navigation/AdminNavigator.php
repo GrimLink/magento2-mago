@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Navigation;
+namespace MagoAssistant\Mago\Service\Skills\Navigation;
 
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
-use MaggyAssistant\Base\Service\Url\SecureAdminUrl;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Service\Url\SecureAdminUrl;
 
 class AdminNavigator implements ToolInterface
 {

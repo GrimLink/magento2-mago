@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Command;
+namespace MagoAssistant\Mago\Service\Command;
 
 /**
  * /cache — the chat counterpart of bin/magento cache:flush, cache:clean and cache:status

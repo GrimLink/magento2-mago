@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Seo\UrlRewriteManager;
+namespace MagoAssistant\Mago\Service\Skills\Seo\UrlRewriteManager;
 
 use Magento\UrlRewrite\Model\ResourceModel\UrlRewriteCollectionFactory;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Service\Url\SecureAdminUrl;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Service\Url\SecureAdminUrl;
 
 class SearchAction implements ActionInterface
 {

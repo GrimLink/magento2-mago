@@ -1,19 +1,19 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Block\Adminhtml;
+namespace MagoAssistant\Mago\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
-use MaggyAssistant\Base\Service\Usage\UsageStats;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Service\Usage\UsageStats;
 
 class Dashboard extends Template
 {
-    protected $_template = 'MaggyAssistant_Base::dashboard/index.phtml';
+    protected $_template = 'MagoAssistant_Mago::dashboard/index.phtml';
 
     public function __construct(
         Context $context,

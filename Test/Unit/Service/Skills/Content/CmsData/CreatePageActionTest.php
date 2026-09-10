@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Skills\Content\CmsData;
+namespace MagoAssistant\Mago\Test\Unit\Service\Skills\Content\CmsData;
 
-use MaggyAssistant\Base\Service\Api\InternalApiClient;
-use MaggyAssistant\Base\Service\Skills\Content\CmsData\CreatePageAction;
-use MaggyAssistant\Base\Service\Store\StoreScopeContext;
-use MaggyAssistant\Base\Test\Unit\Fakes\BuildsStoreLayouts;
+use MagoAssistant\Mago\Service\Api\InternalApiClient;
+use MagoAssistant\Mago\Service\Skills\Content\CmsData\CreatePageAction;
+use MagoAssistant\Mago\Service\Store\StoreScopeContext;
+use MagoAssistant\Mago\Test\Unit\Fakes\BuildsStoreLayouts;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

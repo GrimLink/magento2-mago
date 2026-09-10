@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Model\Conversation;
+namespace MagoAssistant\Mago\Model\Conversation;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Sql\Expression;
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
+use MagoAssistant\Mago\Api\ConversationRepositoryInterface;
 
 class Repository implements ConversationRepositoryInterface
 {
@@ -22,7 +22,7 @@ class Repository implements ConversationRepositoryInterface
     public function create(int $adminUserId, string $title = 'New Chat'): int
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_conversation');
+        $table = $this->resourceConnection->getTableName('mago_conversation');
 
         $connection->insert($table, [
             'admin_user_id' => $adminUserId,
@@ -35,7 +35,7 @@ class Repository implements ConversationRepositoryInterface
     public function getById(int $conversationId): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_conversation');
+        $table = $this->resourceConnection->getTableName('mago_conversation');
 
         $select = $connection->select()->from($table)->where('entity_id = ?', $conversationId);
         $row = $connection->fetchRow($select);
@@ -50,7 +50,7 @@ class Repository implements ConversationRepositoryInterface
     public function getByIdForUser(int $conversationId, int $adminUserId): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_conversation');
+        $table = $this->resourceConnection->getTableName('mago_conversation');
 
         $select = $connection->select()
             ->from($table)
@@ -69,7 +69,7 @@ class Repository implements ConversationRepositoryInterface
     public function getListByUser(int $adminUserId): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_conversation');
+        $table = $this->resourceConnection->getTableName('mago_conversation');
 
         $select = $connection->select()
             ->from($table)
@@ -82,7 +82,7 @@ class Repository implements ConversationRepositoryInterface
     public function delete(int $conversationId, ?int $adminUserId = null): void
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_conversation');
+        $table = $this->resourceConnection->getTableName('mago_conversation');
 
         $where = ['entity_id = ?' => $conversationId];
         if ($adminUserId !== null) {
@@ -101,7 +101,7 @@ class Repository implements ConversationRepositoryInterface
         ?string $toolCallId = null
     ): int {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_message');
+        $table = $this->resourceConnection->getTableName('mago_message');
 
         $data = [
             'conversation_id' => $conversationId,
@@ -122,7 +122,7 @@ class Repository implements ConversationRepositoryInterface
         $messageId = (int)$connection->lastInsertId($table);
 
         // Touch conversation updated_at
-        $convTable = $this->resourceConnection->getTableName('maggy_conversation');
+        $convTable = $this->resourceConnection->getTableName('mago_conversation');
         $connection->update($convTable, ['updated_at' => new Expression('NOW()')], ['entity_id = ?' => $conversationId]);
 
         return $messageId;
@@ -131,7 +131,7 @@ class Repository implements ConversationRepositoryInterface
     public function getMessages(int $conversationId): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_message');
+        $table = $this->resourceConnection->getTableName('mago_message');
 
         $select = $connection->select()
             ->from($table)
@@ -144,7 +144,7 @@ class Repository implements ConversationRepositoryInterface
     public function getMessageById(int $messageId): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_message');
+        $table = $this->resourceConnection->getTableName('mago_message');
 
         $select = $connection->select()->from($table)->where('entity_id = ?', $messageId);
         $row = $connection->fetchRow($select);
@@ -159,8 +159,8 @@ class Repository implements ConversationRepositoryInterface
     public function getMessageForUser(int $messageId, int $adminUserId): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $messageTable = $this->resourceConnection->getTableName('maggy_message');
-        $conversationTable = $this->resourceConnection->getTableName('maggy_conversation');
+        $messageTable = $this->resourceConnection->getTableName('mago_message');
+        $conversationTable = $this->resourceConnection->getTableName('mago_conversation');
 
         $select = $connection->select()
             ->from(['m' => $messageTable])
@@ -180,11 +180,11 @@ class Repository implements ConversationRepositoryInterface
     public function resolveConfirmation(int $messageId, bool $confirmed, ?int $adminUserId = null): void
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_message');
+        $table = $this->resourceConnection->getTableName('mago_message');
 
         $where = ['entity_id = ?' => $messageId];
         if ($adminUserId !== null) {
-            $conversationTable = $this->resourceConnection->getTableName('maggy_conversation');
+            $conversationTable = $this->resourceConnection->getTableName('mago_conversation');
             $where[] = $connection->quoteInto(
                 'conversation_id IN (SELECT entity_id FROM ' . $conversationTable . ' WHERE admin_user_id = ?)',
                 $adminUserId

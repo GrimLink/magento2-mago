@@ -1,16 +1,16 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Ai;
+namespace MagoAssistant\Mago\Service\Ai;
 
 use MageOS\AiBase\Api\AiClientFactoryInterface;
 use MageOS\AiBase\Api\AiClientInterface;
 use MageOS\AiBase\Api\Data\ChatResponseInterface;
 use MageOS\AiBase\Api\Data\StreamChunkType;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
 
 /**
  * The assistant's one way to reach an AI provider.

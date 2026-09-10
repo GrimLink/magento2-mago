@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Url;
+namespace MagoAssistant\Mago\Service\Url;
 
 use Magento\Backend\Model\UrlInterface as BackendUrl;
 

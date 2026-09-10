@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules;
+namespace MagoAssistant\Mago\Service\Skills\Marketing\CatalogPriceRules;
 
 use Magento\CatalogRule\Model\Rule\Job;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
 
 class ApplyRulesAction implements ActionInterface
 {

@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Fakes;
+namespace MagoAssistant\Mago\Test\Unit\Fakes;
 
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
 
 /**
  * Hand-written mixed tool (not action-scoped) whose read actions are those listed in $readActions.

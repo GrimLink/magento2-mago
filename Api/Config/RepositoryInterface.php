@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Api\Config;
+namespace MagoAssistant\Mago\Api\Config;
 
 use Magento\Store\Api\Data\StoreInterface;
 
@@ -14,27 +14,27 @@ use Magento\Store\Api\Data\StoreInterface;
  */
 interface RepositoryInterface
 {
-    public const EXTENSION_CODE = 'MaggyAssistant_Base';
-    public const XML_PATH_EXTENSION_ENABLE = 'maggy/general/enabled';
-    public const XML_PATH_DEBUG = 'maggy/debug/debug';
-    public const XML_PATH_PAYLOAD_RETENTION_DAYS = 'maggy/debug/payload_retention_days';
-    public const XML_PATH_AI_SERVICE = 'maggy/api/ai_service';
-    public const XML_PATH_MAX_TOKENS = 'maggy/api/max_tokens';
-    public const XML_PATH_STREAMING = 'maggy/api/streaming';
-    public const XML_PATH_SYSTEM_PROMPT = 'maggy/chat/system_prompt';
-    public const XML_PATH_MAX_TOOL_ITERATIONS = 'maggy/chat/max_tool_iterations';
-    public const XML_PATH_MAX_RESPONSE_TOKENS = 'maggy/tools/max_response_tokens';
-    public const XML_PATH_ACCENT_COLOR = 'maggy/chat/accent_color';
-    public const XML_PATH_TEXT_COLOR = 'maggy/chat/text_color';
-    public const XML_PATH_ASSISTANT_NAME = 'maggy/chat/assistant_name';
-    public const XML_PATH_INTERNAL_URL = 'maggy/api/internal_url';
-    public const XML_PATH_INTERNAL_SSL_VERIFY = 'maggy/api/internal_ssl_verify';
-    public const XML_PATH_LANGUAGE = 'maggy/chat/language';
-    public const XML_PATH_ANSWER_WIDGETS = 'maggy/chat/answer_widgets';
-    public const XML_PATH_DOCS_ENABLED = 'maggy/docs/enabled';
-    public const XML_PATH_DOCS_SOURCE_REPO = 'maggy/docs/source_repo';
-    public const XML_PATH_DOCS_REF = 'maggy/docs/ref';
-    public const XML_PATH_DOCS_TOP_K = 'maggy/docs/top_k';
+    public const EXTENSION_CODE = 'MagoAssistant_Mago';
+    public const XML_PATH_EXTENSION_ENABLE = 'mago/general/enabled';
+    public const XML_PATH_DEBUG = 'mago/debug/debug';
+    public const XML_PATH_PAYLOAD_RETENTION_DAYS = 'mago/debug/payload_retention_days';
+    public const XML_PATH_AI_SERVICE = 'mago/api/ai_service';
+    public const XML_PATH_MAX_TOKENS = 'mago/api/max_tokens';
+    public const XML_PATH_STREAMING = 'mago/api/streaming';
+    public const XML_PATH_SYSTEM_PROMPT = 'mago/chat/system_prompt';
+    public const XML_PATH_MAX_TOOL_ITERATIONS = 'mago/chat/max_tool_iterations';
+    public const XML_PATH_MAX_RESPONSE_TOKENS = 'mago/tools/max_response_tokens';
+    public const XML_PATH_ACCENT_COLOR = 'mago/chat/accent_color';
+    public const XML_PATH_TEXT_COLOR = 'mago/chat/text_color';
+    public const XML_PATH_ASSISTANT_NAME = 'mago/chat/assistant_name';
+    public const XML_PATH_INTERNAL_URL = 'mago/api/internal_url';
+    public const XML_PATH_INTERNAL_SSL_VERIFY = 'mago/api/internal_ssl_verify';
+    public const XML_PATH_LANGUAGE = 'mago/chat/language';
+    public const XML_PATH_ANSWER_WIDGETS = 'mago/chat/answer_widgets';
+    public const XML_PATH_DOCS_ENABLED = 'mago/docs/enabled';
+    public const XML_PATH_DOCS_SOURCE_REPO = 'mago/docs/source_repo';
+    public const XML_PATH_DOCS_REF = 'mago/docs/ref';
+    public const XML_PATH_DOCS_TOP_K = 'mago/docs/top_k';
     /**
      * @return string
      */

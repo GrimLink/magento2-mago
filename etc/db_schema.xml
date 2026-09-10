@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
 
-    <table name="maggy_conversation" resource="default" engine="innodb" comment="Admin Assistant Conversations">
+    <table name="mago_conversation" resource="default" engine="innodb" comment="Admin Assistant Conversations">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="admin_user_id" unsigned="true" nullable="false" comment="Admin User ID"/>
         <column xsi:type="varchar" name="title" nullable="false" length="255" default="New Chat" comment="Conversation Title"/>
@@ -10,12 +10,12 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
-        <index referenceId="MAGGY_CONVERSATION_ADMIN_USER_ID" indexType="btree">
+        <index referenceId="MAGO_CONVERSATION_ADMIN_USER_ID" indexType="btree">
             <column name="admin_user_id"/>
         </index>
     </table>
 
-    <table name="maggy_message" resource="default" engine="innodb" comment="Admin Assistant Messages">
+    <table name="mago_message" resource="default" engine="innodb" comment="Admin Assistant Messages">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="conversation_id" unsigned="true" nullable="false" comment="Conversation ID"/>
         <column xsi:type="varchar" name="role" nullable="false" length="20" comment="Role: user, assistant, system, tool"/>
@@ -27,16 +27,16 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
-        <constraint xsi:type="foreign" referenceId="MAGGY_MSG_CONV_ID" table="maggy_message" column="conversation_id" referenceTable="maggy_conversation" referenceColumn="entity_id" onDelete="CASCADE"/>
-        <index referenceId="MAGGY_MESSAGE_CONVERSATION_ID" indexType="btree">
+        <constraint xsi:type="foreign" referenceId="MAGO_MSG_CONV_ID" table="mago_message" column="conversation_id" referenceTable="mago_conversation" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="MAGO_MESSAGE_CONVERSATION_ID" indexType="btree">
             <column name="conversation_id"/>
         </index>
-        <index referenceId="MAGGY_MESSAGE_ROLE" indexType="btree">
+        <index referenceId="MAGO_MESSAGE_ROLE" indexType="btree">
             <column name="role"/>
         </index>
     </table>
 
-    <table name="maggy_skill_permission" resource="default" engine="innodb" comment="Admin Assistant Skill Permissions">
+    <table name="mago_skill_permission" resource="default" engine="innodb" comment="Admin Assistant Skill Permissions">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="admin_user_id" unsigned="true" nullable="false" comment="Admin User ID"/>
         <column xsi:type="varchar" name="skill_name" nullable="false" length="100" comment="Skill Name"/>
@@ -44,16 +44,16 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
-        <constraint xsi:type="unique" referenceId="MAGGY_SKILL_PERM_USER_SKILL">
+        <constraint xsi:type="unique" referenceId="MAGO_SKILL_PERM_USER_SKILL">
             <column name="admin_user_id"/>
             <column name="skill_name"/>
         </constraint>
-        <index referenceId="MAGGY_SKILL_PERM_ADMIN_USER_ID" indexType="btree">
+        <index referenceId="MAGO_SKILL_PERM_ADMIN_USER_ID" indexType="btree">
             <column name="admin_user_id"/>
         </index>
     </table>
 
-    <table name="maggy_usage_log" resource="default" engine="innodb" comment="Admin Assistant Usage Log">
+    <table name="mago_usage_log" resource="default" engine="innodb" comment="Admin Assistant Usage Log">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="int" name="admin_user_id" unsigned="true" nullable="false" comment="Admin User ID"/>
         <column xsi:type="int" name="conversation_id" unsigned="true" nullable="true" comment="Conversation ID"/>
@@ -69,18 +69,18 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
-        <index referenceId="MAGGY_USAGE_LOG_ADMIN_USER_ID" indexType="btree">
+        <index referenceId="MAGO_USAGE_LOG_ADMIN_USER_ID" indexType="btree">
             <column name="admin_user_id"/>
         </index>
-        <index referenceId="MAGGY_USAGE_LOG_CREATED_AT" indexType="btree">
+        <index referenceId="MAGO_USAGE_LOG_CREATED_AT" indexType="btree">
             <column name="created_at"/>
         </index>
-        <index referenceId="MAGGY_USAGE_LOG_PROVIDER" indexType="btree">
+        <index referenceId="MAGO_USAGE_LOG_PROVIDER" indexType="btree">
             <column name="provider"/>
         </index>
     </table>
 
-    <table name="maggy_doc" resource="default" engine="innodb" comment="Admin Assistant Documentation Corpus">
+    <table name="mago_doc" resource="default" engine="innodb" comment="Admin Assistant Documentation Corpus">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="source" nullable="false" length="255" default="" comment="Source repo"/>
         <column xsi:type="varchar" name="path" nullable="false" length="512" default="" comment="Doc path in source"/>
@@ -95,7 +95,7 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
-        <index referenceId="MAGGY_DOC_FULLTEXT" indexType="fulltext">
+        <index referenceId="MAGO_DOC_FULLTEXT" indexType="fulltext">
             <column name="title"/>
             <column name="description"/>
             <column name="tags"/>

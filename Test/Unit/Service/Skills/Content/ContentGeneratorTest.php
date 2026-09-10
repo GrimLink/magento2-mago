@@ -1,17 +1,17 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Skills\Content;
+namespace MagoAssistant\Mago\Test\Unit\Service\Skills\Content;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Category\Collection as CategoryCollection;
-use MaggyAssistant\Base\Service\Skills\Content\ContentGenerator;
-use MaggyAssistant\Base\Service\Store\StoreScopeContext;
-use MaggyAssistant\Base\Test\Unit\Fakes\BuildsStoreLayouts;
+use MagoAssistant\Mago\Service\Skills\Content\ContentGenerator;
+use MagoAssistant\Mago\Service\Store\StoreScopeContext;
+use MagoAssistant\Mago\Test\Unit\Fakes\BuildsStoreLayouts;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

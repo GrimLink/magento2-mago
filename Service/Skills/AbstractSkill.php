@@ -1,16 +1,16 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills;
+namespace MagoAssistant\Mago\Service\Skills;
 
 use Magento\Framework\AuthorizationInterface;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface;
-use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
-use MaggyAssistant\Base\Api\Tool\IrreversibleToolInterface;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\Skill\IrreversibleActionInterface;
+use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
+use MagoAssistant\Mago\Api\Tool\IrreversibleToolInterface;
 
 abstract class AbstractSkill implements ActionScopedToolInterface, IrreversibleToolInterface
 {

@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Ai;
+namespace MagoAssistant\Mago\Test\Unit\Service\Ai;
 
-use MaggyAssistant\Base\Service\Ai\AnswerWidgets;
+use MagoAssistant\Mago\Service\Ai\AnswerWidgets;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

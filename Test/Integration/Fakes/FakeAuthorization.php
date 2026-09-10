@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Integration\Fakes;
+namespace MagoAssistant\Mago\Test\Integration\Fakes;
 
 use Magento\Framework\AuthorizationInterface;
 

@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Api;
+namespace MagoAssistant\Mago\Service\Api;
 
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 final class InternalRequestOptions
 {

@@ -1,5 +1,5 @@
 (function() {
-    var config = window.MAGGY_CONFIG;
+    var config = window.MAGO_CONFIG;
     var formKey = config.formKey;
     var skills = config.skills;
     var commands = config.commands || [];
@@ -11,9 +11,9 @@
     var slashActive = false;
     var slashIndex = 0;
     var filteredItems = [];
-    var SS_KEY_OPEN = 'maggy_open';
-    var SS_KEY_CONV = 'maggy_conv';
-    var SS_KEY_FULL = 'maggy_fullsize';
+    var SS_KEY_OPEN = 'mago_open';
+    var SS_KEY_CONV = 'mago_conv';
+    var SS_KEY_FULL = 'mago_fullsize';
 
     function saveState() {
         try {
@@ -24,15 +24,15 @@
     }
 
     function qs(s) { return document.querySelector(s); }
-    var toggle = qs('#maggy-toggle');
-    var chat = qs('#maggy-chat');
-    var msgs = qs('#maggy-messages');
-    var input = qs('#maggy-input');
-    var loading = qs('#maggy-loading');
-    var sendBtn = qs('#maggy-send');
-    var histList = qs('#maggy-history-list');
-    var inputArea = qs('#maggy-input-area');
-    var slashMenu = qs('#maggy-slash-menu');
+    var toggle = qs('#mago-toggle');
+    var chat = qs('#mago-chat');
+    var msgs = qs('#mago-messages');
+    var input = qs('#mago-input');
+    var loading = qs('#mago-loading');
+    var sendBtn = qs('#mago-send');
+    var histList = qs('#mago-history-list');
+    var inputArea = qs('#mago-input-area');
+    var slashMenu = qs('#mago-slash-menu');
 
     // A theme without the header container renders the panel without its
     // toggle, so bail out before anything binds to a missing element.
@@ -41,14 +41,14 @@
     }
 
     function clearMsgs() {
-        var nodes = msgs.querySelectorAll('.maggy-message, .maggy-date-sep');
+        var nodes = msgs.querySelectorAll('.mago-message, .mago-date-sep');
         for (var i = 0; i < nodes.length; i++) nodes[i].remove();
         loading.style.display = 'none';
     }
 
     // The header subtitle names the conversation being viewed; empty on a fresh chat.
     function setSubtitle(text) {
-        var el = qs('#maggy-subtitle');
+        var el = qs('#mago-subtitle');
         if (el) el.textContent = text || '';
     }
 
@@ -74,7 +74,7 @@
 
     function openPanel() {
         chat.classList.add('is-open');
-        document.body.classList.add('maggy-active');
+        document.body.classList.add('mago-active');
         syncToggleLabel();
         if (msgs.children.length <= 1 && !conversationId) {
             showGreeting();
@@ -85,8 +85,8 @@
 
     function closePanel() {
         chat.classList.remove('is-open', 'is-fullsize');
-        document.body.classList.remove('maggy-active', 'maggy-fullsize');
-        var expandBtn = qs('#maggy-expand');
+        document.body.classList.remove('mago-active', 'mago-fullsize');
+        var expandBtn = qs('#mago-expand');
         expandBtn.title = 'Full size';
         expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
         syncToggleLabel();
@@ -103,11 +103,11 @@
             openPanel();
         }
     };
-    qs('#maggy-close').onclick = closePanel;
-    qs('#maggy-expand').onclick = function() {
+    qs('#mago-close').onclick = closePanel;
+    qs('#mago-expand').onclick = function() {
         var isFullsize = chat.classList.toggle('is-fullsize');
-        document.body.classList.toggle('maggy-fullsize', isFullsize);
-        var expandBtn = qs('#maggy-expand');
+        document.body.classList.toggle('mago-fullsize', isFullsize);
+        var expandBtn = qs('#mago-expand');
         if (isFullsize) {
             expandBtn.title = 'Side panel';
             expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
@@ -117,7 +117,7 @@
         }
         saveState();
     };
-    qs('#maggy-new').onclick = function() {
+    qs('#mago-new').onclick = function() {
         if (showingHistory) hideHistory();
         if (showingLog) hideLog();
         clearMsgs();
@@ -125,7 +125,7 @@
         showGreeting();
         saveState();
     };
-    qs('#maggy-history').onclick = function() {
+    qs('#mago-history').onclick = function() {
         if (showingHistory) {
             hideHistory();
         } else {
@@ -183,7 +183,7 @@
         var hasCommands = filteredItems.some(function(i) { return i.type === 'command'; });
         var hasSkills = filteredItems.some(function(i) { return i.type === 'skill'; });
         slashMenu.appendChild(UI.skillMenu({
-            itemClass: 'maggy-slash-item',
+            itemClass: 'mago-slash-item',
             title: hasCommands ? (hasSkills ? 'Commands and skills' : 'Commands') : 'Skills',
             skills: filteredItems.map(function(item) {
                 return {
@@ -226,9 +226,9 @@
 
     // S12: every write the assistant ran (or skipped, or that failed) in this browser session,
     // kept in sessionStorage so it survives the page loads an admin makes between questions.
-    var SS_KEY_LOG = 'maggy_log';
-    var logBtn = qs('#maggy-log');
-    var logView = qs('#maggy-log-view');
+    var SS_KEY_LOG = 'mago_log';
+    var logBtn = qs('#mago-log');
+    var logView = qs('#mago-log-view');
     var showingLog = false;
 
     function readLog() {
@@ -300,7 +300,7 @@
     }
 
     function updateSlashHighlight() {
-        var items = slashMenu.querySelectorAll('.maggy-slash-item');
+        var items = slashMenu.querySelectorAll('.mago-slash-item');
         items.forEach(function(el, i) {
             el.classList.toggle('is-active', i === slashIndex);
         });
@@ -404,17 +404,17 @@
             }
             data.conversations.forEach(function(conv) {
                 var item = document.createElement('div');
-                item.className = 'maggy-history-item';
-                item.innerHTML = '<span class="maggy-history-item-title">' + esc(conv.title || 'Untitled') + '</span>'
-                    + '<span class="maggy-history-item-date">' + formatDate(conv.updated_at) + '</span>'
-                    + '<button type="button" class="maggy-history-item-delete" title="Delete">'
+                item.className = 'mago-history-item';
+                item.innerHTML = '<span class="mago-history-item-title">' + esc(conv.title || 'Untitled') + '</span>'
+                    + '<span class="mago-history-item-date">' + formatDate(conv.updated_at) + '</span>'
+                    + '<button type="button" class="mago-history-item-delete" title="Delete">'
                     + '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
                     + '</button>';
 
-                item.querySelector('.maggy-history-item-title').onclick = function() {
+                item.querySelector('.mago-history-item-title').onclick = function() {
                     loadConversation(conv.entity_id, conv.title);
                 };
-                item.querySelector('.maggy-history-item-delete').onclick = function(e) {
+                item.querySelector('.mago-history-item-delete').onclick = function(e) {
                     e.stopPropagation();
                     deleteConversation(conv.entity_id, item);
                 };
@@ -508,7 +508,7 @@
         markedRenderer.table = function(token) {
             // Render using the default logic but wrap in a scrollable div
             var html = marked.Renderer.prototype.table.call(this, token);
-            return '<div class="maggy-table-wrap">' + html + '</div>';
+            return '<div class="mago-table-wrap">' + html + '</div>';
         };
         // A ```mago fenced block holds a widget spec ({"type": "stat", ...} or a
         // list of them) and renders as the matching widget. While the block is
@@ -567,7 +567,7 @@
         if (label !== lastDateLabel) {
             lastDateLabel = label;
             var sep = document.createElement('div');
-            sep.className = 'maggy-date-sep';
+            sep.className = 'mago-date-sep';
             sep.innerHTML = '<span>' + esc(label) + '</span>';
             msgs.insertBefore(sep, loading);
         }
@@ -581,14 +581,14 @@
 
     function addMsg(role, html, timestamp) {
         var cls = role === 'user' ? 'is-user' : 'is-assistant';
-        var timeHtml = timestamp ? '<div class="maggy-msg-time">' + esc(formatTime(timestamp)) + '</div>' : '';
+        var timeHtml = timestamp ? '<div class="mago-msg-time">' + esc(formatTime(timestamp)) + '</div>' : '';
         var div = document.createElement('div');
-        div.className = 'maggy-message ' + cls;
+        div.className = 'mago-message ' + cls;
         // Tool tags, then the read-only trace (S06), then the answer itself, as in
         // the design: what Mago looked up sits above what it concluded.
-        div.innerHTML = '<div class="maggy-tool-tags"></div>'
-            + '<div class="maggy-tool-trace mago-trace is-tight"></div>'
-            + '<div class="maggy-message-content">' + html + '</div>' + timeHtml;
+        div.innerHTML = '<div class="mago-tool-tags"></div>'
+            + '<div class="mago-tool-trace mago-trace is-tight"></div>'
+            + '<div class="mago-message-content">' + html + '</div>' + timeHtml;
         chat.classList.remove('is-empty');
         msgs.insertBefore(div, loading);
         msgs.scrollTop = msgs.scrollHeight;
@@ -601,20 +601,20 @@
     function updateToolStatus(msgEl, toolName, status, message) {
         if (status === 'running') {
             var el = UI.readLine({text: message || ('Running ' + toolName + '…'), tool: toolName, state: 'active'});
-            el.classList.add('maggy-tool-status');
+            el.classList.add('mago-tool-status');
             el.setAttribute('data-tool', toolName);
-            var trace = msgEl.querySelector('.maggy-tool-trace');
+            var trace = msgEl.querySelector('.mago-tool-trace');
             if (trace) {
                 trace.appendChild(el);
             } else {
-                msgEl.querySelector('.maggy-message-content').before(el);
+                msgEl.querySelector('.mago-message-content').before(el);
             }
             msgs.scrollTop = msgs.scrollHeight;
         } else if (status === 'done' || status === 'failed') {
-            var statusEl = msgEl.querySelector('.maggy-tool-status[data-tool="' + toolName + '"]:not(.is-done)');
+            var statusEl = msgEl.querySelector('.mago-tool-status[data-tool="' + toolName + '"]:not(.is-done)');
             if (statusEl) {
                 statusEl.magoSetState(status);
-                statusEl.classList.add('maggy-tool-status', 'mago-readline', 'is-done');
+                statusEl.classList.add('mago-tool-status', 'mago-readline', 'is-done');
                 if (status === 'failed' && message) {
                     statusEl.title = message;
                 }
@@ -633,7 +633,7 @@
     }
 
     msgs.addEventListener('click', function(e) {
-        var scope = e.target.closest('.maggy-message-content');
+        var scope = e.target.closest('.mago-message-content');
         if (!scope) return;
         var chip = e.target.closest('.mago-chip, .mago-suggestion:not([href])');
         if (chip) {
@@ -649,17 +649,17 @@
     });
 
     msgs.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && e.target.classList.contains('mago-field-input') && e.target.closest('.maggy-message-content')) {
+        if (e.key === 'Enter' && e.target.classList.contains('mago-field-input') && e.target.closest('.mago-message-content')) {
             e.preventDefault();
             if (e.target.value.trim()) askFromWidget(e.target.value.trim());
         }
     });
 
     function addToolTag(msgEl, toolName) {
-        var tags = msgEl.querySelector('.maggy-tool-tags');
+        var tags = msgEl.querySelector('.mago-tool-tags');
         if (!tags) return;
         var tag = document.createElement('span');
-        tag.className = 'maggy-tool-tag';
+        tag.className = 'mago-tool-tag';
         tag.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
             + esc(toolName);
         tags.appendChild(tag);
@@ -677,7 +677,7 @@
     }
 
     // Welcome starters drop the skill into the input so the slash menu takes over.
-    var starters = chat.querySelectorAll('.maggy-starter');
+    var starters = chat.querySelectorAll('.mago-starter');
     for (var si = 0; si < starters.length; si++) {
         starters[si].onclick = function() {
             var name = this.getAttribute('data-skill');
@@ -729,21 +729,21 @@
                 else if (ln.indexOf('data: ')===0) {
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='conversation') { conversationId=d.conversation_id; saveState(); }
                     else if (evt==='tool_call') {
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         addToolTag(msg, d.name);
                     }
                     else if (evt==='tool_status') {
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         updateToolStatus(msg, d.name, d.status, d.message);
                     }
                     else if (evt==='confirm') {
                         writeToolDetected = true;
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         setBusy(false);
                         showConfirmButtons(msg, conversationId, d.tools || []);
                     }
@@ -759,7 +759,7 @@
                         }
                     }
                     else if (evt==='error') {
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         showError(msg, d.error);
                     }
                 }
@@ -778,7 +778,7 @@
             return reader.read().then(read);
         }).catch(function(e) {
             setBusy(false);
-            if (!msg) { msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+            if (!msg) { msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
             showError(msg, 'Connection error: ' + e.message);
         });
     }
@@ -789,13 +789,13 @@
     // collapsed line; "Not now" leaves a muted line and no call is made.
     function showConfirmButtons(msgEl, messageIdOrConvId, tools) {
         // Prevent duplicate confirm cards
-        if (msgEl.querySelector('.maggy-confirm-actions')) return;
+        if (msgEl.querySelector('.mago-confirm-actions')) return;
 
         tools = tools || [];
         var first = tools[0] || null;
         var title = first ? skillTitle(first.name) : 'Confirm action';
         var text = first && first.description ? first.description : 'I want to perform an action. Allow this?';
-        var hooks = {actions: 'maggy-confirm-actions', allow: 'maggy-btn--confirm', confirm: 'maggy-btn--confirm', later: 'maggy-btn--reject', cancel: 'maggy-btn--reject'};
+        var hooks = {actions: 'mago-confirm-actions', allow: 'mago-btn--confirm', confirm: 'mago-btn--confirm', later: 'mago-btn--reject', cancel: 'mago-btn--reject'};
         var irreversible = tools.filter(function(t) { return t.irreversible; });
         var card;
 
@@ -840,7 +840,7 @@
                 onLater: function() { decide(false); }
             });
         }
-        var actions = card.querySelector('.maggy-confirm-actions');
+        var actions = card.querySelector('.mago-confirm-actions');
         msgEl.appendChild(card);
         msgs.scrollTop = msgs.scrollHeight;
 
@@ -957,11 +957,11 @@
                 else if (ln.indexOf('data: ')===0) {
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='tool_call') {
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         addToolTag(msg, d.name);
                     }
                     else if (evt==='tool_status') {
@@ -980,7 +980,7 @@
                                 run.card.magoUpdate({progress: 90});
                             }
                         } else {
-                            if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                            if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                             updateToolStatus(msg, d.name, d.status, d.message);
                         }
                     }
@@ -995,7 +995,7 @@
                     else if (evt==='error') {
                         failed = true;
                         failureMessage = failureMessage || d.error || '';
-                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.maggy-message-content'); }
+                        if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         showError(msg, d.error);
                     }
                 }
@@ -1052,8 +1052,8 @@
             }
             if (wasFullsize) {
                 chat.classList.add('is-fullsize');
-                document.body.classList.add('maggy-fullsize');
-                var expandBtn = qs('#maggy-expand');
+                document.body.classList.add('mago-fullsize');
+                var expandBtn = qs('#mago-expand');
                 expandBtn.title = 'Side panel';
                 expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
             }

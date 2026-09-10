@@ -1,6 +1,6 @@
 # Skills Architecture
 
-> **Status:** Draft — `MaggyAssistant_Base` v1.0.0
+> **Status:** Draft — `MagoAssistant_Mago` v1.0.0
 > **Last updated:** 2026-09-07
 
 ## Table of Contents
@@ -44,7 +44,7 @@ In practice, a skill maps to one or more tools registered in the `ToolRegistry`.
 #### `ToolInterface`
 
 ```
-MaggyAssistant\Base\Api\Tool\ToolInterface
+MagoAssistant\Mago\Api\Tool\ToolInterface
 ```
 
 Every tool implements this contract:
@@ -93,7 +93,7 @@ For `AbstractSkill`-based tools, override `getBaseInstructions()` for skill-leve
 #### `ToolRegistry`
 
 ```
-MaggyAssistant\Base\Service\Tool\ToolRegistry
+MagoAssistant\Mago\Service\Tool\ToolRegistry
 ```
 
 Central registry that collects all tools via DI injection:
@@ -116,7 +116,7 @@ Parameter schemas and the derived read-only action lists are memoized per tool f
 #### `IrreversibleActionInterface` / `IrreversibleToolInterface`
 
 A write that has no reverse (a delete, an order cancellation, a refund) implements
-`MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface` instead of the plain
+`MagoAssistant\Mago\Api\Skill\IrreversibleActionInterface` instead of the plain
 `ActionInterface`. Its one extra method, `getImpacts(array $params, int $adminUserId): string[]`,
 describes what the call will do to the store in plain words, one consequence per line, reading
 the current state where that helps ("Order #100 (currently processing) is canceled ..."). It must
@@ -138,7 +138,7 @@ running it. A tool that returns an `error` key is reported to the panel with a `
 #### `ActionScopedToolInterface`
 
 ```
-MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface
+MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface
 ```
 
 Optional extension of `ToolInterface` for mixed read/write tools. It adds `getDescriptionForActions(array $actionNames)` and `getParameterSchemaForActions(array $actionNames)`, which the registry calls for admins holding only a `read` grant so the provider sees a description and schema that mention nothing but the read actions. `AbstractSkill` implements it for free; hand-written mixed tools (`cache_manager`, `indexer_manager`) implement it themselves. A mixed tool that only implements `ToolInterface` still works, but is narrowed by the action enum alone.
@@ -146,7 +146,7 @@ Optional extension of `ToolInterface` for mixed read/write tools. It adds `getDe
 #### `ChatService`
 
 ```
-MaggyAssistant\Base\Service\Ai\ChatService
+MagoAssistant\Mago\Service\Ai\ChatService
 ```
 
 Orchestrates the conversation loop:
@@ -191,15 +191,15 @@ Tool output is truncated by the `ChatService` to prevent context window exhausti
 
 | Limit | Default | Configurable |
 |-------|---------|--------------|
-| Max response size per tool | 4,000 tokens (estimated as 4 bytes per token on the JSON output) | `maggy/tools/max_response_tokens` |
-| Execution timeout (planned) | 5 seconds (read), 10 seconds (write) | `maggy/tools/execution_timeout` |
+| Max response size per tool | 4,000 tokens (estimated as 4 bytes per token on the JSON output) | `mago/tools/max_response_tokens` |
+| Execution timeout (planned) | 5 seconds (read), 10 seconds (write) | `mago/tools/execution_timeout` |
 
 When a tool result exceeds the limit, the result sent to the LLM is replaced by an envelope: `_truncated: true`, an `output` field with the first part of the JSON (cut multibyte-safe, may stop mid-value), `total_bytes`/`returned_bytes`, and a `note` instructing the model not to retry the same call but to narrow the query. The cap applies to all three execution paths (plain, streaming, confirmed writes); the debug log still records the full result before truncation.
 
 ### Store Scope Awareness
 
 ```
-MaggyAssistant\Base\Service\Store\StoreScopeContext
+MagoAssistant\Mago\Service\Store\StoreScopeContext
 ```
 
 Magento configuration and content live on three levels — default (global), website and store view — and a deeper level overrides the one above it. Before this existed the assistant silently acted on whatever scope a tool defaulted to (issue #38): config went to the default scope, CMS pages created through the internal REST API landed on the default store view only, and product content was saved globally.
@@ -262,7 +262,7 @@ Two classes bridge that to the rest of this module:
 tool calls already complete and their arguments decoded, so there is no SSE parsing or partial-JSON
 stitching anywhere in this module.
 
-Which service a store runs on is `maggy/api/ai_service`, an id pointing at a row configured under
+Which service a store runs on is `mago/api/ai_service`, an id pointing at a row configured under
 *Stores > Configuration > Mage-OS > AI Configuration*. Empty means the first usable one.
 
 ---
@@ -352,7 +352,7 @@ Controller\Adminhtml\Chat\Stream ── CommandRunner::isCommand() ── yes �
 The admin typed the exact action, so a write command needs no confirmation card. Everything else
 is enforced exactly as for an AI-initiated tool call:
 
-- `MaggyAssistant_Base::assistant_write` is required for write subcommands (`flush`, `clean`, `reindex`)
+- `MagoAssistant_Mago::assistant_write` is required for write subcommands (`flush`, `clean`, `reindex`)
 - the skill grant on the underlying tool decides which subcommands exist for the admin
   (a read grant on `cache_manager` shows only `/cache status`)
 - the tool's native Magento ACL (`Magento_Backend::flush_cache_storage`, `Magento_Indexer::invalidate`, …)
@@ -360,11 +360,11 @@ is enforced exactly as for an AI-initiated tool call:
 
 ### Registering Custom Commands
 
-Implement `MaggyAssistant\Base\Api\Command\CommandInterface` and add it to the
+Implement `MagoAssistant\Mago\Api\Command\CommandInterface` and add it to the
 `CommandRegistry` via `di.xml`:
 
 ```xml
-<type name="MaggyAssistant\Base\Service\Command\CommandRegistry">
+<type name="MagoAssistant\Mago\Service\Command\CommandRegistry">
     <arguments>
         <argument name="commands" xsi:type="array">
             <item name="server" xsi:type="object">Vendor\HostingIntegration\Command\ServerCommand</item>
@@ -374,7 +374,7 @@ Implement `MaggyAssistant\Base\Api\Command\CommandInterface` and add it to the
 ```
 
 When the command wraps one of the assistant's tools, extend
-`MaggyAssistant\Base\Service\Command\AbstractToolCommand`: declare `getToolName()`, list the
+`MagoAssistant\Mago\Service\Command\AbstractToolCommand`: declare `getToolName()`, list the
 subcommands with `getSubcommands()` (name, argument hint, description, read/write) and map each
 subcommand to a tool input in `execute()` through `runTool()`. Permission filtering, the
 `tool_status` events and error rendering come for free; `renderTable()` formats tabular results.
@@ -392,11 +392,11 @@ Magento_Backend::admin
 ├── Magento_Backend::stores
 │   └── Magento_Backend::stores_settings
 │       └── Magento_Config::config
-│           └── MaggyAssistant_Base::config          # Module configuration access
+│           └── MagoAssistant_Mago::config          # Module configuration access
 │
-└── MaggyAssistant_Base::assistant                    # Parent resource
-    ├── MaggyAssistant_Base::assistant_read           # Read operations
-    └── MaggyAssistant_Base::assistant_write          # Write operations
+└── MagoAssistant_Mago::assistant                    # Parent resource
+    ├── MagoAssistant_Mago::assistant_read           # Read operations
+    └── MagoAssistant_Mago::assistant_write          # Write operations
 ```
 
 ### How It Works
@@ -417,7 +417,7 @@ Magento_Backend::admin
 
 ### Per-User Skill Permissions
 
-On top of role ACL, the **Skills** admin screen (Maggy Assistant → Skills) stores a per-admin-user permission per skill in the `maggy_skill_permission` table: `disabled`, `read`, or `write`. `PermissionChecker` resolves these; when a user has no row for a skill, the role ACL above is the fallback. Unknown values in a row are treated as `disabled` (fail closed).
+On top of role ACL, the **Skills** admin screen (Mago Assistant → Skills) stores a per-admin-user permission per skill in the `mago_skill_permission` table: `disabled`, `read`, or `write`. `PermissionChecker` resolves these; when a user has no row for a skill, the role ACL above is the fallback. Unknown values in a row are treated as `disabled` (fail closed).
 
 Enforcement happens at three points, all keyed on the acting admin user id, which the chat controllers pass through `ChatService` into `ToolRegistry`:
 
@@ -448,7 +448,7 @@ declare(strict_types=1);
 
 namespace Vendor\HostingIntegration\Service\Tool;
 
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
 
 class ServerStatus implements ToolInterface
 {
@@ -519,7 +519,7 @@ class ServerStatus implements ToolInterface
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
 
-    <type name="MaggyAssistant\Base\Service\Tool\ToolRegistry">
+    <type name="MagoAssistant\Mago\Service\Tool\ToolRegistry">
         <arguments>
             <argument name="tools" xsi:type="array">
                 <item name="server_status" xsi:type="object">
@@ -542,7 +542,7 @@ That's it. The `ToolRegistry` picks up the new tool, includes it in AI provider 
     <acl>
         <resources>
             <resource id="Magento_Backend::admin">
-                <resource id="MaggyAssistant_Base::assistant">
+                <resource id="MagoAssistant_Mago::assistant">
                     <resource id="Vendor_HostingIntegration::server_status"
                               title="Hosting - Server Status" sortOrder="100"/>
                 </resource>
@@ -577,7 +577,7 @@ Add a `system.xml` field under the Admin Assistant tools section so store admins
 A hosting provider like Hypernode could register multiple tools as a single skill area:
 
 ```xml
-<type name="MaggyAssistant\Base\Service\Tool\ToolRegistry">
+<type name="MagoAssistant\Mago\Service\Tool\ToolRegistry">
     <arguments>
         <argument name="tools" xsi:type="array">
             <item name="hypernode_server_status" xsi:type="object">
@@ -611,7 +611,7 @@ This enables conversations like:
 A PSP like Mollie could expose payment insights:
 
 ```xml
-<type name="MaggyAssistant\Base\Service\Tool\ToolRegistry">
+<type name="MagoAssistant\Mago\Service\Tool\ToolRegistry">
     <arguments>
         <argument name="tools" xsi:type="array">
             <item name="mollie_payment_methods" xsi:type="object">
@@ -648,7 +648,7 @@ The module implements its own tool protocol via `ToolInterface`. This is concept
 
 The architecture was designed to be adaptable to MCP:
 
-| Maggy Assistant | MCP Equivalent |
+| Mago Assistant | MCP Equivalent |
 |----------------|----------------|
 | `ToolInterface` | MCP Tool |
 | `ToolRegistry` | MCP Server (tool provider) |
@@ -686,44 +686,44 @@ The existing `ToolInterface` methods map 1:1 to MCP tool definitions, making thi
 
 ### Admin UI Location
 
-`Stores > Configuration > MaggyAssistant > Admin Assistant`
+`Stores > Configuration > MagoAssistant > Admin Assistant`
 
 ### Sections
 
 #### General
 | Path | Description | Default |
 |------|-------------|---------|
-| `maggy/general/enabled` | Enable/disable the module | No |
+| `mago/general/enabled` | Enable/disable the module | No |
 
 #### AI Provider
 | Path | Description | Default |
 |------|-------------|---------|
-| `maggy/api/ai_service` | Row id of the `MageOS_AiBase` service to run on; empty means the first usable one | — |
-| `maggy/api/max_tokens` | Maximum response tokens | `4096` |
-| `maggy/api/streaming` | Enable SSE streaming | Yes |
+| `mago/api/ai_service` | Row id of the `MageOS_AiBase` service to run on; empty means the first usable one | — |
+| `mago/api/max_tokens` | Maximum response tokens | `4096` |
+| `mago/api/streaming` | Enable SSE streaming | Yes |
 
 #### Chat Behavior
 | Path | Description | Default |
 |------|-------------|---------|
-| `maggy/chat/system_prompt` | System instruction sent with every request | — |
-| `maggy/chat/max_tool_iterations` | Max tool execution loops per message | `10` |
+| `mago/chat/system_prompt` | System instruction sent with every request | — |
+| `mago/chat/max_tool_iterations` | Max tool execution loops per message | `10` |
 
 #### Tools
 | Path | Description | Default |
 |------|-------------|---------|
-| `maggy/tools/max_response_tokens` | Estimated token cap per tool result before truncation | `4000` |
+| `mago/tools/max_response_tokens` | Estimated token cap per tool result before truncation | `4000` |
 
 #### Internal API
 | Path | Description | Default |
 |------|-------------|---------|
-| `maggy/api/internal_url` | Internal URL for REST API calls (Docker/proxy setups) | — (uses store base URL) |
-| `maggy/api/internal_ssl_verify` | Verify the TLS certificate on internal REST calls (disable when the certificate cannot match the internal URL host) | `1` |
+| `mago/api/internal_url` | Internal URL for REST API calls (Docker/proxy setups) | — (uses store base URL) |
+| `mago/api/internal_ssl_verify` | Verify the TLS certificate on internal REST calls (disable when the certificate cannot match the internal URL host) | `1` |
 
 #### Debug & Logging
 | Path | Description | Default |
 |------|-------------|---------|
-| `maggy/debug/debug` | Debug log, and full request/response payloads in the usage log | No |
-| `maggy/debug/payload_retention_days` | Days before a daily cron removes stored payloads from the usage log (0 keeps forever); token statistics are never deleted | `30` |
+| `mago/debug/debug` | Debug log, and full request/response payloads in the usage log | No |
+| `mago/debug/payload_retention_days` | Days before a daily cron removes stored payloads from the usage log (0 keeps forever); token statistics are never deleted | `30` |
 
 #### Per-Tool Toggles (Not implemented)
 
@@ -804,6 +804,6 @@ Admin types message
 - **Review the system prompt** — it's sent with every request. Don't include credentials or internal URLs.
 - **Disable unused tools** — if you don't need CMS editing via the assistant, disable `cms_data`.
 - **Use ACL roles** — give catalog managers `assistant_read` only. Reserve `assistant_write` for senior admins.
-- **Audit conversations** — conversations are stored in `maggy_conversation` and `maggy_message` tables. Review periodically.
-- **Usage log** — `maggy_usage_log` always records token counts and skill names for accounting. The full request/response payloads are only stored while Debug Mode is on, and a daily cron removes stored payloads older than `maggy/debug/payload_retention_days` (default 30 days).
+- **Audit conversations** — conversations are stored in `mago_conversation` and `mago_message` tables. Review periodically.
+- **Usage log** — `mago_usage_log` always records token counts and skill names for accounting. The full request/response payloads are only stored while Debug Mode is on, and a daily cron removes stored payloads older than `mago/debug/payload_retention_days` (default 30 days).
 - **Be aware of AI provider data policies** — messages and tool results are processed by the selected AI provider (Anthropic or OpenAI). Review their data retention and usage policies.

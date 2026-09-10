@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager;
+namespace MagoAssistant\Mago\Service\Skills\Catalog\ReviewManager;
 
 use Magento\Review\Model\Review;
 use Magento\Review\Model\ReviewFactory;
 use Magento\Review\Model\ResourceModel\Review as ReviewResource;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
 
 class ApproveAction implements ActionInterface
 {

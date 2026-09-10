@@ -7,7 +7,7 @@
         <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Enable documentation grounding</label>
             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-            <comment><![CDATA[When enabled, a cron indexes the docs into the <code>maggy_doc</code> table (~5 MB) on the schedule below. For an immediate first index, run <code>bin/magento maggy:docs:index --force</code>.]]></comment>
+            <comment><![CDATA[When enabled, a cron indexes the docs into the <code>mago_doc</code> table (~5 MB) on the schedule below. For an immediate first index, run <code>bin/magento mago:docs:index --force</code>.]]></comment>
         </field>
         <field id="source_repo" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Source repository</label>

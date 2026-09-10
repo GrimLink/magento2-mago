@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Ui\DataProvider;
+namespace MagoAssistant\Mago\Ui\DataProvider;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider;
@@ -50,11 +50,11 @@ class ConversationsDataProvider extends DataProvider
     public function getSearchResult(): SearchResultInterface
     {
         $connection = $this->resourceConnection->getConnection();
-        $conversationTable = $this->resourceConnection->getTableName('maggy_conversation');
-        $messageTable = $this->resourceConnection->getTableName('maggy_message');
+        $conversationTable = $this->resourceConnection->getTableName('mago_conversation');
+        $messageTable = $this->resourceConnection->getTableName('mago_message');
         $adminUserTable = $this->resourceConnection->getTableName('admin_user');
 
-        $usageTable = $this->resourceConnection->getTableName('maggy_usage_log');
+        $usageTable = $this->resourceConnection->getTableName('mago_usage_log');
 
         $select = $connection->select()
             ->from(['c' => $conversationTable], [
@@ -116,11 +116,11 @@ class ConversationsDataProvider extends DataProvider
     public function getData(): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $conversationTable = $this->resourceConnection->getTableName('maggy_conversation');
-        $messageTable = $this->resourceConnection->getTableName('maggy_message');
+        $conversationTable = $this->resourceConnection->getTableName('mago_conversation');
+        $messageTable = $this->resourceConnection->getTableName('mago_message');
         $adminUserTable = $this->resourceConnection->getTableName('admin_user');
 
-        $usageTable = $this->resourceConnection->getTableName('maggy_usage_log');
+        $usageTable = $this->resourceConnection->getTableName('mago_usage_log');
 
         $select = $connection->select()
             ->from(['c' => $conversationTable], [

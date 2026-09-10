@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Analytics\CustomerData;
+namespace MagoAssistant\Mago\Service\Skills\Analytics\CustomerData;
 
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Service\Api\InternalApiClient;
-use MaggyAssistant\Base\Service\Url\SecureAdminUrl;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Service\Api\InternalApiClient;
+use MagoAssistant\Mago\Service\Url\SecureAdminUrl;
 
 class LookupCustomerAction implements ActionInterface
 {

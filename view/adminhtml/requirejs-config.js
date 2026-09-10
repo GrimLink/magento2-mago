@@ -1,5 +1,5 @@
 var config = {
     paths: {
-        'marked': 'MaggyAssistant_Base/js/marked.min'
+        'marked': 'MagoAssistant_Mago/js/marked.min'
     }
 };

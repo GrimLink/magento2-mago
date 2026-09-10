@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="MagoAssistant\Mago\Block\Adminhtml\Conversation\View"
+                   name="mago_conversation_container">
+                <block class="MagoAssistant\Mago\Block\Adminhtml\ConversationView"
+                       name="mago_conversation_view"
+                       template="MagoAssistant_Mago::conversations/view.phtml"/>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

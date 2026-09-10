@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Api\WebApi;
+namespace MagoAssistant\Mago\Api\WebApi;
 
 /**
  * Chat management REST API interface

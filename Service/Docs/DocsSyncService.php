@@ -1,23 +1,23 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Docs;
+namespace MagoAssistant\Mago\Service\Docs;
 
 use Magento\Framework\FlagManager;
 use Magento\Framework\Lock\LockManagerInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
-use MaggyAssistant\Base\Logger\ErrorLogger;
-use MaggyAssistant\Base\Model\Doc\Repository as DocRepository;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Logger\ErrorLogger;
+use MagoAssistant\Mago\Model\Doc\Repository as DocRepository;
 
 class DocsSyncService
 {
-    private const FLAG_SHA = 'maggy_docs_source_sha';
-    private const FLAG_SYNCED_AT = 'maggy_docs_synced_at';
-    private const FLAG_ERROR = 'maggy_docs_last_error';
-    private const LOCK_NAME = 'maggy_docs_sync';
+    private const FLAG_SHA = 'mago_docs_source_sha';
+    private const FLAG_SYNCED_AT = 'mago_docs_synced_at';
+    private const FLAG_ERROR = 'mago_docs_last_error';
+    private const LOCK_NAME = 'mago_docs_sync';
     private const VARCHAR_MAX = 512;
 
     public function __construct(

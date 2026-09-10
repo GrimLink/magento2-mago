@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {expect, test} from '@playwright/test';
@@ -82,14 +82,14 @@ test('Places the toggle in the admin header, between search and notifications, n
 
   await chatPanel.openOnDashboard(page);
 
-  await expect(page.locator('.maggy-toggle-tab')).toHaveCount(0);
-  await expect(page.locator('.page-header #maggy-toggle')).toHaveCount(1);
+  await expect(page.locator('.mago-toggle-tab')).toHaveCount(0);
+  await expect(page.locator('.page-header #mago-toggle')).toHaveCount(1);
 
   // Search reserves a box wider than its visible icon (the icon itself is
   // right-aligned inside it), so neighbours sit a few px inside that box by
   // design - comparing left edges avoids being tripped up by that overlap.
   const searchBox = await page.locator('.search-global').boundingBox();
-  const toggleBox = await page.locator('#maggy-toggle').boundingBox();
+  const toggleBox = await page.locator('#mago-toggle').boundingBox();
   const notificationsBox = await page.locator('.notifications-wrapper').boundingBox();
   const userBox = await page.locator('.admin-user').boundingBox();
 
@@ -98,12 +98,12 @@ test('Places the toggle in the admin header, between search and notifications, n
   expect(userBox.x).toBeGreaterThan(notificationsBox.x);
 });
 
-test('Makes it obvious the header icon closes Maggy once the panel is open', async ({page}) => {
+test('Makes it obvious the header icon closes Mago once the panel is open', async ({page}) => {
   await chatMock.install(page, lookupProduct);
 
   await chatPanel.openOnDashboard(page);
 
-  const toggle = page.locator('#maggy-toggle');
+  const toggle = page.locator('#mago-toggle');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(toggle).toHaveAttribute('title', /Close/);
 
@@ -119,9 +119,9 @@ test('Colors the header icon with the configured accent color so it stands out',
 
   await page.goto('/' + (process.env.ADMIN_PATH || 'admin') + '/admin/dashboard', {waitUntil: 'load'});
 
-  const toggle = page.locator('#maggy-toggle');
+  const toggle = page.locator('#mago-toggle');
   const accent = await page.evaluate(
-    () => getComputedStyle(document.documentElement).getPropertyValue('--maggy-accent').trim()
+    () => getComputedStyle(document.documentElement).getPropertyValue('--mago-accent').trim()
   );
   const iconColor = await toggle.evaluate((el) => getComputedStyle(el).color);
   const accentRgb = await page.evaluate((hex) => {
@@ -141,7 +141,7 @@ test('Does not push search, notifications or the user menu away from their origi
 
   await page.goto('/' + (process.env.ADMIN_PATH || 'admin') + '/admin/dashboard', {waitUntil: 'load'});
 
-  // Before Maggy's icon existed, these three were floated right and sat flush
+  // Before Mago's icon existed, these three were floated right and sat flush
   // against the actions column's own right edge. Adding a fourth icon must
   // claim the column's spare width, not re-anchor the whole group to the left
   // and leave a gap where the user menu used to end.
@@ -159,7 +159,7 @@ test('Lines the header icon up with the icons it sits between', async ({page}) =
   // Admin themes size their header icons differently, so the toggle takes its
   // box from the theme rather than from fixed pixels: same height and same
   // center line as the icons on either side of it, whatever the theme picks.
-  const toggleBox = await page.locator('#maggy-toggle').boundingBox();
+  const toggleBox = await page.locator('#mago-toggle').boundingBox();
   const notificationsBox = await page.locator('.notifications-action').boundingBox();
   const userBox = await page.locator('.admin-user .admin__action-dropdown').boundingBox();
 

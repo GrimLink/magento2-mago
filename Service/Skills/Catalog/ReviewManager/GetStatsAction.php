@@ -1,16 +1,16 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager;
+namespace MagoAssistant\Mago\Service\Skills\Catalog\ReviewManager;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Review\Model\ResourceModel\Review\CollectionFactory;
 use Magento\Review\Model\Review;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
 
 class GetStatsAction implements ActionInterface
 {

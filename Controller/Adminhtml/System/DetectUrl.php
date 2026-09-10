@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\System;
+namespace MagoAssistant\Mago\Controller\Adminhtml\System;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -15,7 +15,7 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class DetectUrl extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::config';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::config';
 
     private const CANDIDATES = [
         // Mark Shust docker-magento

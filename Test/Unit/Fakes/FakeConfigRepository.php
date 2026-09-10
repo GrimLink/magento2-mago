@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Fakes;
+namespace MagoAssistant\Mago\Test\Unit\Fakes;
 
 use Magento\Store\Api\Data\StoreInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface;
 
 class FakeConfigRepository implements RepositoryInterface
 {

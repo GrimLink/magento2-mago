@@ -1,5 +1,5 @@
 {
-  "name": "maggy-assistant-end-2-end",
+  "name": "mago-assistant-end-2-end",
   "private": true,
   "devDependencies": {
     "@playwright/test": "^1.47.2",

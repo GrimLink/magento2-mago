@@ -1,20 +1,20 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Docs;
+namespace MagoAssistant\Mago\Service\Docs;
 
 use Magento\Framework\HTTP\Client\CurlFactory;
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Logger\ErrorLogger;
+use MagoAssistant\Mago\Logger\ErrorLogger;
 
 class GitHubDocsSource
 {
     private const TREES_URL = 'https://api.github.com/repos/%s/git/trees/%s?recursive=1';
     private const RAW_URL = 'https://raw.githubusercontent.com/%s/%s/%s';
-    private const USER_AGENT = 'MaggyAssistant-Base';
+    private const USER_AGENT = 'MagoAssistant-Mago';
 
     public function __construct(
         // Own client, not InternalApiClient: raw.githubusercontent.com redirects, which that client disables.

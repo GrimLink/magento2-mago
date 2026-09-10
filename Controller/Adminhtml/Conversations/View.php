@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Conversations;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Conversations;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -15,7 +15,7 @@ use Magento\Framework\View\Result\PageFactory;
 
 class View extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::config';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::config';
 
     public function __construct(
         Context $context,
@@ -36,12 +36,12 @@ class View extends Action implements HttpGetActionInterface
         $connection = $this->resourceConnection->getConnection();
         $title = $connection->fetchOne(
             $connection->select()
-                ->from($this->resourceConnection->getTableName('maggy_conversation'), ['title'])
+                ->from($this->resourceConnection->getTableName('mago_conversation'), ['title'])
                 ->where('entity_id = ?', $conversationId)
         );
 
         $resultPage = $this->pageFactory->create();
-        $resultPage->setActiveMenu('MaggyAssistant_Base::conversations');
+        $resultPage->setActiveMenu('MagoAssistant_Mago::conversations');
         $resultPage->getConfig()->getTitle()->prepend((string)($title ?: __('Conversation #%1', $conversationId)));
         return $resultPage;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {type Page, type Route} from '@playwright/test';
@@ -26,15 +26,15 @@ export const textDeltas = (sentence: string): SseEvent[] =>
 export default class ChatMock {
   /**
    * The browser never talks to Claude or OpenAI. It reads an SSE stream of
-   * text / tool_call / confirm / done / error events from maggy/chat/stream.
+   * text / tool_call / confirm / done / error events from mago/chat/stream.
    * Replaying that stream keeps the tests deterministic and free.
    */
   async install(page: Page, scenario: ChatScenario) {
-    await page.route(/\/maggy\/chat\/stream/, (route) => this.fulfilSse(route, scenario.stream));
-    await page.route(/\/maggy\/chat\/status/, (route) => this.fulfilJson(route, scenario.status ?? {}));
-    await page.route(/\/maggy\/chat\/history/, (route) => this.fulfilJson(route, scenario.history ?? {conversations: []}));
-    await page.route(/\/maggy\/chat\/reject/, (route) => this.fulfilJson(route, scenario.reject ?? {success: true}));
-    await page.route(/\/maggy\/chat\/confirm/, (route) => this.fulfilSse(route, scenario.confirm ?? []));
+    await page.route(/\/mago\/chat\/stream/, (route) => this.fulfilSse(route, scenario.stream));
+    await page.route(/\/mago\/chat\/status/, (route) => this.fulfilJson(route, scenario.status ?? {}));
+    await page.route(/\/mago\/chat\/history/, (route) => this.fulfilJson(route, scenario.history ?? {conversations: []}));
+    await page.route(/\/mago\/chat\/reject/, (route) => this.fulfilJson(route, scenario.reject ?? {success: true}));
+    await page.route(/\/mago\/chat\/confirm/, (route) => this.fulfilSse(route, scenario.confirm ?? []));
   }
 
   countRequestsTo(page: Page, pattern: RegExp) {

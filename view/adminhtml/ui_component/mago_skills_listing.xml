@@ -4,18 +4,18 @@
 
     <argument name="data" xsi:type="array">
         <item name="js_config" xsi:type="array">
-            <item name="provider" xsi:type="string">maggy_skills_listing.maggy_skills_listing_data_source</item>
+            <item name="provider" xsi:type="string">mago_skills_listing.mago_skills_listing_data_source</item>
         </item>
     </argument>
 
     <settings>
-        <spinner>maggy_skills_columns</spinner>
+        <spinner>mago_skills_columns</spinner>
         <deps>
-            <dep>maggy_skills_listing.maggy_skills_listing_data_source</dep>
+            <dep>mago_skills_listing.mago_skills_listing_data_source</dep>
         </deps>
     </settings>
 
-    <dataSource name="maggy_skills_listing_data_source" component="Magento_Ui/js/grid/provider">
+    <dataSource name="mago_skills_listing_data_source" component="Magento_Ui/js/grid/provider">
         <settings>
             <storageConfig>
                 <param name="dataScope" xsi:type="string">data</param>
@@ -23,7 +23,7 @@
             </storageConfig>
             <updateUrl path="mui/index/render"/>
         </settings>
-        <dataProvider class="MaggyAssistant\Base\Ui\DataProvider\SkillsDataProvider" name="maggy_skills_listing_data_source">
+        <dataProvider class="MagoAssistant\Mago\Ui\DataProvider\SkillsDataProvider" name="mago_skills_listing_data_source">
             <settings>
                 <requestFieldName>name</requestFieldName>
                 <primaryFieldName>name</primaryFieldName>
@@ -31,7 +31,7 @@
         </dataProvider>
     </dataSource>
 
-    <columns name="maggy_skills_columns">
+    <columns name="mago_skills_columns">
         <column name="name" sortOrder="10">
             <settings>
                 <label translate="true">Name</label>
@@ -45,17 +45,17 @@
                 <filter>text</filter>
             </settings>
         </column>
-        <column name="category" sortOrder="30" component="MaggyAssistant_Base/js/grid/columns/badge">
+        <column name="category" sortOrder="30" component="MagoAssistant_Mago/js/grid/columns/badge">
             <settings>
                 <label translate="true">Category</label>
                 <filter>select</filter>
             </settings>
         </column>
-        <column name="type" sortOrder="40" component="MaggyAssistant_Base/js/grid/columns/badge">
+        <column name="type" sortOrder="40" component="MagoAssistant_Mago/js/grid/columns/badge">
             <settings>
                 <label translate="true">Type</label>
                 <filter>select</filter>
-                <options class="MaggyAssistant\Base\Ui\Source\SkillType"/>
+                <options class="MagoAssistant\Mago\Ui\Source\SkillType"/>
                 <dataType>select</dataType>
             </settings>
         </column>
@@ -66,7 +66,7 @@
                 <sortable>false</sortable>
             </settings>
         </column>
-        <actionsColumn name="actions" class="MaggyAssistant\Base\Ui\Component\Listing\Column\SkillActions" sortOrder="60">
+        <actionsColumn name="actions" class="MagoAssistant\Mago\Ui\Component\Listing\Column\SkillActions" sortOrder="60">
             <settings>
                 <label translate="true">Actions</label>
                 <indexField>name</indexField>

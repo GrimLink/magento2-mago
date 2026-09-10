@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-/** @var \MaggyAssistant\Base\Block\Adminhtml\ConversationView $block */
+/** @var \MagoAssistant\Mago\Block\Adminhtml\ConversationView $block */
 /** @var \Magento\Framework\Escaper $escaper */
 
 $conversation = $block->getConversation();
@@ -22,56 +22,56 @@ if (!$conversation) {
 ?>
 
 <style>
-    .maggy-conv-messages { list-style: none; padding: 0; margin: 0; }
-    .maggy-conv-messages > li { padding: 20px 24px; border-bottom: 1px solid #e8e8e8; }
-    .maggy-conv-messages > li:last-child { border-bottom: none; }
-    .maggy-conv-msg--user { background: #f0f1f3; }
-    .maggy-conv-msg--assistant { background: #fafafa; padding-left: 39px !important; }
-    .maggy-conv-role-icon { display: inline-flex; vertical-align: -3px; color: #333; margin-right: 5px; }
-    .maggy-conv-body-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-    .maggy-conv-role-name { font-weight: 600; font-size: 14px; color: #333; }
-    .maggy-conv-time { font-size: 11px; color: #bbb; margin-left: auto; }
-    .maggy-conv-body { font-size: 14px; line-height: 1.65; color: #333; word-wrap: break-word; }
-    .maggy-conv-body p { margin: 0 0 6px; }
-    .maggy-conv-body p:last-child { margin-bottom: 0; }
-    .maggy-conv-body pre { background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 6px 0; }
-    .maggy-conv-body code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
-    .maggy-conv-body pre code { background: transparent; padding: 0; }
-    .maggy-conv-body a { color: <?= /* @noEscape */ $accentColor ?>; text-decoration: none; border-bottom: 1px solid transparent; }
-    .maggy-conv-body a:hover { border-bottom-color: <?= /* @noEscape */ $accentColor ?>; }
-    .maggy-conv-body ul, .maggy-conv-body ol { margin: 4px 0 8px; padding-left: 22px; }
-    .maggy-conv-body h2, .maggy-conv-body h3, .maggy-conv-body h4 { margin: 10px 0 4px; font-size: 15px; }
+    .mago-conv-messages { list-style: none; padding: 0; margin: 0; }
+    .mago-conv-messages > li { padding: 20px 24px; border-bottom: 1px solid #e8e8e8; }
+    .mago-conv-messages > li:last-child { border-bottom: none; }
+    .mago-conv-msg--user { background: #f0f1f3; }
+    .mago-conv-msg--assistant { background: #fafafa; padding-left: 39px !important; }
+    .mago-conv-role-icon { display: inline-flex; vertical-align: -3px; color: #333; margin-right: 5px; }
+    .mago-conv-body-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .mago-conv-role-name { font-weight: 600; font-size: 14px; color: #333; }
+    .mago-conv-time { font-size: 11px; color: #bbb; margin-left: auto; }
+    .mago-conv-body { font-size: 14px; line-height: 1.65; color: #333; word-wrap: break-word; }
+    .mago-conv-body p { margin: 0 0 6px; }
+    .mago-conv-body p:last-child { margin-bottom: 0; }
+    .mago-conv-body pre { background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 6px 0; }
+    .mago-conv-body code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+    .mago-conv-body pre code { background: transparent; padding: 0; }
+    .mago-conv-body a { color: <?= /* @noEscape */ $accentColor ?>; text-decoration: none; border-bottom: 1px solid transparent; }
+    .mago-conv-body a:hover { border-bottom-color: <?= /* @noEscape */ $accentColor ?>; }
+    .mago-conv-body ul, .mago-conv-body ol { margin: 4px 0 8px; padding-left: 22px; }
+    .mago-conv-body h2, .mago-conv-body h3, .mago-conv-body h4 { margin: 10px 0 4px; font-size: 15px; }
     /* Table styles */
-    .maggy-conv-body .maggy-table-wrap { display: block; overflow-x: auto; margin: 10px 0; border-radius: 6px; }
-    .maggy-conv-body table { border-collapse: separate !important; border-spacing: 0 !important; width: max-content; min-width: 100%; font-size: 13px; border: 1px solid #e0e0e0; border-radius: 6px; }
-    .maggy-conv-body th, .maggy-conv-body td { border: none !important; border-bottom: 1px solid #e8e8e8 !important; border-right: 1px solid #e8e8e8 !important; padding: 7px 14px !important; white-space: nowrap !important; vertical-align: middle; text-align: left; }
-    .maggy-conv-body th:last-child, .maggy-conv-body td:last-child { border-right: none !important; }
-    .maggy-conv-body tr:last-child td { border-bottom: none !important; }
-    .maggy-conv-body th { background: rgba(0,0,0,0.04) !important; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: #555; }
-    .maggy-conv-body tr:nth-child(even) td { background: #f8f8f8 !important; }
-    .maggy-conv-body tr:hover td { background: #f0f4ff !important; }
+    .mago-conv-body .mago-table-wrap { display: block; overflow-x: auto; margin: 10px 0; border-radius: 6px; }
+    .mago-conv-body table { border-collapse: separate !important; border-spacing: 0 !important; width: max-content; min-width: 100%; font-size: 13px; border: 1px solid #e0e0e0; border-radius: 6px; }
+    .mago-conv-body th, .mago-conv-body td { border: none !important; border-bottom: 1px solid #e8e8e8 !important; border-right: 1px solid #e8e8e8 !important; padding: 7px 14px !important; white-space: nowrap !important; vertical-align: middle; text-align: left; }
+    .mago-conv-body th:last-child, .mago-conv-body td:last-child { border-right: none !important; }
+    .mago-conv-body tr:last-child td { border-bottom: none !important; }
+    .mago-conv-body th { background: rgba(0,0,0,0.04) !important; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: #555; }
+    .mago-conv-body tr:nth-child(even) td { background: #f8f8f8 !important; }
+    .mago-conv-body tr:hover td { background: #f0f4ff !important; }
     /* Raw toggle */
-    .maggy-conv-raw-pre { background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: #444; margin: 0; }
-    .maggy-conv-raw-toggle { margin-left: auto; padding: 3px 10px; font-size: 11px; font-weight: 500; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #666; cursor: pointer; }
-    .maggy-conv-raw-toggle:hover { background: #f5f5f5; }
-    .maggy-conv-raw-toggle.is-active { background: #333; color: #fff; border-color: #333; }
+    .mago-conv-raw-pre { background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: #444; margin: 0; }
+    .mago-conv-raw-toggle { margin-left: auto; padding: 3px 10px; font-size: 11px; font-weight: 500; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #666; cursor: pointer; }
+    .mago-conv-raw-toggle:hover { background: #f5f5f5; }
+    .mago-conv-raw-toggle.is-active { background: #333; color: #fff; border-color: #333; }
     /* Tool tags */
-    .maggy-conv-tool-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
-    .maggy-conv-tool-tag { display: inline-flex; align-items: center; gap: 3px; background: #eef1f5; color: #555; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px; }
-    .maggy-conv-tool-tag--sales_data { background: #e8f0fe; color: #1a56db; }
-    .maggy-conv-tool-tag--customer_data { background: #fef3e2; color: #b45309; }
-    .maggy-conv-tool-tag--product_data { background: #e6f4ea; color: #137333; }
-    .maggy-conv-tool-tag--cms_data { background: #f3e8fd; color: #7c3aed; }
-    .maggy-conv-tool-tag--config_reader { background: #f0f0f0; color: #555; }
-    .maggy-conv-tool-tag--config_writer { background: #fce8e8; color: #c5221f; }
-    .maggy-conv-tool-tag--content_generator { background: #e8f5f0; color: #0d7c66; }
-    .maggy-conv-tool-tag--admin_navigator { background: #f5f0e8; color: #8a6d3b; }
-    .maggy-conv-tool-toggle { background: none; border: 1px solid #e3e3e3; padding: 3px 8px; border-radius: 3px; font-size: 11px; color: #999; cursor: pointer; margin-top: 4px; }
-    .maggy-conv-tool-toggle:hover { background: #f5f5f5; }
-    .maggy-conv-tool-data { display: none; margin-top: 6px; }
-    .maggy-conv-tool-data.is-open { display: block; }
-    .maggy-conv-date-sep { display: flex !important; justify-content: center; padding: 6px 20px; background: none; border-bottom: 1px solid #f0f0f0; }
-    .maggy-conv-date-sep span { background: #f0f0f0; color: #999; font-size: 10px; padding: 2px 12px; border-radius: 10px; text-transform: uppercase; letter-spacing: .5px; }
+    .mago-conv-tool-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+    .mago-conv-tool-tag { display: inline-flex; align-items: center; gap: 3px; background: #eef1f5; color: #555; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px; }
+    .mago-conv-tool-tag--sales_data { background: #e8f0fe; color: #1a56db; }
+    .mago-conv-tool-tag--customer_data { background: #fef3e2; color: #b45309; }
+    .mago-conv-tool-tag--product_data { background: #e6f4ea; color: #137333; }
+    .mago-conv-tool-tag--cms_data { background: #f3e8fd; color: #7c3aed; }
+    .mago-conv-tool-tag--config_reader { background: #f0f0f0; color: #555; }
+    .mago-conv-tool-tag--config_writer { background: #fce8e8; color: #c5221f; }
+    .mago-conv-tool-tag--content_generator { background: #e8f5f0; color: #0d7c66; }
+    .mago-conv-tool-tag--admin_navigator { background: #f5f0e8; color: #8a6d3b; }
+    .mago-conv-tool-toggle { background: none; border: 1px solid #e3e3e3; padding: 3px 8px; border-radius: 3px; font-size: 11px; color: #999; cursor: pointer; margin-top: 4px; }
+    .mago-conv-tool-toggle:hover { background: #f5f5f5; }
+    .mago-conv-tool-data { display: none; margin-top: 6px; }
+    .mago-conv-tool-data.is-open { display: block; }
+    .mago-conv-date-sep { display: flex !important; justify-content: center; padding: 6px 20px; background: none; border-bottom: 1px solid #f0f0f0; }
+    .mago-conv-date-sep span { background: #f0f0f0; color: #999; font-size: 10px; padding: 2px 12px; border-radius: 10px; text-transform: uppercase; letter-spacing: .5px; }
 </style>
 
 <div class="admin__page-section order-view-account-information">
@@ -124,9 +124,9 @@ if (!$conversation) {
                         <tr>
                             <th><?= $escaper->escapeHtml(__('Skills')) ?></th>
                             <td>
-                                <div class="maggy-conv-tool-tags">
+                                <div class="mago-conv-tool-tags">
                                     <?php foreach ($skillsUsed as $skillName): ?>
-                                        <span class="maggy-conv-tool-tag maggy-conv-tool-tag--<?= $escaper->escapeHtmlAttr($skillName) ?>"><?= $escaper->escapeHtml($skillName) ?></span>
+                                        <span class="mago-conv-tool-tag mago-conv-tool-tag--<?= $escaper->escapeHtmlAttr($skillName) ?>"><?= $escaper->escapeHtml($skillName) ?></span>
                                     <?php endforeach; ?>
                                 </div>
                             </td>
@@ -148,13 +148,13 @@ if (!$conversation) {
 <div class="admin__page-section" style="margin-top: 20px;">
     <div class="admin__page-section-title" style="display:flex;align-items:center;">
         <span class="title"><?= $escaper->escapeHtml(__('Messages')) ?></span>
-        <button type="button" id="maggy-raw-toggle" class="maggy-conv-raw-toggle"><?= $escaper->escapeHtml(__('Raw')) ?></button>
+        <button type="button" id="mago-raw-toggle" class="mago-conv-raw-toggle"><?= $escaper->escapeHtml(__('Raw')) ?></button>
     </div>
     <div class="admin__page-section-content">
         <?php if (empty($messages)): ?>
             <p class="admin__field-note" style="padding: 20px;"><?= $escaper->escapeHtml(__('No messages in this conversation.')) ?></p>
         <?php else: ?>
-            <ul class="maggy-conv-messages">
+            <ul class="mago-conv-messages">
             <?php
             $lastDate = '';
             $toolToggleId = 0;
@@ -169,27 +169,27 @@ if (!$conversation) {
                 if ($currentDate !== $lastDate):
                     $lastDate = $currentDate;
             ?>
-                <li class="maggy-conv-date-sep"><span><?= $escaper->escapeHtml($currentDate) ?></span></li>
+                <li class="mago-conv-date-sep"><span><?= $escaper->escapeHtml($currentDate) ?></span></li>
             <?php endif; ?>
 
             <?php if ($role === 'user'): ?>
-                <li class="maggy-conv-msg--user">
-                    <div class="maggy-conv-body-header">
-                        <span class="maggy-conv-role-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
-                        <span class="maggy-conv-role-name"><?= $escaper->escapeHtml($adminFirstName) ?></span>
-                        <span class="maggy-conv-time"><?= $escaper->escapeHtml($time) ?></span>
+                <li class="mago-conv-msg--user">
+                    <div class="mago-conv-body-header">
+                        <span class="mago-conv-role-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+                        <span class="mago-conv-role-name"><?= $escaper->escapeHtml($adminFirstName) ?></span>
+                        <span class="mago-conv-time"><?= $escaper->escapeHtml($time) ?></span>
                     </div>
-                    <div class="maggy-conv-body"><?= $escaper->escapeHtml($content) ?></div>
+                    <div class="mago-conv-body"><?= $escaper->escapeHtml($content) ?></div>
                 </li>
 
             <?php elseif ($role === 'assistant'): ?>
-                <li class="maggy-conv-msg--assistant">
-                    <div class="maggy-conv-body-header">
-                        <span class="maggy-conv-role-icon maggy-conv-role-icon--assistant"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1.17A7 7 0 0 1 14 23h-4a7 7 0 0 1-6.83-4H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2zM9 15a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm6 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/></svg></span>
-                        <span class="maggy-conv-role-name"><?= $escaper->escapeHtml($assistantName) ?></span>
-                        <span class="maggy-conv-time"><?= $escaper->escapeHtml($time) ?></span>
+                <li class="mago-conv-msg--assistant">
+                    <div class="mago-conv-body-header">
+                        <span class="mago-conv-role-icon mago-conv-role-icon--assistant"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1.17A7 7 0 0 1 14 23h-4a7 7 0 0 1-6.83-4H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2zM9 15a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm6 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/></svg></span>
+                        <span class="mago-conv-role-name"><?= $escaper->escapeHtml($assistantName) ?></span>
+                        <span class="mago-conv-time"><?= $escaper->escapeHtml($time) ?></span>
                     </div>
-                    <div class="maggy-conv-body" data-md="<?= $escaper->escapeHtmlAttr($content) ?>">
+                    <div class="mago-conv-body" data-md="<?= $escaper->escapeHtmlAttr($content) ?>">
                         <?= /* @noEscape */ $block->renderMarkdown($content) ?>
                     </div>
                     <?php if (!empty($toolCalls)): ?>
@@ -198,10 +198,10 @@ if (!$conversation) {
                             $toolToggleId++;
                             $arguments = $toolCall['input'] ?? $toolCall['function']['arguments'] ?? $toolCall['arguments'] ?? null;
                             if ($arguments): ?>
-                                <button type="button" class="maggy-conv-tool-toggle" onclick="document.getElementById('tool-input-<?= (int)$toolToggleId ?>').classList.toggle('is-open')">
+                                <button type="button" class="mago-conv-tool-toggle" onclick="document.getElementById('tool-input-<?= (int)$toolToggleId ?>').classList.toggle('is-open')">
                                     <?= $escaper->escapeHtml($toolCall['name'] ?? $toolCall['function']['name'] ?? '') ?> input
                                 </button>
-                                <div id="tool-input-<?= (int)$toolToggleId ?>" class="maggy-conv-tool-data">
+                                <div id="tool-input-<?= (int)$toolToggleId ?>" class="mago-conv-tool-data">
                                     <pre><?= $escaper->escapeHtml($block->formatJson($arguments)) ?></pre>
                                 </div>
                             <?php endif; ?>
@@ -211,27 +211,27 @@ if (!$conversation) {
 
             <?php elseif ($role === 'tool'): ?>
                 <li>
-                    <div class="maggy-conv-body-header">
-                        <span class="maggy-conv-role-icon maggy-conv-role-icon--tool"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
-                        <span class="maggy-conv-role-name">Tool</span>
-                        <span class="maggy-conv-time"><?= $escaper->escapeHtml($time) ?></span>
+                    <div class="mago-conv-body-header">
+                        <span class="mago-conv-role-icon mago-conv-role-icon--tool"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+                        <span class="mago-conv-role-name">Tool</span>
+                        <span class="mago-conv-time"><?= $escaper->escapeHtml($time) ?></span>
                     </div>
                     <?php $toolToggleId++; ?>
-                    <button type="button" class="maggy-conv-tool-toggle" onclick="document.getElementById('tool-result-<?= (int)$toolToggleId ?>').classList.toggle('is-open')">
+                    <button type="button" class="mago-conv-tool-toggle" onclick="document.getElementById('tool-result-<?= (int)$toolToggleId ?>').classList.toggle('is-open')">
                         Show result
                     </button>
-                    <div id="tool-result-<?= (int)$toolToggleId ?>" class="maggy-conv-tool-data">
+                    <div id="tool-result-<?= (int)$toolToggleId ?>" class="mago-conv-tool-data">
                         <pre><?= $escaper->escapeHtml($block->formatJson($content)) ?></pre>
                     </div>
                 </li>
 
             <?php else: ?>
                 <li>
-                    <div class="maggy-conv-body-header">
-                        <span class="maggy-conv-role-name"><?= $escaper->escapeHtml(ucfirst($role)) ?></span>
-                        <span class="maggy-conv-time"><?= $escaper->escapeHtml($time) ?></span>
+                    <div class="mago-conv-body-header">
+                        <span class="mago-conv-role-name"><?= $escaper->escapeHtml(ucfirst($role)) ?></span>
+                        <span class="mago-conv-time"><?= $escaper->escapeHtml($time) ?></span>
                     </div>
-                    <div class="maggy-conv-body"><?= $escaper->escapeHtml($content) ?></div>
+                    <div class="mago-conv-body"><?= $escaper->escapeHtml($content) ?></div>
                 </li>
             <?php endif; ?>
 
@@ -253,29 +253,29 @@ require(['marked'], function(marked) {
     };
     r.table = function(token) {
         var html = Renderer.prototype.table.call(this, token);
-        return '<div class="maggy-table-wrap">' + html + '</div>';
+        return '<div class="mago-table-wrap">' + html + '</div>';
     };
     marked.use({ renderer: r, gfm: true, breaks: true });
 
     // Re-render all assistant bodies with marked.js
-    document.querySelectorAll('.maggy-conv-body[data-md]').forEach(function(el) {
+    document.querySelectorAll('.mago-conv-body[data-md]').forEach(function(el) {
         el.innerHTML = marked.parse(el.getAttribute('data-md'));
     });
 
     // Raw / Rendered toggle
     var rawActive = false;
-    var btn = document.getElementById('maggy-raw-toggle');
+    var btn = document.getElementById('mago-raw-toggle');
     if (btn) {
         btn.addEventListener('click', function() {
             rawActive = !rawActive;
             btn.classList.toggle('is-active', rawActive);
             btn.textContent = rawActive ? 'Rendered' : 'Raw';
-            document.querySelectorAll('.maggy-conv-body[data-md]').forEach(function(el) {
+            document.querySelectorAll('.mago-conv-body[data-md]').forEach(function(el) {
                 if (rawActive) {
                     el.dataset.rendered = el.innerHTML;
                     var raw = el.getAttribute('data-md')
                         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    el.innerHTML = '<pre class="maggy-conv-raw-pre">' + raw + '</pre>';
+                    el.innerHTML = '<pre class="mago-conv-raw-pre">' + raw + '</pre>';
                 } else {
                     el.innerHTML = el.dataset.rendered || marked.parse(el.getAttribute('data-md'));
                 }
@@ -318,17 +318,17 @@ if (!empty($apiCalls)):
                     <td style="padding:8px 15px;font-size:12px;">
                         <?php if (!empty($call['skill_names'])): ?>
                             <?php foreach (explode(',', $call['skill_names']) as $skill): ?>
-                                <span class="maggy-conv-tool-tag maggy-conv-tool-tag--<?= $escaper->escapeHtmlAttr(trim($skill)) ?>"><?= $escaper->escapeHtml(trim($skill)) ?></span>
+                                <span class="mago-conv-tool-tag mago-conv-tool-tag--<?= $escaper->escapeHtmlAttr(trim($skill)) ?>"><?= $escaper->escapeHtml(trim($skill)) ?></span>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </td>
                     <td style="padding:8px 15px;font-size:12px;">
                         <?php if (!empty($call['request_payload']) || !empty($call['response_payload'])): ?>
-                            <button type="button" class="maggy-conv-tool-toggle" onclick="maggyOpenPayloadModal(<?= (int)$call['entity_id'] ?>)">
+                            <button type="button" class="mago-conv-tool-toggle" onclick="magoOpenPayloadModal(<?= (int)$call['entity_id'] ?>)">
                                 <?= $escaper->escapeHtml(__('View')) ?>
                             </button>
-                            <script type="text/json" id="maggy-payload-req-<?= (int)$call['entity_id'] ?>"><?= /* @noEscape */ $block->formatJson($call['request_payload'] ?? '') ?></script>
-                            <script type="text/json" id="maggy-payload-res-<?= (int)$call['entity_id'] ?>"><?= /* @noEscape */ $block->formatJson($call['response_payload'] ?? '') ?></script>
+                            <script type="text/json" id="mago-payload-req-<?= (int)$call['entity_id'] ?>"><?= /* @noEscape */ $block->formatJson($call['request_payload'] ?? '') ?></script>
+                            <script type="text/json" id="mago-payload-res-<?= (int)$call['entity_id'] ?>"><?= /* @noEscape */ $block->formatJson($call['response_payload'] ?? '') ?></script>
                         <?php else: ?>
                             <span style="color:#ccc;font-size:11px;"><?= $escaper->escapeHtml(__('Not recorded')) ?></span>
                         <?php endif; ?>
@@ -340,15 +340,15 @@ if (!empty($apiCalls)):
     </div>
 </div>
 
-<div id="maggy-payload-modal" style="display:none;">
+<div id="mago-payload-modal" style="display:none;">
     <div style="display:flex;gap:16px;align-items:stretch;">
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
             <h4 style="margin:0 0 8px;font-size:13px;font-weight:600;color:#333;"><?= $escaper->escapeHtml(__('Request')) ?></h4>
-            <pre id="maggy-payload-modal-req" style="flex:1;max-height:70vh;overflow:auto;background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:4px;font-size:11px;margin:0;white-space:pre-wrap;word-break:break-word;min-height:40px;"></pre>
+            <pre id="mago-payload-modal-req" style="flex:1;max-height:70vh;overflow:auto;background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:4px;font-size:11px;margin:0;white-space:pre-wrap;word-break:break-word;min-height:40px;"></pre>
         </div>
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
             <h4 style="margin:0 0 8px;font-size:13px;font-weight:600;color:#333;"><?= $escaper->escapeHtml(__('Response')) ?></h4>
-            <pre id="maggy-payload-modal-res" style="flex:1;max-height:70vh;overflow:auto;background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:4px;font-size:11px;margin:0;white-space:pre-wrap;word-break:break-word;min-height:40px;"></pre>
+            <pre id="mago-payload-modal-res" style="flex:1;max-height:70vh;overflow:auto;background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:4px;font-size:11px;margin:0;white-space:pre-wrap;word-break:break-word;min-height:40px;"></pre>
         </div>
     </div>
 </div>
@@ -358,27 +358,27 @@ require(['jquery', 'Magento_Ui/js/modal/modal'], function($, modal) {
     var opts = {
         type: 'popup',
         title: '<?= $escaper->escapeJs(__('API Payload')) ?>',
-        modalClass: 'maggy-payload-modal-wrapper',
+        modalClass: 'mago-payload-modal-wrapper',
         buttons: [{
             text: $.mage.__('Close'),
             class: 'action-secondary',
             click: function() { this.closeModal(); }
         }]
     };
-    var $el = $('#maggy-payload-modal');
+    var $el = $('#mago-payload-modal');
     modal(opts, $el);
 
-    window.maggyOpenPayloadModal = function(id) {
-        var req = $('#maggy-payload-req-' + id).text();
-        var res = $('#maggy-payload-res-' + id).text();
-        $('#maggy-payload-modal-req').text(req || 'Not recorded');
-        $('#maggy-payload-modal-res').text(res || 'Not recorded');
+    window.magoOpenPayloadModal = function(id) {
+        var req = $('#mago-payload-req-' + id).text();
+        var res = $('#mago-payload-res-' + id).text();
+        $('#mago-payload-modal-req').text(req || 'Not recorded');
+        $('#mago-payload-modal-res').text(res || 'Not recorded');
         $el.modal('openModal');
     };
 });
 </script>
 <style>
-    .maggy-payload-modal-wrapper .modal-inner-wrap { width: 90vw; max-width: 1400px; }
-    .maggy-payload-modal-wrapper .modal-content { padding: 20px; }
+    .mago-payload-modal-wrapper .modal-inner-wrap { width: 90vw; max-width: 1400px; }
+    .mago-payload-modal-wrapper .modal-content { padding: 20px; }
 </style>
 <?php endif; ?>

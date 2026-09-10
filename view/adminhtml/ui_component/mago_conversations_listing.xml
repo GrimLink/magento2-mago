@@ -4,23 +4,23 @@
 
     <argument name="data" xsi:type="array">
         <item name="js_config" xsi:type="array">
-            <item name="provider" xsi:type="string">maggy_conversations_listing.maggy_conversations_listing_data_source</item>
+            <item name="provider" xsi:type="string">mago_conversations_listing.mago_conversations_listing_data_source</item>
         </item>
     </argument>
 
     <settings>
-        <spinner>maggy_conversations_columns</spinner>
+        <spinner>mago_conversations_columns</spinner>
         <deps>
-            <dep>maggy_conversations_listing.maggy_conversations_listing_data_source</dep>
+            <dep>mago_conversations_listing.mago_conversations_listing_data_source</dep>
         </deps>
     </settings>
 
-    <dataSource name="maggy_conversations_listing_data_source" component="Magento_Ui/js/grid/provider">
+    <dataSource name="mago_conversations_listing_data_source" component="Magento_Ui/js/grid/provider">
         <settings>
             <updateUrl path="mui/index/render"/>
         </settings>
-        <dataProvider class="MaggyAssistant\Base\Ui\DataProvider\ConversationsDataProvider"
-                      name="maggy_conversations_listing_data_source">
+        <dataProvider class="MagoAssistant\Mago\Ui\DataProvider\ConversationsDataProvider"
+                      name="mago_conversations_listing_data_source">
             <settings>
                 <requestFieldName>id</requestFieldName>
                 <primaryFieldName>entity_id</primaryFieldName>
@@ -36,7 +36,7 @@
         <massaction name="listing_massaction">
             <action name="delete">
                 <settings>
-                    <url path="maggy/conversations/massDelete"/>
+                    <url path="mago/conversations/massDelete"/>
                     <type>delete</type>
                     <label translate="true">Delete</label>
                     <confirm>
@@ -49,7 +49,7 @@
         <paging name="listing_paging"/>
     </listingToolbar>
 
-    <columns name="maggy_conversations_columns">
+    <columns name="mago_conversations_columns">
         <selectionsColumn name="ids" sortOrder="0">
             <settings>
                 <indexField>entity_id</indexField>
@@ -98,14 +98,14 @@
                 <visible>false</visible>
             </settings>
         </column>
-        <column name="estimated_cost" sortOrder="47" class="MaggyAssistant\Base\Ui\Component\Listing\Column\Price">
+        <column name="estimated_cost" sortOrder="47" class="MagoAssistant\Mago\Ui\Component\Listing\Column\Price">
             <settings>
                 <label translate="true">Est. Cost</label>
                 <filter>textRange</filter>
                 <sortable>true</sortable>
             </settings>
         </column>
-        <column name="skills_used" sortOrder="48" class="MaggyAssistant\Base\Ui\Component\Listing\Column\Skills">
+        <column name="skills_used" sortOrder="48" class="MagoAssistant\Mago\Ui\Component\Listing\Column\Skills">
             <settings>
                 <label translate="true">Skills Used</label>
                 <filter>text</filter>
@@ -127,7 +127,7 @@
                 <dataType>date</dataType>
             </settings>
         </column>
-        <actionsColumn name="actions" class="MaggyAssistant\Base\Ui\Component\Listing\Column\ConversationActions" sortOrder="70">
+        <actionsColumn name="actions" class="MagoAssistant\Mago\Ui\Component\Listing\Column\ConversationActions" sortOrder="70">
             <settings>
                 <label translate="true">Actions</label>
                 <indexField>entity_id</indexField>

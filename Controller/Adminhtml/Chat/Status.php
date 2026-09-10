@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Chat;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Chat;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -13,7 +13,7 @@ use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
+use MagoAssistant\Mago\Api\ConversationRepositoryInterface;
 
 /**
  * Fallback endpoint to check if a conversation has a pending confirmation.
@@ -23,7 +23,7 @@ class Status extends Action implements HttpPostActionInterface
 {
     use FormKeyJsonValidation;
 
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_read';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::assistant_read';
 
     public function __construct(
         Context $context,

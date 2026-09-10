@@ -1,22 +1,22 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Ai;
+namespace MagoAssistant\Mago\Service\Ai;
 
 use MageOS\AiBase\Api\AiClientInterface;
-use MaggyAssistant\Base\Api\ChatServiceInterface;
-use MaggyAssistant\Base\Api\Tool\IrreversibleToolInterface;
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
-use MaggyAssistant\Base\Logger\DebugLogger;
-use MaggyAssistant\Base\Logger\ErrorLogger;
+use MagoAssistant\Mago\Api\ChatServiceInterface;
+use MagoAssistant\Mago\Api\Tool\IrreversibleToolInterface;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Logger\DebugLogger;
+use MagoAssistant\Mago\Logger\ErrorLogger;
 use Magento\Framework\AuthorizationInterface;
-use MaggyAssistant\Base\Service\Store\StoreScopeContext;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
-use MaggyAssistant\Base\Service\Usage\UsageLogger;
+use MagoAssistant\Mago\Service\Store\StoreScopeContext;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Service\Usage\UsageLogger;
 
 class ChatService implements ChatServiceInterface
 {

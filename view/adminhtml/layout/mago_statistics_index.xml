@@ -2,9 +2,7 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
-            <block class="MaggyAssistant\Base\Block\Adminhtml\SkillEdit"
-                   name="maggy_skill_edit"
-                   template="MaggyAssistant_Base::skills/edit.phtml"/>
+            <block class="MagoAssistant\Mago\Block\Adminhtml\Dashboard" name="mago_dashboard" template="MagoAssistant_Mago::dashboard/index.phtml"/>
         </referenceContainer>
     </body>
 </page>

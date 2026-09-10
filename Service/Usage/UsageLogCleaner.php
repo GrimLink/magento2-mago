@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Usage;
+namespace MagoAssistant\Mago\Service\Usage;
 
 use Magento\Framework\App\ResourceConnection;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 class UsageLogCleaner
 {
@@ -28,7 +28,7 @@ class UsageLogCleaner
         }
 
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
         $cutoff = (new \DateTimeImmutable(sprintf('-%d days', $days), new \DateTimeZone('UTC')))
             ->format('Y-m-d H:i:s');
 

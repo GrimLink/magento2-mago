@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Docs\DocsSearch;
+namespace MagoAssistant\Mago\Service\Skills\Docs\DocsSearch;
 
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Model\Doc\Repository as DocRepository;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Model\Doc\Repository as DocRepository;
 
 class SearchAction implements ActionInterface
 {
@@ -67,8 +67,8 @@ class SearchAction implements ActionInterface
         if ($this->docRepository->count() === 0) {
             return [
                 'note' => 'The documentation has not been indexed yet. An administrator can run '
-                    . '"bin/magento maggy:docs:index" (or wait for the sync cron), and it must be enabled '
-                    . 'under Stores > Configuration > Maggy Assistant > Documentation.',
+                    . '"bin/magento mago:docs:index" (or wait for the sync cron), and it must be enabled '
+                    . 'under Stores > Configuration > Mago Assistant > Documentation.',
             ];
         }
 

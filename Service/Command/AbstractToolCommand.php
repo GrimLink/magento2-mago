@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Command;
+namespace MagoAssistant\Mago\Service\Command;
 
-use MaggyAssistant\Base\Api\ChatServiceInterface;
-use MaggyAssistant\Base\Api\Command\CommandInterface;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Api\ChatServiceInterface;
+use MagoAssistant\Mago\Api\Command\CommandInterface;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 
 /**
  * Slash command backed by one of the assistant's tools. Every subcommand becomes a tool call

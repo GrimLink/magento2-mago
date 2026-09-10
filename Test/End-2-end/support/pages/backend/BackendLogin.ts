@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {expect} from "@playwright/test";
@@ -19,8 +19,8 @@ export default class BackendLogin {
     await page.waitForURL('**/' + adminPath + '/**/dashboard/**');
 
     await expect(
-      page.locator('#maggy-toggle'),
-      'The Maggy chat panel is not rendered. Run: bin/magento config:set maggy/general/enabled 1'
+      page.locator('#mago-toggle'),
+      'The Mago chat panel is not rendered. Run: bin/magento config:set mago/general/enabled 1'
     ).toBeAttached();
   }
 }

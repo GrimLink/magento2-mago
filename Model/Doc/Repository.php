@@ -1,17 +1,17 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Model\Doc;
+namespace MagoAssistant\Mago\Model\Doc;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Sql\Expression;
 
 class Repository
 {
-    private const TABLE = 'maggy_doc';
+    private const TABLE = 'mago_doc';
     private const MAX_SEARCH_LIMIT = 20;
 
     public function __construct(

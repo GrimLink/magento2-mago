@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Api;
+namespace MagoAssistant\Mago\Test\Unit\Service\Api;
 
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Service\Api\InternalRequestOptions;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeConfigRepository;
+use MagoAssistant\Mago\Service\Api\InternalRequestOptions;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeConfigRepository;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

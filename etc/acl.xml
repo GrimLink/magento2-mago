@@ -6,15 +6,15 @@
                 <resource id="Magento_Backend::stores">
                     <resource id="Magento_Backend::stores_settings">
                         <resource id="Magento_Config::config">
-                            <resource id="MaggyAssistant_Base::config" title="Admin Assistant Configuration" sortOrder="10"/>
+                            <resource id="MagoAssistant_Mago::config" title="Admin Assistant Configuration" sortOrder="10"/>
                         </resource>
                     </resource>
                 </resource>
-                <resource id="MaggyAssistant_Base::assistant" title="Admin Assistant" sortOrder="100">
-                    <resource id="MaggyAssistant_Base::assistant_read" title="Read Operations" sortOrder="10"/>
-                    <resource id="MaggyAssistant_Base::assistant_write" title="Write Operations" sortOrder="20"/>
-                    <resource id="MaggyAssistant_Base::conversations" title="Manage Conversations" sortOrder="30">
-                        <resource id="MaggyAssistant_Base::conversations_delete" title="Delete Conversations" sortOrder="10"/>
+                <resource id="MagoAssistant_Mago::assistant" title="Admin Assistant" sortOrder="100">
+                    <resource id="MagoAssistant_Mago::assistant_read" title="Read Operations" sortOrder="10"/>
+                    <resource id="MagoAssistant_Mago::assistant_write" title="Write Operations" sortOrder="20"/>
+                    <resource id="MagoAssistant_Mago::conversations" title="Manage Conversations" sortOrder="30">
+                        <resource id="MagoAssistant_Mago::conversations_delete" title="Delete Conversations" sortOrder="10"/>
                     </resource>
                 </resource>
             </resource>

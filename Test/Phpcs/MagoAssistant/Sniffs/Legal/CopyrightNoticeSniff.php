@@ -1,20 +1,20 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Sniffs\Legal;
+namespace MagoAssistant\Sniffs\Legal;
 
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
 
 class CopyrightNoticeSniff implements Sniff
 {
-    private const ERROR_MESSAGE = 'Missing or invalid Maggy Assistant copyright notice at the top of the file';
+    private const ERROR_MESSAGE = 'Missing or invalid Mago Assistant copyright notice at the top of the file';
 
     private const REQUIRED_LINES = [
-        'Copyright © Maggy Assistant',
+        'Copyright © Mago Assistant',
     ];
 
     public function register(): array

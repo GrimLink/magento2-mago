@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\System\ModuleVersion;
+namespace MagoAssistant\Mago\Service\Skills\System\ModuleVersion;
 
-use MaggyAssistant\Base\Api\ModuleInfo\RepositoryInterface as ModuleInfoRepository;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\ModuleInfo\RepositoryInterface as ModuleInfoRepository;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
 
 class GetVersionAction implements ActionInterface
 {

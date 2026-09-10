@@ -1,31 +1,31 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Ai;
+namespace MagoAssistant\Mago\Test\Unit\Service\Ai;
 
 use MageOS\AiBase\Api\AiClientInterface;
 use Magento\Framework\AuthorizationInterface;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Store\Model\StoreManagerInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface;
-use MaggyAssistant\Base\Logger\DebugLogger;
-use MaggyAssistant\Base\Logger\ErrorLogger;
-use MaggyAssistant\Base\Service\Ai\AnswerWidgets;
-use MaggyAssistant\Base\Service\Ai\ChatService;
-use MaggyAssistant\Base\Service\Ai\Client;
-use MaggyAssistant\Base\Service\Skills\PermissionChecker;
-use MaggyAssistant\Base\Service\Store\StoreScopeContext;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
-use MaggyAssistant\Base\Service\Usage\UsageLogger;
-use MaggyAssistant\Base\Test\Unit\Fakes\BuildsStoreLayouts;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeAction;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeConfigRepository;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeIrreversibleAction;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeLogger;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeSkill;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface;
+use MagoAssistant\Mago\Logger\DebugLogger;
+use MagoAssistant\Mago\Logger\ErrorLogger;
+use MagoAssistant\Mago\Service\Ai\AnswerWidgets;
+use MagoAssistant\Mago\Service\Ai\ChatService;
+use MagoAssistant\Mago\Service\Ai\Client;
+use MagoAssistant\Mago\Service\Skills\PermissionChecker;
+use MagoAssistant\Mago\Service\Store\StoreScopeContext;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Service\Usage\UsageLogger;
+use MagoAssistant\Mago\Test\Unit\Fakes\BuildsStoreLayouts;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeAction;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeConfigRepository;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeIrreversibleAction;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeLogger;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeSkill;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

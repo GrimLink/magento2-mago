@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Chat;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Chat;
 
 /**
  * CSRF gate for chat controllers that receive a raw JSON body (form key travels in the body,

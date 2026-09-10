@@ -6,11 +6,11 @@
 // always tabular. Orange marks the subject, peach the rest, grey the remainder.
 //
 // The kit only uses CSS custom properties. The chat panel defines the brand
-// tokens (--mago-ink, --mago-hairline, --maggy-accent, ...) in panel.phtml;
+// tokens (--mago-ink, --mago-hairline, --mago-accent, ...) in panel.phtml;
 // the semantic tokens the kit adds on top live here, on the panel and on any
 // element carrying .mago-kit, so the same widgets render outside the panel.
 
-.maggy-chat-panel,
+.mago-chat-panel,
 .mago-kit {
     // Semantic tones
     --mago-ok: #5C7A3F;
@@ -42,7 +42,7 @@
     --mago-accent-hover: #FFB98F;
 
     // Chart ramp, rank descending
-    --mago-ramp-1: var(--maggy-accent, #FF7A33);
+    --mago-ramp-1: var(--mago-accent, #FF7A33);
     --mago-ramp-2: #FF9D66;
     --mago-ramp-3: #FFC9A6;
     --mago-ramp-4: #FFE9DC;
@@ -239,12 +239,12 @@
     }
 
     &.is-primary {
-        background: var(--maggy-accent, #FF7A33);
-        color: var(--maggy-accent-text, #FFFFFF);
+        background: var(--mago-accent, #FF7A33);
+        color: var(--mago-accent-text, #FFFFFF);
         box-shadow: 0 6px 16px -8px rgba(230, 80, 0, .8);
 
         &:hover:not(:disabled) {
-            background: var(--maggy-accent-hover, #E65000);
+            background: var(--mago-accent-hover, #E65000);
         }
 
         &:disabled {
@@ -1297,7 +1297,7 @@
 
 .mago-suggestion-icon {
     display: inline-flex;
-    color: var(--maggy-accent, #FF7A33);
+    color: var(--mago-accent, #FF7A33);
     flex: none;
 }
 
@@ -1754,8 +1754,8 @@
         color: var(--mago-ink, #373330);
 
         .mago-check-box {
-            background: var(--maggy-accent, #FF7A33);
-            border-color: var(--maggy-accent, #FF7A33);
+            background: var(--mago-accent, #FF7A33);
+            border-color: var(--mago-accent, #FF7A33);
             color: #FFFFFF;
         }
     }
@@ -1904,7 +1904,7 @@
     transition: border-color .15s, box-shadow .15s;
 
     &:focus-within {
-        border-color: var(--maggy-accent, #FF7A33);
+        border-color: var(--mago-accent, #FF7A33);
         box-shadow: 0 0 0 3px rgba(255, 122, 51, .14);
     }
 }
@@ -1993,7 +1993,7 @@
     width: 8px;
     height: 8px;
     border-radius: 3px;
-    background: var(--maggy-accent, #FF7A33);
+    background: var(--mago-accent, #FF7A33);
     flex: none;
 
     .is-danger & {
@@ -2087,7 +2087,7 @@
 
     &.is-active {
         background: var(--mago-accent-bg);
-        border-left-color: var(--maggy-accent, #FF7A33);
+        border-left-color: var(--mago-accent, #FF7A33);
     }
 }
 
@@ -2099,7 +2099,7 @@
     background: var(--mago-ok-soft);
 
     &.is-write {
-        background: var(--maggy-accent, #FF7A33);
+        background: var(--mago-accent, #FF7A33);
     }
 
     &.is-irreversible {

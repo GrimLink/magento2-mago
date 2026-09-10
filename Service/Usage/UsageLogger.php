@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Usage;
+namespace MagoAssistant\Mago\Service\Usage;
 
 use Magento\Framework\App\ResourceConnection;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 class UsageLogger
 {
@@ -29,7 +29,7 @@ class UsageLogger
         ?array $responsePayload = null
     ): void {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
 
         $data = [
             'admin_user_id' => $adminUserId,

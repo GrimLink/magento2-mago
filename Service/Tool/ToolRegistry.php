@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Tool;
+namespace MagoAssistant\Mago\Service\Tool;
 
-use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
-use MaggyAssistant\Base\Service\Skills\PermissionChecker;
+use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Service\Skills\PermissionChecker;
 
 class ToolRegistry
 {

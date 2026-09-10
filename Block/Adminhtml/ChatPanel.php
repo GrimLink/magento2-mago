@@ -1,23 +1,23 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Block\Adminhtml;
+namespace MagoAssistant\Mago\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Model\Auth\Session as AdminSession;
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
-use MaggyAssistant\Base\Service\Command\CommandRegistry;
-use MaggyAssistant\Base\Service\Command\CommandRunner;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Service\Command\CommandRegistry;
+use MagoAssistant\Mago\Service\Command\CommandRunner;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 
 class ChatPanel extends Template
 {
-    protected $_template = 'MaggyAssistant_Base::chat/panel.phtml';
+    protected $_template = 'MagoAssistant_Mago::chat/panel.phtml';
 
     public function __construct(
         Context $context,
@@ -45,13 +45,13 @@ class ChatPanel extends Template
     public function getJsConfig(): string
     {
         return (string)$this->json->serialize([
-            'streamUrl' => $this->getUrl('maggy/chat/stream'),
-            'historyUrl' => $this->getUrl('maggy/chat/history'),
-            'loadUrl' => $this->getUrl('maggy/chat/load'),
-            'deleteUrl' => $this->getUrl('maggy/chat/delete'),
-            'confirmUrl' => $this->getUrl('maggy/chat/confirm'),
-            'rejectUrl' => $this->getUrl('maggy/chat/reject'),
-            'statusUrl' => $this->getUrl('maggy/chat/status'),
+            'streamUrl' => $this->getUrl('mago/chat/stream'),
+            'historyUrl' => $this->getUrl('mago/chat/history'),
+            'loadUrl' => $this->getUrl('mago/chat/load'),
+            'deleteUrl' => $this->getUrl('mago/chat/delete'),
+            'confirmUrl' => $this->getUrl('mago/chat/confirm'),
+            'rejectUrl' => $this->getUrl('mago/chat/reject'),
+            'statusUrl' => $this->getUrl('mago/chat/status'),
             'apiBaseUrl' => $this->getUrl('rest/V1/assistant'),
             'isStreamingEnabled' => $this->configRepository->isStreamingEnabled(),
         ]);
@@ -59,7 +59,7 @@ class ChatPanel extends Template
 
     public function getStreamUrl(): string
     {
-        return $this->getUrl('maggy/chat/stream');
+        return $this->getUrl('mago/chat/stream');
     }
 
     public function getFormKey(): string

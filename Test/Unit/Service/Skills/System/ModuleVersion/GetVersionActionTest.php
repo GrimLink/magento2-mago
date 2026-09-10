@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Skills\System\ModuleVersion;
+namespace MagoAssistant\Mago\Test\Unit\Service\Skills\System\ModuleVersion;
 
-use MaggyAssistant\Base\Api\ModuleInfo\RepositoryInterface;
-use MaggyAssistant\Base\Service\Skills\System\ModuleVersion\GetVersionAction;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeModuleInfoRepository;
+use MagoAssistant\Mago\Api\ModuleInfo\RepositoryInterface;
+use MagoAssistant\Mago\Service\Skills\System\ModuleVersion\GetVersionAction;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeModuleInfoRepository;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

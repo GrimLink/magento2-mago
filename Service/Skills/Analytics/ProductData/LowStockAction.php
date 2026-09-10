@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Analytics\ProductData;
+namespace MagoAssistant\Mago\Service\Skills\Analytics\ProductData;
 
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
 
 class LowStockAction implements ActionInterface
 {

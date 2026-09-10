@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {expect, test} from '@playwright/test';
@@ -11,7 +11,7 @@ const pageBuilderStage = new PageBuilderStage();
 
 const ABOUT_US_PAGE_TITLE = 'About us';
 
-test('Closes full-screen Page Builder when Maggy was opened first', async ({page}) => {
+test('Closes full-screen Page Builder when Mago was opened first', async ({page}) => {
   await pageBuilderStage.openCmsPage(page, ABOUT_US_PAGE_TITLE);
 
   await chatPanel.open(page);

@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Api;
+namespace MagoAssistant\Mago\Service\Api;
 
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Integration\Api\UserTokenIssuerInterface;
@@ -13,9 +13,9 @@ use Magento\Integration\Model\UserToken\UserTokenParametersFactory;
 use Magento\Authorization\Model\UserContextInterface;
 use Magento\Framework\UrlInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
-use MaggyAssistant\Base\Logger\DebugLogger;
-use MaggyAssistant\Base\Logger\ErrorLogger;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
+use MagoAssistant\Mago\Logger\DebugLogger;
+use MagoAssistant\Mago\Logger\ErrorLogger;
 
 class InternalApiClient
 {

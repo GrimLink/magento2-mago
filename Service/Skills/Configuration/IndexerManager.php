@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Configuration;
+namespace MagoAssistant\Mago\Service\Skills\Configuration;
 
 use Magento\Framework\Indexer\IndexerRegistry;
 use Magento\Indexer\Model\Indexer\CollectionFactory;
-use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
+use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
 
 class IndexerManager implements ActionScopedToolInterface
 {

@@ -1,9 +1,9 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
-/** @var \MaggyAssistant\Base\Block\Adminhtml\Dashboard $block */
+/** @var \MagoAssistant\Mago\Block\Adminhtml\Dashboard $block */
 /** @var \Magento\Framework\Escaper $escaper */
 
 $accentColor = $block->getAccentColor() ?: '#F26322';
@@ -19,101 +19,101 @@ $userStats = $block->getUserStats();
 $skillStats = $block->getSkillStats();
 $dailyTrend = $block->getDailyTrend();
 $currentPeriod = $block->getPeriod();
-$dashboardUrl = $block->getUrl('maggy/statistics/index');
+$dashboardUrl = $block->getUrl('mago/statistics/index');
 ?>
 
 <style>
-    .maggy-dashboard { width: 100%; }
-    .maggy-dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .maggy-dashboard-header h2 { margin: 0; font-size: 20px; color: #333; }
-    .maggy-period-selector { display: flex; gap: 8px; }
-    .maggy-period-btn {
+    .mago-dashboard { width: 100%; }
+    .mago-dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .mago-dashboard-header h2 { margin: 0; font-size: 20px; color: #333; }
+    .mago-period-selector { display: flex; gap: 8px; }
+    .mago-period-btn {
         padding: 6px 14px; border: 1px solid #ccc; background: #fff; border-radius: 4px;
         cursor: pointer; font-size: 13px; color: #555; text-decoration: none;
     }
-    .maggy-period-btn.active, .maggy-period-btn:hover {
+    .mago-period-btn.active, .mago-period-btn:hover {
         background: <?= /* @noEscape */ $accentColor ?>; color: #fff; border-color: <?= /* @noEscape */ $accentColor ?>;
     }
-    .maggy-stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .maggy-stat-card {
+    .mago-stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .mago-stat-card {
         background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 20px;
         text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
-    .maggy-stat-card-value { font-size: 28px; font-weight: 700; color: <?= /* @noEscape */ $accentColor ?>; margin-bottom: 4px; }
-    .maggy-stat-card-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-    .maggy-section { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .maggy-section h3 { margin: 0 0 16px; font-size: 16px; color: #333; }
-    .maggy-chart-area { position: relative; height: 160px; }
-    .maggy-chart-area svg { width: 100%; height: 100%; }
-    .maggy-chart-area-fill { fill: rgba(<?= /* @noEscape */ $accentRgb ?>, 0.08); }
-    .maggy-chart-area-line { fill: none; stroke: <?= /* @noEscape */ $accentColor ?>; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
-    .maggy-chart-area-dot { fill: <?= /* @noEscape */ $accentColor ?>; stroke: #fff; stroke-width: 2; cursor: pointer; transition: r 0.15s; }
-    .maggy-chart-area-tooltip {
+    .mago-stat-card-value { font-size: 28px; font-weight: 700; color: <?= /* @noEscape */ $accentColor ?>; margin-bottom: 4px; }
+    .mago-stat-card-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .mago-section { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .mago-section h3 { margin: 0 0 16px; font-size: 16px; color: #333; }
+    .mago-chart-area { position: relative; height: 160px; }
+    .mago-chart-area svg { width: 100%; height: 100%; }
+    .mago-chart-area-fill { fill: rgba(<?= /* @noEscape */ $accentRgb ?>, 0.08); }
+    .mago-chart-area-line { fill: none; stroke: <?= /* @noEscape */ $accentColor ?>; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+    .mago-chart-area-dot { fill: <?= /* @noEscape */ $accentColor ?>; stroke: #fff; stroke-width: 2; cursor: pointer; transition: r 0.15s; }
+    .mago-chart-area-tooltip {
         display: none; position: absolute; background: #333; color: #fff; padding: 4px 8px;
         border-radius: 3px; font-size: 11px; white-space: nowrap; z-index: 10;
         transform: translate(-50%, -100%); margin-top: -8px; pointer-events: none;
     }
-    .maggy-chart-area-tooltip.is-visible { display: block; }
-    .maggy-chart-area-grid { stroke: #f0f0f0; stroke-width: 1; }
-    .maggy-chart-area-axis { font-size: 10px; fill: #aaa; }
-    .maggy-chart-labels { display: flex; margin-top: 6px; }
-    .maggy-chart-labels span { flex: 1; text-align: center; font-size: 9px; color: #aaa; }
-    .maggy-table { width: 100%; border-collapse: collapse; }
-    .maggy-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e3e3e3; font-size: 13px; color: #666; font-weight: 600; }
-    .maggy-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333; }
-    .maggy-table tr:hover td { background: #f8f9fa; }
-    .maggy-table .maggy-right { text-align: right; }
-    .maggy-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    .maggy-empty { text-align: center; color: #aaa; padding: 30px 0; font-size: 14px; }
+    .mago-chart-area-tooltip.is-visible { display: block; }
+    .mago-chart-area-grid { stroke: #f0f0f0; stroke-width: 1; }
+    .mago-chart-area-axis { font-size: 10px; fill: #aaa; }
+    .mago-chart-labels { display: flex; margin-top: 6px; }
+    .mago-chart-labels span { flex: 1; text-align: center; font-size: 9px; color: #aaa; }
+    .mago-table { width: 100%; border-collapse: collapse; }
+    .mago-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e3e3e3; font-size: 13px; color: #666; font-weight: 600; }
+    .mago-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333; }
+    .mago-table tr:hover td { background: #f8f9fa; }
+    .mago-table .mago-right { text-align: right; }
+    .mago-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .mago-empty { text-align: center; color: #aaa; padding: 30px 0; font-size: 14px; }
     @media (max-width: 900px) {
-        .maggy-stat-cards { grid-template-columns: repeat(2, 1fr); }
-        .maggy-grid-2 { grid-template-columns: 1fr; }
+        .mago-stat-cards { grid-template-columns: repeat(2, 1fr); }
+        .mago-grid-2 { grid-template-columns: 1fr; }
     }
 </style>
 
-<div class="maggy-dashboard">
-    <div class="maggy-dashboard-header">
+<div class="mago-dashboard">
+    <div class="mago-dashboard-header">
         <h2><?= $escaper->escapeHtml(__('Usage Dashboard')) ?></h2>
-        <div class="maggy-period-selector">
+        <div class="mago-period-selector">
             <a href="<?= $escaper->escapeUrl($dashboardUrl . '?period=today') ?>"
-               class="maggy-period-btn <?= $currentPeriod === 'today' ? 'active' : '' ?>">
+               class="mago-period-btn <?= $currentPeriod === 'today' ? 'active' : '' ?>">
                 <?= $escaper->escapeHtml(__('Today')) ?>
             </a>
             <a href="<?= $escaper->escapeUrl($dashboardUrl . '?period=7days') ?>"
-               class="maggy-period-btn <?= $currentPeriod === '7days' ? 'active' : '' ?>">
+               class="mago-period-btn <?= $currentPeriod === '7days' ? 'active' : '' ?>">
                 <?= $escaper->escapeHtml(__('7 Days')) ?>
             </a>
             <a href="<?= $escaper->escapeUrl($dashboardUrl . '?period=30days') ?>"
-               class="maggy-period-btn <?= $currentPeriod === '30days' ? 'active' : '' ?>">
+               class="mago-period-btn <?= $currentPeriod === '30days' ? 'active' : '' ?>">
                 <?= $escaper->escapeHtml(__('30 Days')) ?>
             </a>
             <a href="<?= $escaper->escapeUrl($dashboardUrl . '?period=all') ?>"
-               class="maggy-period-btn <?= $currentPeriod === 'all' ? 'active' : '' ?>">
+               class="mago-period-btn <?= $currentPeriod === 'all' ? 'active' : '' ?>">
                 <?= $escaper->escapeHtml(__('All Time')) ?>
             </a>
         </div>
     </div>
 
-    <div class="maggy-stat-cards">
-        <div class="maggy-stat-card">
-            <div class="maggy-stat-card-value"><?= (int)$todayStats['total_requests'] ?></div>
-            <div class="maggy-stat-card-label"><?= $escaper->escapeHtml(__('Requests Today')) ?></div>
+    <div class="mago-stat-cards">
+        <div class="mago-stat-card">
+            <div class="mago-stat-card-value"><?= (int)$todayStats['total_requests'] ?></div>
+            <div class="mago-stat-card-label"><?= $escaper->escapeHtml(__('Requests Today')) ?></div>
         </div>
-        <div class="maggy-stat-card">
-            <div class="maggy-stat-card-value"><?= $escaper->escapeHtml($block->formatTokens($todayStats['total_tokens'])) ?></div>
-            <div class="maggy-stat-card-label"><?= $escaper->escapeHtml(__('Tokens Today')) ?></div>
+        <div class="mago-stat-card">
+            <div class="mago-stat-card-value"><?= $escaper->escapeHtml($block->formatTokens($todayStats['total_tokens'])) ?></div>
+            <div class="mago-stat-card-label"><?= $escaper->escapeHtml(__('Tokens Today')) ?></div>
         </div>
-        <div class="maggy-stat-card">
-            <div class="maggy-stat-card-value"><?= $escaper->escapeHtml($block->formatCost($todayStats['estimated_cost'])) ?></div>
-            <div class="maggy-stat-card-label"><?= $escaper->escapeHtml(__('Est. Cost Today')) ?></div>
+        <div class="mago-stat-card">
+            <div class="mago-stat-card-value"><?= $escaper->escapeHtml($block->formatCost($todayStats['estimated_cost'])) ?></div>
+            <div class="mago-stat-card-label"><?= $escaper->escapeHtml(__('Est. Cost Today')) ?></div>
         </div>
-        <div class="maggy-stat-card">
-            <div class="maggy-stat-card-value"><?= (int)$todayStats['unique_users'] ?></div>
-            <div class="maggy-stat-card-label"><?= $escaper->escapeHtml(__('Active Users Today')) ?></div>
+        <div class="mago-stat-card">
+            <div class="mago-stat-card-value"><?= (int)$todayStats['unique_users'] ?></div>
+            <div class="mago-stat-card-label"><?= $escaper->escapeHtml(__('Active Users Today')) ?></div>
         </div>
     </div>
 
-    <div class="maggy-section">
+    <div class="mago-section">
         <h3><?= $escaper->escapeHtml(__('Daily Trend')) ?></h3>
         <?php if (!empty($dailyTrend)): ?>
             <?php
@@ -157,26 +157,26 @@ $dashboardUrl = $block->getUrl('maggy/statistics/index');
             }
             $areaPath = $linePath . ' L' . end($points)['x'] . ',' . ($padT + $chartH) . ' L' . $points[0]['x'] . ',' . ($padT + $chartH) . ' Z';
             ?>
-            <div class="maggy-chart-area">
+            <div class="mago-chart-area">
                 <svg viewBox="0 0 <?= /* @noEscape */ (int)$svgW ?> <?= /* @noEscape */ (int)$svgH ?>" preserveAspectRatio="none">
                     <?php for ($g = 0; $g <= 4; $g++): ?>
-                        <line class="maggy-chart-area-grid" x1="<?= /* @noEscape */ (int)$padL ?>" y1="<?= /* @noEscape */ (float)($padT + ($chartH / 4) * $g) ?>" x2="<?= /* @noEscape */ (int)($svgW - $padR) ?>" y2="<?= /* @noEscape */ (float)($padT + ($chartH / 4) * $g) ?>" />
+                        <line class="mago-chart-area-grid" x1="<?= /* @noEscape */ (int)$padL ?>" y1="<?= /* @noEscape */ (float)($padT + ($chartH / 4) * $g) ?>" x2="<?= /* @noEscape */ (int)($svgW - $padR) ?>" y2="<?= /* @noEscape */ (float)($padT + ($chartH / 4) * $g) ?>" />
                     <?php endfor; ?>
-                    <path class="maggy-chart-area-fill" d="<?= /* @noEscape */ $areaPath ?>" />
-                    <path class="maggy-chart-area-line" d="<?= /* @noEscape */ $linePath ?>" />
+                    <path class="mago-chart-area-fill" d="<?= /* @noEscape */ $areaPath ?>" />
+                    <path class="mago-chart-area-line" d="<?= /* @noEscape */ $linePath ?>" />
                     <?php foreach ($points as $i => $p): ?>
-                        <circle class="maggy-chart-area-dot" cx="<?= /* @noEscape */ (float)$p['x'] ?>" cy="<?= /* @noEscape */ (float)$p['y'] ?>" r="3" data-tt="mm-tt-<?= /* @noEscape */ (int)$i ?>"
+                        <circle class="mago-chart-area-dot" cx="<?= /* @noEscape */ (float)$p['x'] ?>" cy="<?= /* @noEscape */ (float)$p['y'] ?>" r="3" data-tt="mm-tt-<?= /* @noEscape */ (int)$i ?>"
                                 onmouseenter="document.getElementById(this.dataset.tt).classList.add('is-visible');this.setAttribute('r','5')"
                                 onmouseleave="document.getElementById(this.dataset.tt).classList.remove('is-visible');this.setAttribute('r','3')" />
                     <?php endforeach; ?>
                 </svg>
                 <?php foreach ($points as $i => $p): ?>
-                    <div class="maggy-chart-area-tooltip" style="left:<?= /* @noEscape */ ($p['x'] / $svgW) * 100 ?>%;top:<?= /* @noEscape */ ($p['y'] / $svgH) * 100 ?>%;" id="mm-tt-<?= /* @noEscape */ (int)$i ?>">
+                    <div class="mago-chart-area-tooltip" style="left:<?= /* @noEscape */ ($p['x'] / $svgW) * 100 ?>%;top:<?= /* @noEscape */ ($p['y'] / $svgH) * 100 ?>%;" id="mm-tt-<?= /* @noEscape */ (int)$i ?>">
                         <?= $escaper->escapeHtml($p['day']['date']) ?>: <?= (int)$p['day']['requests'] ?> req, <?= $escaper->escapeHtml($block->formatTokens((int)$p['day']['tokens'])) ?> tokens
                     </div>
                 <?php endforeach; ?>
             </div>
-            <div class="maggy-chart-labels">
+            <div class="mago-chart-labels">
                 <?php foreach ($dailyTrend as $i => $day):
                     $showLabel = ($trendCount <= 7) || ($i === 0 || $i === $trendCount - 1 || $i % 7 === 0);
                 ?>
@@ -184,21 +184,21 @@ $dashboardUrl = $block->getUrl('maggy/statistics/index');
                 <?php endforeach; ?>
             </div>
         <?php else: ?>
-            <div class="maggy-empty"><?= $escaper->escapeHtml(__('No usage data yet.')) ?></div>
+            <div class="mago-empty"><?= $escaper->escapeHtml(__('No usage data yet.')) ?></div>
         <?php endif; ?>
     </div>
 
-    <div class="maggy-grid-2">
-        <div class="maggy-section">
+    <div class="mago-grid-2">
+        <div class="mago-section">
             <h3><?= $escaper->escapeHtml(__('Top Users')) ?></h3>
             <?php if (!empty($userStats)): ?>
-                <table class="maggy-table">
+                <table class="mago-table">
                     <thead>
                     <tr>
                         <th><?= $escaper->escapeHtml(__('User')) ?></th>
-                        <th class="maggy-right"><?= $escaper->escapeHtml(__('Requests')) ?></th>
-                        <th class="maggy-right"><?= $escaper->escapeHtml(__('Tokens')) ?></th>
-                        <th class="maggy-right"><?= $escaper->escapeHtml(__('Est. Cost')) ?></th>
+                        <th class="mago-right"><?= $escaper->escapeHtml(__('Requests')) ?></th>
+                        <th class="mago-right"><?= $escaper->escapeHtml(__('Tokens')) ?></th>
+                        <th class="mago-right"><?= $escaper->escapeHtml(__('Est. Cost')) ?></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -210,39 +210,39 @@ $dashboardUrl = $block->getUrl('maggy/statistics/index');
                                     <br><small style="color:#999"><?= $escaper->escapeHtml($user['name']) ?></small>
                                 <?php endif; ?>
                             </td>
-                            <td class="maggy-right"><?= (int)$user['request_count'] ?></td>
-                            <td class="maggy-right"><?= $escaper->escapeHtml($block->formatTokens($user['total_tokens'])) ?></td>
-                            <td class="maggy-right"><?= $escaper->escapeHtml($block->formatCost($user['estimated_cost'])) ?></td>
+                            <td class="mago-right"><?= (int)$user['request_count'] ?></td>
+                            <td class="mago-right"><?= $escaper->escapeHtml($block->formatTokens($user['total_tokens'])) ?></td>
+                            <td class="mago-right"><?= $escaper->escapeHtml($block->formatCost($user['estimated_cost'])) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
                 </table>
             <?php else: ?>
-                <div class="maggy-empty"><?= $escaper->escapeHtml(__('No user data for this period.')) ?></div>
+                <div class="mago-empty"><?= $escaper->escapeHtml(__('No user data for this period.')) ?></div>
             <?php endif; ?>
         </div>
 
-        <div class="maggy-section">
+        <div class="mago-section">
             <h3><?= $escaper->escapeHtml(__('Popular Skills')) ?></h3>
             <?php if (!empty($skillStats)): ?>
-                <table class="maggy-table">
+                <table class="mago-table">
                     <thead>
                     <tr>
                         <th><?= $escaper->escapeHtml(__('Skill')) ?></th>
-                        <th class="maggy-right"><?= $escaper->escapeHtml(__('Usage Count')) ?></th>
+                        <th class="mago-right"><?= $escaper->escapeHtml(__('Usage Count')) ?></th>
                     </tr>
                     </thead>
                     <tbody>
                     <?php foreach ($skillStats as $skill): ?>
                         <tr>
                             <td><?= $escaper->escapeHtml($skill['name']) ?></td>
-                            <td class="maggy-right"><?= (int)$skill['usage_count'] ?></td>
+                            <td class="mago-right"><?= (int)$skill['usage_count'] ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
                 </table>
             <?php else: ?>
-                <div class="maggy-empty"><?= $escaper->escapeHtml(__('No skill usage data for this period.')) ?></div>
+                <div class="mago-empty"><?= $escaper->escapeHtml(__('No skill usage data for this period.')) ?></div>
             <?php endif; ?>
         </div>
     </div>
