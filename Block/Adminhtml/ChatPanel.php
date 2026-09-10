@@ -20,8 +20,13 @@ class ChatPanel extends Template
 {
     /**
      * Maximum number of fields the form bridge includes in a single page snapshot.
+     *
+     * A stock Magento product form registers 204 field components, so the previous 200 truncated
+     * every product page by a handful of fields and dropped whichever happened to register last.
+     * FORM_BYTE_CAP is what actually bounds the payload; this only needs enough headroom that a
+     * normal form is described in full.
      */
-    public const FORM_FIELD_CAP = 200;
+    public const FORM_FIELD_CAP = 600;
 
     /**
      * Maximum character length of a single field's value in a page snapshot.

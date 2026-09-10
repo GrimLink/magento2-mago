@@ -64,6 +64,10 @@ define([
     // itself is waited for separately, bounded by NAVIGATE_INTENT_FORM_TIMEOUT_MS below, since a UI
     // component form registers well after the page's own load event.
     var NAVIGATE_INTENT_FORM_TIMEOUT_MS = 8000;
+
+    /* Long enough for a Page Builder stage to register on a slow admin, short enough that a form
+       which never settles still sends promptly rather than appearing to hang. */
+    var FORM_SETTLE_TIMEOUT_MS = 3000;
     var NAVIGATE_STATUS_CLASS = 'mago-navigate-status';
 
     // send() is synchronous and cannot await a module load, so the bridge is requested once at
@@ -893,6 +897,20 @@ define([
         var content = null;
         var full = '';
 
+        /* The form's fields register over several ticks, and a Page Builder field only once its
+           stage has initialised. Sending straight away describes a form that is genuinely missing
+           fields, and nothing downstream can tell that from a form that really has none, so the
+           request waits for the count to stop moving. Bounded, because a form that never settles
+           must not hold the message hostage: the snapshot is sent as-is and reports itself early. */
+        if (!formBridge) {
+            postMessage();
+
+            return;
+        }
+
+        formBridge.whenFieldsSettled(FORM_SETTLE_TIMEOUT_MS, postMessage);
+
+        function postMessage() {
         fetch(config.streamUrl, {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
@@ -997,6 +1015,7 @@ define([
             if (!msg) { msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
             showError(msg, 'Connection error: ' + e.message);
         });
+        }
     }
 
     // S01: a write action asks first. The card names the skill, lists the

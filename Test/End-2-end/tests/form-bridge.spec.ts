@@ -110,6 +110,57 @@ test.describe('Form bridge snapshot', () => {
     expect(nameField.value).toBe('Edited But Not Saved');
   });
 
+  /**
+   * A stock product form registers just over 200 field components, so the old cap of 200 cut it
+   * short on every product page and dropped whichever fields registered last. The byte cap is what
+   * bounds the payload; this guards the field cap having enough headroom for an ordinary form.
+   */
+  test('it describes a whole product form without cutting the field list short', async ({page}) => {
+    test.setTimeout(40000);
+
+    await chatPanel.openOn(page, 'catalog/product/edit/id/' + productId);
+    await page.evaluate(() => new Promise((resolve) => {
+      (window as any).magoFormBridge.whenFieldsSettled(5000, resolve);
+    }));
+
+    const result = await snapshot(page);
+
+    expect(result.truncated.fields).toBe(false);
+  });
+
+  /**
+   * Description is a Page Builder field, which registers only once its stage has initialised, well
+   * after the plain inputs around it. Snapshotting before that reported a product form with no
+   * Description at all, which read as "this form has no such field" rather than "ask again".
+   */
+  test('it includes the Page Builder description field once the form has settled', async ({page}) => {
+    test.setTimeout(40000);
+
+    await chatPanel.openOn(page, 'catalog/product/edit/id/' + productId);
+    await page.evaluate(() => new Promise((resolve) => {
+      (window as any).magoFormBridge.whenFieldsSettled(5000, resolve);
+    }));
+
+    const result = await snapshot(page);
+    const paths = result.fields.map((field: any) => field.path);
+
+    expect(paths.some((path: string) => /(^|\.)description$/.test(path))).toBe(true);
+  });
+
+  test('it waits for a form that has not registered yet instead of reporting none', async ({page}) => {
+    test.setTimeout(40000);
+
+    await chatPanel.openOn(page, 'catalog/product/edit/id/' + productId);
+
+    const fieldCount = await page.evaluate(() => new Promise((resolve) => {
+      const bridge = (window as any).magoFormBridge;
+
+      bridge.whenFieldsSettled(5000, () => resolve(bridge.snapshot().fields.length));
+    }));
+
+    expect(fieldCount).toBeGreaterThan(0);
+  });
+
   test('it reports truncation when the form has more fields than the cap', async ({page}) => {
     test.setTimeout(40000);
 

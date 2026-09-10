@@ -60,8 +60,21 @@ class PageContextNormalizer
             isNewEntity: (bool)($rawPageContext['isNewEntity'] ?? false),
             storeId: $this->toNullableStringValue($rawPageContext['storeId'] ?? null),
             fields: $fields,
-            fieldCount: count($fields)
+            fieldCount: count($fields),
+            isFieldListTruncated: $this->isFieldListTruncated($rawPageContext)
         );
+    }
+
+    /**
+     * The browser sets truncated.fields when the form had more fields than its cap allowed.
+     *
+     * @param array<string,mixed> $rawPageContext
+     */
+    private function isFieldListTruncated(array $rawPageContext): bool
+    {
+        $truncated = $rawPageContext['truncated'] ?? null;
+
+        return is_array($truncated) && ($truncated['fields'] ?? false) === true;
     }
 
     /**

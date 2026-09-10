@@ -13,7 +13,7 @@ define(['uiRegistry'], function (registry) {
     'use strict';
 
     var DEFAULT_CAPS = {
-        maxFields: 200,
+        maxFields: 600,
         maxFieldValueLength: 500,
         maxFieldOptions: 50,
         maxPayloadBytes: 200000
@@ -1189,10 +1189,95 @@ define(['uiRegistry'], function (registry) {
         });
     }
 
+    /* Two consecutive polls with the same count is what "settled" means here. A UI component form
+       registers its fields over several ticks, and a Page Builder field
+       (Magento_PageBuilder/js/form/element/wysiwyg) registers only once its stage has initialised,
+       well after the plain inputs around it. A snapshot taken before that reports a form that is
+       genuinely missing fields, with nothing to say it was early. */
+    var SETTLE_POLL_INTERVAL_MS = 100;
+    var SETTLE_STABLE_POLLS = 2;
+
+    /* How long after this module loads a page is given to produce a form at all. Past that, a page
+       without one has genuinely not got one, and waiting again on every message would put the delay
+       on every dashboard question forever to catch a race that only exists just after a load. */
+    var FORM_APPEARANCE_GRACE_MS = 750;
+    var loadedAt = Date.now();
+
+    /**
+     * Number of field components currently registered for the open form, or null when no form is
+     * open. Counting is deliberately cheaper than building a snapshot: this runs on a poll.
+     *
+     * @returns {?Number}
+     */
+    function registeredFieldCount() {
+        var formComponent = findFormComponent();
+
+        if (!formComponent) {
+            return null;
+        }
+
+        var prefix = formComponent.name + '.';
+
+        return registry.filter(function (component) {
+            return !!component
+                && typeof component.name === 'string'
+                && component.name.indexOf(prefix) === 0
+                && isFieldComponent(component);
+        }).length;
+    }
+
+    /**
+     * Calls back once the form has stopped registering fields, or once timeoutMs has passed,
+     * whichever comes first. The callback is told which of the two happened so a caller can report
+     * an early snapshot rather than present it as complete. On a page with no form it calls back
+     * immediately: there is nothing to wait for.
+     *
+     * @param {Number} timeoutMs
+     * @param {Function} callback
+     */
+    function whenFieldsSettled(timeoutMs, callback) {
+        var lastCount = -1;
+        var stablePolls = 0;
+
+        /* Real elapsed time, not a tick count: a background tab has its timers throttled to about
+           one a second, so counting intervals would call a form absent after a fraction of the
+           time it was given. */
+        var startedAt = Date.now();
+        var poller = setInterval(function () {
+            var count = registeredFieldCount();
+            var elapsedMs = Date.now() - startedAt;
+
+            /* No form component yet means either a page without one or a form that has not got
+               there. They are indistinguishable this early, so a short grace period decides: long
+               enough for a form to appear, short enough that the dashboard does not pay for it on
+               every message. */
+            if (count === null) {
+                if (Date.now() - loadedAt >= FORM_APPEARANCE_GRACE_MS) {
+                    clearInterval(poller);
+                    callback(true);
+                }
+
+                return;
+            }
+
+            stablePolls = count === lastCount ? stablePolls + 1 : 0;
+            lastCount = count;
+
+            if (stablePolls >= SETTLE_STABLE_POLLS) {
+                clearInterval(poller);
+                callback(true);
+            } else if (elapsedMs >= timeoutMs) {
+                clearInterval(poller);
+                callback(false);
+            }
+        }, SETTLE_POLL_INTERVAL_MS);
+    }
+
     var bridge = {
         snapshot: snapshot,
         apply: apply,
         whenFormReady: whenFormReady,
+        whenFieldsSettled: whenFieldsSettled,
         hasUnsavedChanges: hasUnsavedChanges
     };
 
