@@ -474,6 +474,45 @@ final class ChatServiceTest extends TestCase
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
+    #[Test]
+    public function itKeepsCustomerPiiOutOfThePayloadSentToTheProvider(): void
+    {
+        $this->grants['customer_data'] = 'read';
+        $auth = $this->createMock(AuthorizationInterface::class);
+        $auth->method('isAllowed')->willReturn(true);
+        $customerData = new FakeSkill('customer_data', $auth, [
+            'lookup_customer' => new FakeAction('lookup_customer', true, [], '', [
+                'results' => [[
+                    'entity_id' => 42,
+                    'name' => 'Jan Jansen',
+                    'email' => 'jan@example.com',
+                    'city' => 'Amsterdam',
+                    'telephone' => '0612345678',
+                    'admin_url' => 'https://shop.test/admin/customer/index/edit/id/42/key/abc123secret/',
+                ]],
+            ]),
+        ]);
+        $service = $this->buildChatService([$customerData]);
+        $this->responses = [[
+            'content' => '',
+            'tool_calls' => [[
+                'id' => 'call_1',
+                'name' => 'customer_data',
+                'input' => ['action' => 'lookup_customer', 'search' => 'Jan'],
+            ]],
+        ]];
+
+        $service->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        $toolMessage = (string)$this->lastMessageOfRole($this->requests[1], 'tool')['content'];
+        self::assertStringNotContainsString('Jan Jansen', $toolMessage);
+        self::assertStringNotContainsString('jan@example.com', $toolMessage);
+        self::assertStringNotContainsString('0612345678', $toolMessage);
+        self::assertStringNotContainsString('abc123secret', $toolMessage);
+        self::assertStringContainsString('[customer_1]', $toolMessage);
+        self::assertStringContainsString('Amsterdam', $toolMessage);
+    }
+
     private function toolCallResponse(string $action, array $input = []): array
     {
         return [
