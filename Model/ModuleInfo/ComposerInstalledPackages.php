@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Model\ModuleInfo;
+namespace MagoAssistant\Mago\Model\ModuleInfo;
 
 use Composer\InstalledVersions;
-use MaggyAssistant\Base\Api\ModuleInfo\InstalledPackagesInterface;
+use MagoAssistant\Mago\Api\ModuleInfo\InstalledPackagesInterface;
 
 class ComposerInstalledPackages implements InstalledPackagesInterface
 {

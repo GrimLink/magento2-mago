@@ -1,16 +1,16 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Skills\Configuration;
+namespace MagoAssistant\Mago\Test\Unit\Service\Skills\Configuration;
 
 use Magento\Config\Model\ResourceModel\Config as ConfigResource;
 use Magento\Framework\App\Cache\TypeListInterface;
-use MaggyAssistant\Base\Service\Skills\Configuration\ConfigWriter;
-use MaggyAssistant\Base\Service\Store\StoreScopeContext;
-use MaggyAssistant\Base\Test\Unit\Fakes\BuildsStoreLayouts;
+use MagoAssistant\Mago\Service\Skills\Configuration\ConfigWriter;
+use MagoAssistant\Mago\Service\Store\StoreScopeContext;
+use MagoAssistant\Mago\Test\Unit\Fakes\BuildsStoreLayouts;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

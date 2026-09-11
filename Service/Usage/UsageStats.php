@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Usage;
+namespace MagoAssistant\Mago\Service\Usage;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Sql\Expression;
@@ -19,7 +19,7 @@ class UsageStats
     public function getForPeriod(string $period): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
         $from = $this->getFromDate($period);
 
         $select = $connection->select()
@@ -53,7 +53,7 @@ class UsageStats
     public function getUserBreakdown(string $period): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
         $adminTable = $this->resourceConnection->getTableName('admin_user');
         $from = $this->getFromDate($period);
 
@@ -98,7 +98,7 @@ class UsageStats
     public function getSkillBreakdown(string $period): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
         $from = $this->getFromDate($period);
 
         $select = $connection->select()
@@ -133,7 +133,7 @@ class UsageStats
     public function getDailyTrend(int $days = 30): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
         $startDate = (new \DateTimeImmutable())->modify("-" . ($days - 1) . " days");
         $from = $startDate->format('Y-m-d 00:00:00');
 

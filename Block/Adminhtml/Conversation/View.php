@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Block\Adminhtml\Conversation;
+namespace MagoAssistant\Mago\Block\Adminhtml\Conversation;
 
 use Magento\Backend\Block\Widget\Container;
 use Magento\Backend\Block\Widget\Context;
@@ -23,7 +23,7 @@ class View extends Container
         parent::__construct($context, $data);
     }
 
-    protected $_template = 'MaggyAssistant_Base::conversations/container.phtml';
+    protected $_template = 'MagoAssistant_Mago::conversations/container.phtml';
 
     protected function _construct(): void
     {
@@ -35,12 +35,12 @@ class View extends Container
             'back',
             [
                 'label' => __('Back'),
-                'onclick' => sprintf("setLocation('%s')", $this->getUrl('maggy/conversations/index')),
+                'onclick' => sprintf("setLocation('%s')", $this->getUrl('mago/conversations/index')),
                 'class' => 'back',
             ]
         );
 
-        if ($this->_authorization->isAllowed('MaggyAssistant_Base::conversations_delete') && $conversationId) {
+        if ($this->_authorization->isAllowed('MagoAssistant_Mago::conversations_delete') && $conversationId) {
             $this->buttonList->add(
                 'delete',
                 [
@@ -48,7 +48,7 @@ class View extends Container
                     'onclick' => sprintf(
                         "confirmSetLocation('%s', '%s')",
                         __('Are you sure you want to delete this conversation?'),
-                        $this->getUrl('maggy/conversations/delete', ['id' => $conversationId])
+                        $this->getUrl('mago/conversations/delete', ['id' => $conversationId])
                     ),
                     'class' => 'delete',
                 ]
@@ -62,7 +62,7 @@ class View extends Container
                     'label' => __('Continue Conversation'),
                     'onclick' => sprintf(
                         "setLocation('%s')",
-                        $this->getUrl('maggy/conversations/continueChat', ['id' => $conversationId])
+                        $this->getUrl('mago/conversations/continueChat', ['id' => $conversationId])
                     ),
                     'class' => 'primary',
                 ]
@@ -78,7 +78,7 @@ class View extends Container
         }
 
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_conversation');
+        $table = $this->resourceConnection->getTableName('mago_conversation');
         $ownerId = (int)$connection->fetchOne(
             $connection->select()->from($table, ['admin_user_id'])->where('entity_id = ?', $conversationId)
         );

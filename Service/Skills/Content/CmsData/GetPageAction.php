@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Content\CmsData;
+namespace MagoAssistant\Mago\Service\Skills\Content\CmsData;
 
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Service\Api\InternalApiClient;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Service\Api\InternalApiClient;
 
 class GetPageAction implements ActionInterface
 {

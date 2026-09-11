@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {expect, test} from '@playwright/test';
@@ -21,7 +21,7 @@ test('Asks for confirmation before creating a CMS page and reports the result', 
   await expect(chatPanel.lastAssistantMessage(page)).toContainText('cms_data');
   await expect(chatPanel.lastAssistantMessage(page)).toContainText('summer-sale');
 
-  const confirmRequest = page.waitForRequest(/\/maggy\/chat\/confirm/);
+  const confirmRequest = page.waitForRequest(/\/mago\/chat\/confirm/);
   await chatPanel.confirmButton(page).click();
 
   expect(JSON.parse((await confirmRequest).postData() ?? '{}')).toMatchObject({message_id: 100501});
@@ -31,7 +31,7 @@ test('Asks for confirmation before creating a CMS page and reports the result', 
 
 test('Resolves the message id through the status endpoint before confirming', async ({page}) => {
   await chatMock.install(page, createCmsPage);
-  const statusCalls = chatMock.countRequestsTo(page, /\/maggy\/chat\/status/);
+  const statusCalls = chatMock.countRequestsTo(page, /\/mago\/chat\/status/);
 
   await chatPanel.openOnDashboard(page);
   await chatPanel.ask(page, 'Create a CMS page titled Summer Sale with url key summer-sale');
@@ -58,7 +58,7 @@ test('Asks for confirmation before creating a coupon rule', async ({page}) => {
 
 test('Makes no write call when the coupon action is rejected', async ({page}) => {
   await chatMock.install(page, createCoupon);
-  const confirmCalls = chatMock.countRequestsTo(page, /\/maggy\/chat\/confirm/);
+  const confirmCalls = chatMock.countRequestsTo(page, /\/mago\/chat\/confirm/);
 
   await chatPanel.openOnDashboard(page);
   await chatPanel.ask(page, 'Add a new coupon code SUMMER20 giving 20% off');

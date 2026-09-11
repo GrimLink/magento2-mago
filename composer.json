@@ -1,5 +1,5 @@
 {
-    "name": "maggy-assistant/magento2-base",
+    "name": "mago-assistant/mago",
     "description": "AI-powered admin assistant for Magento 2. Chat with your store using Anthropic, OpenAI, Gemini, Ollama and more.",
     "type": "magento2-module",
     "version": "1.1.0",
@@ -19,7 +19,7 @@
         "magento/module-cron": "*"
     },
     "suggest": {
-        "maggy-assistant/magento2-issue-tracker": "Add-on for reporting issues to GitHub, Jira, and other project trackers",
+        "mago-assistant/magento2-issue-tracker": "Add-on for reporting issues to GitHub, Jira, and other project trackers",
         "symfony/ai-azure-platform": "Run the assistant on Azure OpenAI",
         "symfony/ai-deep-seek-platform": "Run the assistant on DeepSeek",
         "symfony/ai-gemini-platform": "Run the assistant on Google Gemini",
@@ -33,7 +33,7 @@
             "registration.php"
         ],
         "psr-4": {
-            "MaggyAssistant\\Base\\": ""
+            "MagoAssistant\\Mago\\": ""
         }
     }
 }

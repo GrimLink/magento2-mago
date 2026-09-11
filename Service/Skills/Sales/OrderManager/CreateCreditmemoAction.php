@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Sales\OrderManager;
+namespace MagoAssistant\Mago\Service\Skills\Sales\OrderManager;
 
-use MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface;
-use MaggyAssistant\Base\Service\Api\InternalApiClient;
-use MaggyAssistant\Base\Service\Url\SecureAdminUrl;
+use MagoAssistant\Mago\Api\Skill\IrreversibleActionInterface;
+use MagoAssistant\Mago\Service\Api\InternalApiClient;
+use MagoAssistant\Mago\Service\Url\SecureAdminUrl;
 
 class CreateCreditmemoAction implements IrreversibleActionInterface
 {

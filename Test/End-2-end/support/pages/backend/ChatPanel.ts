@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {errors, type Locator, type Page} from '@playwright/test';
@@ -38,12 +38,12 @@ export default class ChatPanel {
   async open(page: Page, toggleBindTimeout: number = TOGGLE_BIND_TIMEOUT_MS) {
     await this.waitForToggleBound(page, toggleBindTimeout);
 
-    await this.adminModals.guard(page, () => page.locator('#maggy-toggle').click({timeout: INTERACTION_TIMEOUT_MS}));
-    await page.locator('#maggy-chat.is-open').waitFor();
+    await this.adminModals.guard(page, () => page.locator('#mago-toggle').click({timeout: INTERACTION_TIMEOUT_MS}));
+    await page.locator('#mago-chat.is-open').waitFor();
   }
 
   async close(page: Page) {
-    await this.adminModals.guard(page, () => page.locator('#maggy-close').click({timeout: INTERACTION_TIMEOUT_MS}));
+    await this.adminModals.guard(page, () => page.locator('#mago-close').click({timeout: INTERACTION_TIMEOUT_MS}));
   }
 
   async ask(page: Page, question: string) {
@@ -52,27 +52,27 @@ export default class ChatPanel {
   }
 
   panel(page: Page): Locator {
-    return page.locator('#maggy-chat');
+    return page.locator('#mago-chat');
   }
 
   welcome(page: Page): Locator {
-    return page.locator('#maggy-welcome');
+    return page.locator('#mago-welcome');
   }
 
   input(page: Page): Locator {
-    return page.locator('#maggy-input');
+    return page.locator('#mago-input');
   }
 
   sendButton(page: Page): Locator {
-    return page.locator('#maggy-send');
+    return page.locator('#mago-send');
   }
 
   userMessages(page: Page): Locator {
-    return page.locator('#maggy-messages .maggy-message.is-user');
+    return page.locator('#mago-messages .mago-message.is-user');
   }
 
   assistantMessages(page: Page): Locator {
-    return page.locator('#maggy-messages .maggy-message.is-assistant:not(#maggy-loading)');
+    return page.locator('#mago-messages .mago-message.is-assistant:not(#mago-loading)');
   }
 
   lastAssistantMessage(page: Page): Locator {
@@ -80,33 +80,33 @@ export default class ChatPanel {
   }
 
   toolTags(page: Page): Locator {
-    return page.locator('#maggy-messages .maggy-tool-tag');
+    return page.locator('#mago-messages .mago-tool-tag');
   }
 
   confirmActions(page: Page): Locator {
-    return page.locator('#maggy-messages .maggy-confirm-actions');
+    return page.locator('#mago-messages .mago-confirm-actions');
   }
 
   confirmButton(page: Page): Locator {
-    return page.locator('#maggy-messages .maggy-btn--confirm');
+    return page.locator('#mago-messages .mago-btn--confirm');
   }
 
   rejectButton(page: Page): Locator {
-    return page.locator('#maggy-messages .maggy-btn--reject');
+    return page.locator('#mago-messages .mago-btn--reject');
   }
 
   slashMenu(page: Page): Locator {
-    return page.locator('#maggy-slash-menu');
+    return page.locator('#mago-slash-menu');
   }
 
   slashItems(page: Page): Locator {
-    return page.locator('#maggy-slash-menu .maggy-slash-item');
+    return page.locator('#mago-slash-menu .mago-slash-item');
   }
 
   private async waitForToggleBound(page: Page, timeout: number): Promise<void> {
     try {
       await page.waitForFunction(() => {
-        const toggle: HTMLElement | null = document.querySelector('#maggy-toggle');
+        const toggle: HTMLElement | null = document.querySelector('#mago-toggle');
 
         return toggle !== null && toggle.onclick !== null;
       }, undefined, {timeout});
@@ -116,7 +116,7 @@ export default class ChatPanel {
       }
 
       throw new Error(
-        'The chat panel toggle (#maggy-toggle) never bound its click handler within ' + timeout + 'ms.'
+        'The chat panel toggle (#mago-toggle) never bound its click handler within ' + timeout + 'ms.'
       );
     }
   }

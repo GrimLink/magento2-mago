@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Fakes;
+namespace MagoAssistant\Mago\Test\Unit\Fakes;
 
-use MaggyAssistant\Base\Api\ModuleInfo\InstalledPackagesInterface;
+use MagoAssistant\Mago\Api\ModuleInfo\InstalledPackagesInterface;
 
 /**
  * What Composer installed: a package name, the version it resolved to, and the directory it owns.

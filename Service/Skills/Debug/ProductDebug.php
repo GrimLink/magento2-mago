@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Debug;
+namespace MagoAssistant\Mago\Service\Skills\Debug;
 
-use MaggyAssistant\Base\Service\Skills\AbstractSkill;
+use MagoAssistant\Mago\Service\Skills\AbstractSkill;
 
 class ProductDebug extends AbstractSkill
 {

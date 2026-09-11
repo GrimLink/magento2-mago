@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Api\Command;
+namespace MagoAssistant\Mago\Api\Command;
 
 /**
  * Slash command — a chat message the admin types as "/name subcommand [args]" that runs

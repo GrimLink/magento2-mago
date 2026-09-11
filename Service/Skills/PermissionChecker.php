@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills;
+namespace MagoAssistant\Mago\Service\Skills;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\AuthorizationInterface;
@@ -34,16 +34,16 @@ class PermissionChecker
 
         // Fallback to standard ACL
         if ($action === 'write') {
-            return $this->authorization->isAllowed('MaggyAssistant_Base::assistant_write');
+            return $this->authorization->isAllowed('MagoAssistant_Mago::assistant_write');
         }
-        return $this->authorization->isAllowed('MaggyAssistant_Base::assistant_read');
+        return $this->authorization->isAllowed('MagoAssistant_Mago::assistant_read');
     }
 
     private function getPermission(int $adminUserId, string $skillName): ?string
     {
         if (!isset($this->permissionsByUser[$adminUserId])) {
             $connection = $this->resourceConnection->getConnection();
-            $table = $this->resourceConnection->getTableName('maggy_skill_permission');
+            $table = $this->resourceConnection->getTableName('mago_skill_permission');
 
             $this->permissionsByUser[$adminUserId] = $connection->fetchPairs(
                 $connection->select()

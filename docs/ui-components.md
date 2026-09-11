@@ -13,12 +13,12 @@ that produced it. The live version, [ui-components-examples.html](ui-components-
 module's own JS and LESS; serve the module root over HTTP (`python3 -m http.server 8080`) and open
 `/docs/ui-components-examples.html`. `docs/render-examples.sh` refreshes the captures.
 
-The module is an AMD module (`MaggyAssistant_Base/js/mago-ui`) and also sets
+The module is an AMD module (`MagoAssistant_Mago/js/mago-ui`) and also sets
 `window.MagoUI`. Every builder takes one options object and returns a detached
 `HTMLElement`; append it wherever it belongs.
 
 ```js
-require(['MaggyAssistant_Base/js/mago-ui'], function (MagoUI) {
+require(['MagoAssistant_Mago/js/mago-ui'], function (MagoUI) {
     var card = MagoUI.stat({label: 'Revenue, 7 days', value: '€38.410', delta: {value: '12,4%', direction: 'up', suffix: 'vs last week'}});
     container.appendChild(card);
 });
@@ -28,7 +28,7 @@ Text options are inserted as plain text. Pass `{html: '...'}` for trusted markup
 (for example the output of the markdown renderer) or a DOM node.
 
 The widgets use the CSS custom properties the panel defines (`--mago-ink`,
-`--mago-hairline`, `--maggy-accent`, ...), so they follow the configured accent
+`--mago-hairline`, `--mago-accent`, ...), so they follow the configured accent
 colour. Outside the panel, put the widgets inside an element with class
 `mago-kit` so the semantic tokens (success, warning, danger, chart ramp) apply.
 
@@ -63,8 +63,8 @@ The assistant learns this format from the `[Answer widgets]` section that
 data only, display strings for numbers, `href` for admin links, no HTML, at most
 three widgets per answer) and one example shape per type. Interactive cards are
 not offered to the model; the panel builds those from tool events. The section is
-controlled by *Stores > Configuration > Maggy Assistant > Chat Settings > Answer
-Widgets* (`maggy/chat/answer_widgets`, default Yes); switching it off keeps the
+controlled by *Stores > Configuration > Mago Assistant > Chat Settings > Answer
+Widgets* (`mago/chat/answer_widgets`, default Yes); switching it off keeps the
 renderer but stops the model from being told about it.
 
 ## Widgets (W01–W21)

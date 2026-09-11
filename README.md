@@ -27,8 +27,8 @@ Anthropic and OpenAI are included out of the box. For other providers (Azure, Ge
 Ollama, LM Studio, etc.) install the matching Symfony AI bridge — see `composer.json` suggests.
 
 ```bash
-composer require maggy-assistant/magento2-base
-bin/magento module:enable MageOS_AiBase MaggyAssistant_Base
+composer require mago-assistant/mago
+bin/magento module:enable MageOS_AiBase MagoAssistant_Mago
 bin/magento setup:upgrade
 ```
 
@@ -37,7 +37,7 @@ bin/magento setup:upgrade
 First add a provider under `Stores > Configuration > Mage-OS > AI Configuration`: pick the
 backend, paste the API key, choose a model, and use **Test Connection** to check it answers.
 
-Then, under `Stores > Configuration > Maggy Assistant`:
+Then, under `Stores > Configuration > Mago Assistant`:
 
 1. **Enable** the module (General)
 2. **Pick the AI Service** the assistant runs on (API Settings). Leave it on *Automatic* to use
@@ -45,7 +45,7 @@ Then, under `Stores > Configuration > Maggy Assistant`:
 
 ### Internal API URL (Docker / reverse proxy setups)
 
-If the module's internal REST API calls fail (e.g. in Docker environments where PHP can't reach itself via the public hostname), configure `Stores > Configuration > Maggy Assistant > API Settings > Internal API URL`.
+If the module's internal REST API calls fail (e.g. in Docker environments where PHP can't reach itself via the public hostname), configure `Stores > Configuration > Mago Assistant > API Settings > Internal API URL`.
 
 Examples:
 - markshust/docker-magento: `https://app:8443`
@@ -80,7 +80,7 @@ Typing `/` in the chat shows the available commands. These run without the AI pr
 | `/index reindex [indexer_id...]` | Reindex all indexers, or only the given IDs |
 | `/help` | List the commands you may use |
 
-Write commands need the `MaggyAssistant_Base::assistant_write` ACL resource plus a write grant on the underlying skill. See [docs/skills-architecture.md](docs/skills-architecture.md#slash-commands) for registering your own commands.
+Write commands need the `MagoAssistant_Mago::assistant_write` ACL resource plus a write grant on the underlying skill. See [docs/skills-architecture.md](docs/skills-architecture.md#slash-commands) for registering your own commands.
 
 The answer widgets and skill cards the chat panel renders are documented in [docs/ui-components.md](docs/ui-components.md); [docs/ui-components-examples.md](docs/ui-components-examples.md) shows every component with sample data and the call behind it.
 
@@ -90,22 +90,22 @@ When enabled, the assistant can answer "how do I…" questions from the official
 
 ### Configuration
 
-`Stores > Configuration > Maggy Assistant > Documentation`
+`Stores > Configuration > Mago Assistant > Documentation`
 
 | Field | Config path | Default | Purpose |
 |---|---|---|---|
-| Enable documentation grounding | `maggy/docs/enabled` | `0` | Master switch; also gates the sync cron |
-| Source repository | `maggy/docs/source_repo` | `mage-os/mirror-commerce-admin.en` | GitHub `owner/repo` to index. Default is the MIT-licensed Mage-OS mirror of Adobe's Commerce Admin docs |
-| Source branch / commit | `maggy/docs/ref` | `main` | Branch or commit to index; pin to a commit for reproducibility |
-| Results per search | `maggy/docs/top_k` | `5` | Max doc pages returned per search |
-| Sync schedule | `maggy/docs/cron_expr` | `0 4 1 * *` (monthly) | Cron expression for the re-index job |
+| Enable documentation grounding | `mago/docs/enabled` | `0` | Master switch; also gates the sync cron |
+| Source repository | `mago/docs/source_repo` | `mage-os/mirror-commerce-admin.en` | GitHub `owner/repo` to index. Default is the MIT-licensed Mage-OS mirror of Adobe's Commerce Admin docs |
+| Source branch / commit | `mago/docs/ref` | `main` | Branch or commit to index; pin to a commit for reproducibility |
+| Results per search | `mago/docs/top_k` | `5` | Max doc pages returned per search |
+| Sync schedule | `mago/docs/cron_expr` | `0 4 1 * *` (monthly) | Cron expression for the re-index job |
 
 ### How the corpus is built
 
-A cron job (`maggy_docs` group, its own process) indexes the docs into the `maggy_doc` table (~5 MB). To index immediately instead of waiting for the cron:
+A cron job (`mago_docs` group, its own process) indexes the docs into the `mago_doc` table (~5 MB). To index immediately instead of waiting for the cron:
 
 ```bash
-bin/magento maggy:docs:index --force
+bin/magento mago:docs:index --force
 ```
 
 Sync is cheap to run often because it is **change-detected by git tree SHA**: an unchanged source repo costs a single API call and skips re-fetching entirely. This is why the default schedule can safely be raised when you feed docs that update more often than the Mage-OS mirror. On a real change, every `help/**.md` is fetched (including `_includes/`, needed to resolve `{{$include}}` partials), Experience League markup is normalized to plain text, and the table is swapped in a single transaction — a failed sync keeps the previous corpus, and searches keep answering from the old corpus until the new one is committed. Only one sync runs at a time: a second invocation (cron overlapping a manual run, or a double-started command) reports `another sync is already running` and exits instead of interfering.
@@ -149,9 +149,9 @@ and how to add scenarios.
 
 | ACL Resource | Grants |
 |---|---|
-| `MaggyAssistant_Base::config` | Module configuration access |
-| `MaggyAssistant_Base::assistant_read` | Read-only tools (analytics, config reading, navigation) |
-| `MaggyAssistant_Base::assistant_write` | Write tools (config changes, CMS, content generation) |
+| `MagoAssistant_Mago::config` | Module configuration access |
+| `MagoAssistant_Mago::assistant_read` | Read-only tools (analytics, config reading, navigation) |
+| `MagoAssistant_Mago::assistant_write` | Write tools (config changes, CMS, content generation) |
 
 ## License
 

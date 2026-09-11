@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Api;
+namespace MagoAssistant\Mago\Test\Unit\Service\Api;
 
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Logger\ErrorLogger;
-use MaggyAssistant\Base\Service\Api\CleartextTokenWarning;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeLogger;
+use MagoAssistant\Mago\Logger\ErrorLogger;
+use MagoAssistant\Mago\Service\Api\CleartextTokenWarning;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeLogger;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;

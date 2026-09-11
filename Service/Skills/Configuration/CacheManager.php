@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Configuration;
+namespace MagoAssistant\Mago\Service\Skills\Configuration;
 
 use Magento\Framework\App\Cache\Frontend\Pool as CacheFrontendPool;
 use Magento\Framework\App\Cache\TypeListInterface;
-use MaggyAssistant\Base\Api\Tool\ActionScopedToolInterface;
+use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
 
 class CacheManager implements ActionScopedToolInterface
 {

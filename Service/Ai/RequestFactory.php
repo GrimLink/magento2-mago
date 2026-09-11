@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Ai;
+namespace MagoAssistant\Mago\Service\Ai;
 
 use MageOS\AiBase\Api\ChatRequestBuilderInterface;
 use MageOS\AiBase\Api\ChatRequestBuilderInterfaceFactory;

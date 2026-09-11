@@ -47,11 +47,11 @@ jobs:
         run: |
           sed -i '/version/d' ./composer.json
           docker cp $(pwd) mage-os-community-edition:/data/extensions/
-          docker exec mage-os-community-edition ./install-composer-package maggy-assistant/magento2-base:@dev
+          docker exec mage-os-community-edition ./install-composer-package mago-assistant/mago:@dev
 
       - name: Activate the extension
         run: |
-          docker exec mage-os-community-edition ./retry "php bin/magento module:enable MageOS_AiBase MaggyAssistant_Base"
+          docker exec mage-os-community-edition ./retry "php bin/magento module:enable MageOS_AiBase MagoAssistant_Mago"
           # Two dashboard modals cover the whole admin on first login and swallow every click:
           # the admin usage tracking modal and the release notification banner.
           docker exec mage-os-community-edition ./retry "php bin/magento module:disable Magento_AdminAnalytics Magento_ReleaseNotification"
@@ -61,14 +61,14 @@ jobs:
         run: |
           docker exec mage-os-community-edition /bin/bash ./change-base-url $BASE_URL
           docker exec mage-os-community-edition /bin/bash ./disable-2fa
-          docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/general/enabled 1"
+          docker exec mage-os-community-edition ./retry "bin/magento config:set mago/general/enabled 1"
           # One MageOS_AiBase service row on the LM Studio bridge, whose base URL is a local
           # runtime address by design, so nothing has to be redirected to make this work. It speaks
           # OpenAI chat-completions and appends /v1/chat/completions itself, so the base URL stops
           # at the host. No credential is involved: a local runtime takes none.
           docker exec mage-os-community-edition ./retry "bin/magento config:set mageos_ai/services/configuration '{\"_e2e_row_1\":{\"lmstudio\":{\"base_url\":\"http://wiremock:8080\",\"model\":\"gemma-3-4b-it-qat\"}}}'"
           # Empty means "first usable service", which is the one row above.
-          docker exec mage-os-community-edition ./retry "bin/magento config:set maggy/api/ai_service ''"
+          docker exec mage-os-community-edition ./retry "bin/magento config:set mago/api/ai_service ''"
           # One admin session is shared by every parallel worker.
           docker exec mage-os-community-edition ./retry "bin/magento config:set admin/security/admin_account_sharing 1"
           docker exec mage-os-community-edition ./retry "bin/magento config:set admin/security/session_lifetime 86400"

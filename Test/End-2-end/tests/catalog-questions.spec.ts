@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {expect, test} from '@playwright/test';

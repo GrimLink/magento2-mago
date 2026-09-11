@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Redirect;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Redirect;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -16,7 +16,7 @@ use Magento\Framework\Controller\Result\RedirectFactory;
  */
 class Index extends Action
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_read';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::assistant_read';
 
     public function __construct(
         Context $context,

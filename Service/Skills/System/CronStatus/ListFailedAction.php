@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\System\CronStatus;
+namespace MagoAssistant\Mago\Service\Skills\System\CronStatus;
 
 use Magento\Cron\Model\ResourceModel\Schedule\CollectionFactory;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Service\Skills\PeriodParser;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Service\Skills\PeriodParser;
 
 class ListFailedAction implements ActionInterface
 {

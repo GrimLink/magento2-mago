@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Marketing\CouponManager;
+namespace MagoAssistant\Mago\Service\Skills\Marketing\CouponManager;
 
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Service\Api\InternalApiClient;
-use MaggyAssistant\Base\Service\Url\SecureAdminUrl;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Service\Api\InternalApiClient;
+use MagoAssistant\Mago\Service\Url\SecureAdminUrl;
 
 class DeactivateRuleAction implements ActionInterface
 {

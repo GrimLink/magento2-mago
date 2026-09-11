@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Block\Adminhtml;
+namespace MagoAssistant\Mago\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 
 class Skills extends Template
 {
@@ -40,6 +40,6 @@ class Skills extends Template
 
     public function getSaveUrl(): string
     {
-        return $this->getUrl('maggy/skills/savePermissions');
+        return $this->getUrl('mago/skills/savePermissions');
     }
 }

@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Chat;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Chat;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -13,19 +13,19 @@ use Magento\Framework\App\Response\Http as HttpResponse;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Api\ChatServiceInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
-use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
-use MaggyAssistant\Base\Logger\DebugLogger;
-use MaggyAssistant\Base\Logger\ErrorLogger;
-use MaggyAssistant\Base\Service\Ai\Client;
-use MaggyAssistant\Base\Service\Command\CommandRunner;
+use MagoAssistant\Mago\Api\ChatServiceInterface;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Api\ConversationRepositoryInterface;
+use MagoAssistant\Mago\Logger\DebugLogger;
+use MagoAssistant\Mago\Logger\ErrorLogger;
+use MagoAssistant\Mago\Service\Ai\Client;
+use MagoAssistant\Mago\Service\Command\CommandRunner;
 
 class Stream extends Action implements HttpPostActionInterface
 {
     use FormKeyJsonValidation;
 
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::assistant_read';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::assistant_read';
 
     public function __construct(
         Context $context,
@@ -82,7 +82,7 @@ class Stream extends Action implements HttpPostActionInterface
             }
 
             if (!$this->configRepository->isEnabled()) {
-                $this->sendSse('error', ['error' => 'The assistant is currently disabled. Enable it in Stores > Configuration > Maggy Assistant.']);
+                $this->sendSse('error', ['error' => 'The assistant is currently disabled. Enable it in Stores > Configuration > Mago Assistant.']);
                 $this->sendSse('done', []);
                 $this->terminateResponse();
             }

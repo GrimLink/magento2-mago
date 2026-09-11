@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {type ChatScenario, textDeltas} from 'Actions/backend/ChatMock';

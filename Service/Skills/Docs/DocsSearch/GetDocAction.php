@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Docs\DocsSearch;
+namespace MagoAssistant\Mago\Service\Skills\Docs\DocsSearch;
 
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Model\Doc\Repository as DocRepository;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Model\Doc\Repository as DocRepository;
 
 class GetDocAction implements ActionInterface
 {

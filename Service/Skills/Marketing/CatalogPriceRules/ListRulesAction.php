@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules;
+namespace MagoAssistant\Mago\Service\Skills\Marketing\CatalogPriceRules;
 
 use Magento\CatalogRule\Model\ResourceModel\Rule\CollectionFactory;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Service\Url\SecureAdminUrl;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Service\Url\SecureAdminUrl;
 
 class ListRulesAction implements ActionInterface
 {

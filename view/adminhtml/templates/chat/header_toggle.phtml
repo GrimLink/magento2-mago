@@ -1,5 +1,5 @@
 <?php
-/** @var \MaggyAssistant\Base\Block\Adminhtml\ChatPanel $block */
+/** @var \MagoAssistant\Mago\Block\Adminhtml\ChatPanel $block */
 /** @var \Magento\Framework\Escaper $escaper */
 if (!$block->isVisible()) {
     return;
@@ -9,10 +9,10 @@ if (!$block->isVisible()) {
 $labelOpen = __('Open %1', $block->getAssistantName());
 $labelClose = __('Close %1', $block->getAssistantName());
 ?>
-<button type="button" id="maggy-toggle" class="maggy-header-icon"
+<button type="button" id="mago-toggle" class="mago-header-icon"
         title="<?= $escaper->escapeHtmlAttr($labelOpen) ?>"
         aria-expanded="false"
-        aria-controls="maggy-chat"
+        aria-controls="mago-chat"
         data-label-open="<?= $escaper->escapeHtmlAttr($labelOpen) ?>"
         data-label-close="<?= $escaper->escapeHtmlAttr($labelClose) ?>">
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="34 30 188 188" fill="currentColor" aria-hidden="true">

@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Api;
+namespace MagoAssistant\Mago\Service\Api;
 
-use MaggyAssistant\Base\Logger\ErrorLogger;
+use MagoAssistant\Mago\Logger\ErrorLogger;
 
 final class CleartextTokenWarning
 {
@@ -62,7 +62,7 @@ final class CleartextTokenWarning
         return sprintf(
             'Internal API URL uses plain http to non-loopback host "%s"; the admin bearer token'
             . ' is sent unencrypted. Use https, or a loopback address, in'
-            . ' Stores > Configuration > Maggy Assistant > API > Internal API URL.',
+            . ' Stores > Configuration > Mago Assistant > API > Internal API URL.',
             $host
         );
     }

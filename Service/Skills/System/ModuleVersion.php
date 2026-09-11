@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\System;
+namespace MagoAssistant\Mago\Service\Skills\System;
 
-use MaggyAssistant\Base\Service\Skills\AbstractSkill;
+use MagoAssistant\Mago\Service\Skills\AbstractSkill;
 
 class ModuleVersion extends AbstractSkill
 {

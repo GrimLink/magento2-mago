@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Integration\Service\Skills;
+namespace MagoAssistant\Mago\Test\Integration\Service\Skills;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\TestFramework\Helper\Bootstrap;
-use MaggyAssistant\Base\Service\Skills\PermissionChecker;
-use MaggyAssistant\Base\Test\Integration\Fakes\FakeAuthorization;
+use MagoAssistant\Mago\Service\Skills\PermissionChecker;
+use MagoAssistant\Mago\Test\Integration\Fakes\FakeAuthorization;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -30,7 +30,7 @@ final class PermissionCheckerTest extends TestCase
     {
         $connection = $this->resourceConnection->getConnection();
         $connection->delete(
-            $this->resourceConnection->getTableName('maggy_skill_permission'),
+            $this->resourceConnection->getTableName('mago_skill_permission'),
             ['admin_user_id in (?)' => [self::ADMIN_USER_ID, self::OTHER_ADMIN_USER_ID]]
         );
     }
@@ -124,7 +124,7 @@ final class PermissionCheckerTest extends TestCase
     private function grant(int $adminUserId, string $permission): void
     {
         $this->resourceConnection->getConnection()->insertOnDuplicate(
-            $this->resourceConnection->getTableName('maggy_skill_permission'),
+            $this->resourceConnection->getTableName('mago_skill_permission'),
             ['admin_user_id' => $adminUserId, 'skill_name' => self::SKILL_NAME, 'permission' => $permission],
             ['permission']
         );
@@ -135,8 +135,8 @@ final class PermissionCheckerTest extends TestCase
         return new PermissionChecker(
             $this->resourceConnection,
             new FakeAuthorization([
-                'MaggyAssistant_Base::assistant_read' => $aclReadAllowed,
-                'MaggyAssistant_Base::assistant_write' => $aclWriteAllowed,
+                'MagoAssistant_Mago::assistant_read' => $aclReadAllowed,
+                'MagoAssistant_Mago::assistant_write' => $aclWriteAllowed,
             ])
         );
     }

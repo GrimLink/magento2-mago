@@ -1,5 +1,5 @@
 /*
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 
 import {expect, test} from '@playwright/test';
@@ -250,7 +250,7 @@ test('reports the real Attention alert, with the failing admin XHR, when a grid 
 test('fails with an explaining message when the chat panel toggle never binds its click handler', async ({page}) => {
   const chatPanel = new ChatPanel();
 
-  await page.setContent('<button id="maggy-toggle"></button>');
+  await page.setContent('<button id="mago-toggle"></button>');
 
   await expect(chatPanel.open(page, 500)).rejects.toThrow(/never bound its click handler/);
 });

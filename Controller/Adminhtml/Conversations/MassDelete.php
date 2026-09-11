@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Conversations;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Conversations;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -14,7 +14,7 @@ use Magento\Framework\Controller\ResultInterface;
 
 class MassDelete extends Action implements HttpPostActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::conversations_delete';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::conversations_delete';
 
     public function __construct(
         Context $context,
@@ -29,9 +29,9 @@ class MassDelete extends Action implements HttpPostActionInterface
         $excluded = $this->getRequest()->getParam('excluded', []);
 
         $connection = $this->resourceConnection->getConnection();
-        $conversationTable = $this->resourceConnection->getTableName('maggy_conversation');
-        $messageTable = $this->resourceConnection->getTableName('maggy_message');
-        $usageTable = $this->resourceConnection->getTableName('maggy_usage_log');
+        $conversationTable = $this->resourceConnection->getTableName('mago_conversation');
+        $messageTable = $this->resourceConnection->getTableName('mago_message');
+        $usageTable = $this->resourceConnection->getTableName('mago_usage_log');
 
         if ($excluded === 'false' || $excluded === false) {
             // "Select All" was used — get all IDs from data provider, minus excluded

@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Console\Command;
+namespace MagoAssistant\Mago\Console\Command;
 
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
-use MaggyAssistant\Base\Service\Docs\DocsSyncService;
+use MagoAssistant\Mago\Service\Docs\DocsSyncService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -34,8 +34,8 @@ class IndexDocs extends Command
 
     protected function configure(): void
     {
-        $this->setName('maggy:docs:index')
-            ->setDescription('Index the Magento admin documentation corpus for the Maggy assistant.')
+        $this->setName('mago:docs:index')
+            ->setDescription('Index the Magento admin documentation corpus for the Mago assistant.')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Re-index even if the source is unchanged.');
         parent::configure();
     }

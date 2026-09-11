@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Block\Adminhtml;
+namespace MagoAssistant\Mago\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
@@ -13,7 +13,7 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Sql\Expression;
 use Magento\Framework\Escaper;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
 
 class ConversationView extends Template
 {
@@ -45,7 +45,7 @@ class ConversationView extends Template
         }
 
         $connection = $this->resourceConnection->getConnection();
-        $conversationTable = $this->resourceConnection->getTableName('maggy_conversation');
+        $conversationTable = $this->resourceConnection->getTableName('mago_conversation');
         $adminUserTable = $this->resourceConnection->getTableName('admin_user');
 
         $select = $connection->select()
@@ -68,7 +68,7 @@ class ConversationView extends Template
         }
 
         $connection = $this->resourceConnection->getConnection();
-        $messageTable = $this->resourceConnection->getTableName('maggy_message');
+        $messageTable = $this->resourceConnection->getTableName('mago_message');
 
         $select = $connection->select()
             ->from($messageTable)
@@ -82,7 +82,7 @@ class ConversationView extends Template
 
     public function getBackUrl(): string
     {
-        return $this->getUrl('maggy/conversations/index');
+        return $this->getUrl('mago/conversations/index');
     }
 
     public function getAdminDisplayName(): string
@@ -114,7 +114,7 @@ class ConversationView extends Template
         }
 
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
 
         $select = $connection->select()
             ->from($table, [
@@ -134,7 +134,7 @@ class ConversationView extends Template
     public function getApiCalls(): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
 
         $select = $connection->select()
             ->from($table)
@@ -148,7 +148,7 @@ class ConversationView extends Template
     public function getSkillsUsed(): array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_usage_log');
+        $table = $this->resourceConnection->getTableName('mago_usage_log');
 
         $select = $connection->select()
             ->from($table, ['skill_names'])
@@ -221,7 +221,7 @@ class ConversationView extends Template
 
     public function getContinueUrl(): string
     {
-        return $this->getUrl('maggy/conversations/continueChat', ['id' => $this->getConversationId()]);
+        return $this->getUrl('mago/conversations/continueChat', ['id' => $this->getConversationId()]);
     }
 
     public function isOwnConversation(): bool

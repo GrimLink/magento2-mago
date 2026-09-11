@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Conversations;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Conversations;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -14,7 +14,7 @@ use Magento\Framework\Controller\ResultInterface;
 
 class Delete extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::conversations_delete';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::conversations_delete';
 
     public function __construct(
         Context $context,
@@ -34,15 +34,15 @@ class Delete extends Action implements HttpGetActionInterface
         try {
             $connection = $this->resourceConnection->getConnection();
             $connection->delete(
-                $this->resourceConnection->getTableName('maggy_usage_log'),
+                $this->resourceConnection->getTableName('mago_usage_log'),
                 ['conversation_id = ?' => $conversationId]
             );
             $connection->delete(
-                $this->resourceConnection->getTableName('maggy_message'),
+                $this->resourceConnection->getTableName('mago_message'),
                 ['conversation_id = ?' => $conversationId]
             );
             $connection->delete(
-                $this->resourceConnection->getTableName('maggy_conversation'),
+                $this->resourceConnection->getTableName('mago_conversation'),
                 ['entity_id = ?' => $conversationId]
             );
 

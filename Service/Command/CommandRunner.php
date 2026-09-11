@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Command;
+namespace MagoAssistant\Mago\Service\Command;
 
 use Magento\Framework\AuthorizationInterface;
-use MaggyAssistant\Base\Api\Command\CommandInterface;
+use MagoAssistant\Mago\Api\Command\CommandInterface;
 
 /**
  * Parses "/name subcommand [args]" chat messages and dispatches them to the registered command
@@ -16,7 +16,7 @@ class CommandRunner
 {
     public const HELP = 'help';
 
-    public const WRITE_ACL = 'MaggyAssistant_Base::assistant_write';
+    public const WRITE_ACL = 'MagoAssistant_Mago::assistant_write';
 
     public function __construct(
         private readonly CommandRegistry $registry,

@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Fakes;
+namespace MagoAssistant\Mago\Test\Unit\Fakes;
 
-use MaggyAssistant\Base\Api\Skill\IrreversibleActionInterface;
+use MagoAssistant\Mago\Api\Skill\IrreversibleActionInterface;
 
 /**
  * A write action that cannot be undone, with a fixed impact list

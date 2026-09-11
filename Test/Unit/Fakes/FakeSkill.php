@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Fakes;
+namespace MagoAssistant\Mago\Test\Unit\Fakes;
 
 use Magento\Framework\AuthorizationInterface;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Service\Skills\AbstractSkill;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Service\Skills\AbstractSkill;
 
 /**
  * Mixed read/write skill built from FakeAction instances

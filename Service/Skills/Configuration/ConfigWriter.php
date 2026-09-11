@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Configuration;
+namespace MagoAssistant\Mago\Service\Skills\Configuration;
 
 use Magento\Config\Model\ResourceModel\Config as ConfigResource;
 use Magento\Framework\App\Cache\TypeListInterface;
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
-use MaggyAssistant\Base\Service\Store\StoreScopeContext;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Service\Store\StoreScopeContext;
 
 class ConfigWriter implements ToolInterface
 {

@@ -1,18 +1,18 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Model\ModuleInfo;
+namespace MagoAssistant\Mago\Model\ModuleInfo;
 
 use Magento\Framework\Component\ComponentRegistrar;
 use Magento\Framework\Component\ComponentRegistrarInterface;
 use Magento\Framework\Module\ModuleList\Loader as ModuleDeclarationLoader;
 use Magento\Framework\Module\ModuleListInterface;
 use Magento\Framework\Module\PackageInfo;
-use MaggyAssistant\Base\Api\ModuleInfo\InstalledPackagesInterface;
-use MaggyAssistant\Base\Api\ModuleInfo\RepositoryInterface;
+use MagoAssistant\Mago\Api\ModuleInfo\InstalledPackagesInterface;
+use MagoAssistant\Mago\Api\ModuleInfo\RepositoryInterface;
 
 class Repository implements RepositoryInterface
 {

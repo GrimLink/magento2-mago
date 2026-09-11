@@ -1,16 +1,16 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Block\Adminhtml;
+namespace MagoAssistant\Mago\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Framework\App\ResourceConnection;
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 
 class SkillEdit extends Template
 {
@@ -50,7 +50,7 @@ class SkillEdit extends Template
         }
 
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_skill_permission');
+        $table = $this->resourceConnection->getTableName('mago_skill_permission');
 
         $select = $connection->select()
             ->from($table, ['admin_user_id', 'permission'])
@@ -66,11 +66,11 @@ class SkillEdit extends Template
 
     public function getSaveUrl(): string
     {
-        return $this->getUrl('maggy/skills/savePermissions');
+        return $this->getUrl('mago/skills/savePermissions');
     }
 
     public function getBackUrl(): string
     {
-        return $this->getUrl('maggy/skills/index');
+        return $this->getUrl('mago/skills/index');
     }
 }

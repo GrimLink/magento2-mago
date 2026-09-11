@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\System\CronStatus;
+namespace MagoAssistant\Mago\Service\Skills\System\CronStatus;
 
 use Magento\Cron\Model\ResourceModel\Schedule\CollectionFactory;
 use Magento\Cron\Model\Schedule;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
 
 class ListScheduleAction implements ActionInterface
 {

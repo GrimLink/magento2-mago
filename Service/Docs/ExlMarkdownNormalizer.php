@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Docs;
+namespace MagoAssistant\Mago\Service\Docs;
 
 class ExlMarkdownNormalizer
 {

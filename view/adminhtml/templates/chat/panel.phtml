@@ -1,5 +1,5 @@
 <?php
-/** @var \MaggyAssistant\Base\Block\Adminhtml\ChatPanel $block */
+/** @var \MagoAssistant\Mago\Block\Adminhtml\ChatPanel $block */
 /** @var \Magento\Framework\Escaper $escaper */
 if (!$block->isVisible()) {
     return;
@@ -34,12 +34,12 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
 
 <style>
 :root {
-    --maggy-accent: <?= /* @noEscape */ $accentColor ?>;
-    --maggy-accent-hover: <?= /* @noEscape */ $accentColorHover ?>;
-    --maggy-accent-light: <?= /* @noEscape */ $accentColorLight ?>;
-    --maggy-accent-rgb: <?= /* @noEscape */ $accentRgb ?>;
-    --maggy-accent-text: <?= /* @noEscape */ $accentText ?>;
-    --maggy-panel-width: 440px;
+    --mago-accent: <?= /* @noEscape */ $accentColor ?>;
+    --mago-accent-hover: <?= /* @noEscape */ $accentColorHover ?>;
+    --mago-accent-light: <?= /* @noEscape */ $accentColorLight ?>;
+    --mago-accent-rgb: <?= /* @noEscape */ $accentRgb ?>;
+    --mago-accent-text: <?= /* @noEscape */ $accentText ?>;
+    --mago-panel-width: 440px;
 
     /* Mago brand palette — see brand-guidelines.md */
     --mago-sunset: #FF7A33;
@@ -65,105 +65,105 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
 }
 </style>
 
-<div id="maggy-chat" class="maggy-chat-panel is-empty">
-    <div class="maggy-header">
-        <div class="maggy-header-left">
-            <div class="maggy-mascot">
+<div id="mago-chat" class="mago-chat-panel is-empty">
+    <div class="mago-header">
+        <div class="mago-header-left">
+            <div class="mago-mascot">
                 <!-- Mago mark: the central Spark (AI) above the geometric M (Magento foundation) -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="34 30 188 188" fill="currentColor" aria-hidden="true">
                     <polygon points="128,40 160,72 128,104 96,72" opacity="0.55"/>
                     <polygon points="44,208 96,104 128,136 160,104 212,208 152,208 128,160 104,208"/>
                 </svg>
             </div>
-            <div class="maggy-header-text">
-                <div class="maggy-title-row">
-                    <span class="maggy-title"><?= $escaper->escapeHtml($assistantName) ?></span>
-                    <span class="maggy-working-pill" aria-live="polite">
-                        <span class="maggy-spinner"></span><?= $escaper->escapeHtml(__('Working')) ?>
+            <div class="mago-header-text">
+                <div class="mago-title-row">
+                    <span class="mago-title"><?= $escaper->escapeHtml($assistantName) ?></span>
+                    <span class="mago-working-pill" aria-live="polite">
+                        <span class="mago-spinner"></span><?= $escaper->escapeHtml(__('Working')) ?>
                     </span>
                 </div>
-                <div id="maggy-subtitle" class="maggy-subtitle"></div>
+                <div id="mago-subtitle" class="mago-subtitle"></div>
             </div>
         </div>
-        <div class="maggy-header-actions">
-            <button type="button" id="maggy-log" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Changes this session')) ?>">
+        <div class="mago-header-actions">
+            <button type="button" id="mago-log" class="mago-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Changes this session')) ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
             </button>
-            <button type="button" id="maggy-history" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Chat History')) ?>">
+            <button type="button" id="mago-history" class="mago-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Chat History')) ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
             </button>
-            <button type="button" id="maggy-new" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('New Chat')) ?>">
+            <button type="button" id="mago-new" class="mago-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('New Chat')) ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-            <button type="button" id="maggy-expand" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Full size')) ?>">
+            <button type="button" id="mago-expand" class="mago-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Full size')) ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             </button>
-            <button type="button" id="maggy-close" class="maggy-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Close')) ?>">
+            <button type="button" id="mago-close" class="mago-btn-icon" title="<?= $escaper->escapeHtmlAttr(__('Close')) ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
     </div>
-    <div id="maggy-history-list" class="maggy-history-list" style="display:none;"></div>
-    <div id="maggy-log-view" class="maggy-log-view" style="display:none;"></div>
-    <div id="maggy-messages" class="maggy-messages">
+    <div id="mago-history-list" class="mago-history-list" style="display:none;"></div>
+    <div id="mago-log-view" class="mago-log-view" style="display:none;"></div>
+    <div id="mago-messages" class="mago-messages">
         <!-- Welcome state: shown while the conversation is empty, hidden via .is-empty as soon as a message lands -->
-        <div id="maggy-welcome" class="maggy-welcome">
-            <div class="maggy-welcome-mark">
+        <div id="mago-welcome" class="mago-welcome">
+            <div class="mago-welcome-mark">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="34 30 188 188" fill="currentColor" aria-hidden="true">
                     <polygon points="128,40 160,72 128,104 96,72" opacity="0.55"/>
                     <polygon points="44,208 96,104 128,136 160,104 212,208 152,208 128,160 104,208"/>
                 </svg>
             </div>
-            <h2 class="maggy-welcome-title">
+            <h2 class="mago-welcome-title">
                 <?= $escaper->escapeHtml($adminName !== '' ? __('Hi %1, what needs doing?', $adminName) : __('What needs doing?')) ?>
             </h2>
-            <p class="maggy-welcome-text">
+            <p class="mago-welcome-text">
                 <?= $escaper->escapeHtml(__('Ask about your catalog, orders or settings. I read anything, and I ask before I change something.')) ?>
             </p>
             <?php if ($starterSkills): ?>
-                <div class="maggy-welcome-label"><?= $escaper->escapeHtml(__('Try one')) ?></div>
-                <div class="maggy-starters">
+                <div class="mago-welcome-label"><?= $escaper->escapeHtml(__('Try one')) ?></div>
+                <div class="mago-starters">
                     <?php foreach ($starterSkills as $skill): ?>
-                        <button type="button" class="maggy-starter" data-skill="<?= $escaper->escapeHtmlAttr($skill['name'] ?? '') ?>">
-                            <span class="maggy-starter-icon">
+                        <button type="button" class="mago-starter" data-skill="<?= $escaper->escapeHtmlAttr($skill['name'] ?? '') ?>">
+                            <span class="mago-starter-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/></svg>
                             </span>
-                            <span class="maggy-starter-text"><?= $escaper->escapeHtml($skill['description'] ?? $skill['name'] ?? '') ?></span>
-                            <svg class="maggy-starter-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+                            <span class="mago-starter-text"><?= $escaper->escapeHtml($skill['description'] ?? $skill['name'] ?? '') ?></span>
+                            <svg class="mago-starter-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
                         </button>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-            <div class="maggy-welcome-hint">
+            <div class="mago-welcome-hint">
                 <kbd>/</kbd> <?= $escaper->escapeHtml(__('for skills')) ?>
             </div>
         </div>
-        <div id="maggy-loading" class="maggy-thinking" style="display:none;">
-            <span class="maggy-spinner"></span>
+        <div id="mago-loading" class="mago-thinking" style="display:none;">
+            <span class="mago-spinner"></span>
             <span><?= $escaper->escapeHtml(__('Thinking…')) ?></span>
         </div>
     </div>
-    <div id="maggy-input-area" class="maggy-input-wrapper">
-        <div id="maggy-slash-menu" class="maggy-slash-menu"></div>
-        <textarea id="maggy-input" class="maggy-input" placeholder="<?= $escaper->escapeHtmlAttr(__('Ask anything…')) ?>" rows="1"></textarea>
-        <button type="button" id="maggy-send" class="maggy-send-btn is-idle" title="<?= $escaper->escapeHtmlAttr(__('Send')) ?>">
+    <div id="mago-input-area" class="mago-input-wrapper">
+        <div id="mago-slash-menu" class="mago-slash-menu"></div>
+        <textarea id="mago-input" class="mago-input" placeholder="<?= $escaper->escapeHtmlAttr(__('Ask anything…')) ?>" rows="1"></textarea>
+        <button type="button" id="mago-send" class="mago-send-btn is-idle" title="<?= $escaper->escapeHtmlAttr(__('Send')) ?>">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="13 5 20 12 13 19"/></svg>
         </button>
     </div>
 </div>
 
 <script>
-window.MAGGY_CONFIG = <?= /* @noEscape */ $block->getJsConfig() ?>;
-window.MAGGY_CONFIG.adminUser = '<?= $escaper->escapeJs($adminName) ?>';
-window.MAGGY_CONFIG.assistantName = '<?= $escaper->escapeJs($assistantName) ?>';
-window.MAGGY_CONFIG.formKey = '<?= $escaper->escapeJs($block->getFormKey()) ?>';
-window.MAGGY_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
-window.MAGGY_CONFIG.commands = <?= /* @noEscape */ $block->getCommandsJson() ?>;
+window.MAGO_CONFIG = <?= /* @noEscape */ $block->getJsConfig() ?>;
+window.MAGO_CONFIG.adminUser = '<?= $escaper->escapeJs($adminName) ?>';
+window.MAGO_CONFIG.assistantName = '<?= $escaper->escapeJs($assistantName) ?>';
+window.MAGO_CONFIG.formKey = '<?= $escaper->escapeJs($block->getFormKey()) ?>';
+window.MAGO_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
+window.MAGO_CONFIG.commands = <?= /* @noEscape */ $block->getCommandsJson() ?>;
 </script>
 <script>
-require(['marked', 'MaggyAssistant_Base/js/mago-ui'], function(marked, MagoUI) {
+require(['marked', 'MagoAssistant_Mago/js/mago-ui'], function(marked, MagoUI) {
     window.marked = marked;
     window.MagoUI = MagoUI;
-    require(['MaggyAssistant_Base/js/chat-panel']);
+    require(['MagoAssistant_Mago/js/chat-panel']);
 });
 </script>

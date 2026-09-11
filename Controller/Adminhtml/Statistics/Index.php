@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Statistics;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Statistics;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -14,7 +14,7 @@ use Magento\Framework\Controller\ResultInterface;
 
 class Index extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::config';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::config';
 
     public function __construct(
         Context $context,
@@ -26,7 +26,7 @@ class Index extends Action implements HttpGetActionInterface
     public function execute(): ResultInterface
     {
         $page = $this->pageFactory->create();
-        $page->setActiveMenu('MaggyAssistant_Base::statistics');
+        $page->setActiveMenu('MagoAssistant_Mago::statistics');
         $page->getConfig()->getTitle()->prepend((string)__('Admin Assistant Statistics'));
         return $page;
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  *
  * Mago UI kit — the reusable building blocks the chat panel answers with.
  *
@@ -24,7 +24,7 @@
  * `render(spec)` maps a plain object ({type: 'stat', ...}) onto a builder,
  * which is how ```mago fenced blocks in an answer become widgets.
  *
- * Loaded through RequireJS as MaggyAssistant_Base/js/mago-ui; also exposed as
+ * Loaded through RequireJS as MagoAssistant_Mago/js/mago-ui; also exposed as
  * window.MagoUI for the plain-script chat panel.
  */
 define([], function () {

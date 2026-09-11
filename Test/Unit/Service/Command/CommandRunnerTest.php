@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Command;
+namespace MagoAssistant\Mago\Test\Unit\Service\Command;
 
 use Magento\Framework\AuthorizationInterface;
-use MaggyAssistant\Base\Service\Command\CommandRegistry;
-use MaggyAssistant\Base\Service\Command\CommandRunner;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeCommand;
+use MagoAssistant\Mago\Service\Command\CommandRegistry;
+use MagoAssistant\Mago\Service\Command\CommandRunner;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeCommand;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -95,7 +95,7 @@ final class CommandRunnerTest extends TestCase
         $runner = $this->runner(false);
 
         $reply = $runner->run('/cache apply config', self::ADMIN_ID, $this->noopChunk());
-        self::assertStringContainsString('MaggyAssistant_Base::assistant_write', $reply);
+        self::assertStringContainsString('MagoAssistant_Mago::assistant_write', $reply);
         self::assertSame([], $this->cache->executions);
 
         $usage = $runner->run('/cache', self::ADMIN_ID, $this->noopChunk());

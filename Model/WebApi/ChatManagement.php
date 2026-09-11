@@ -1,19 +1,19 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Model\WebApi;
+namespace MagoAssistant\Mago\Model\WebApi;
 
 use Magento\Authorization\Model\UserContextInterface;
 use Magento\Framework\Exception\AuthorizationException;
 use Magento\Framework\Serialize\Serializer\Json;
-use MaggyAssistant\Base\Api\ChatServiceInterface;
-use MaggyAssistant\Base\Api\ConversationRepositoryInterface;
-use MaggyAssistant\Base\Api\WebApi\ChatManagementInterface;
-use MaggyAssistant\Base\Logger\ErrorLogger;
-use MaggyAssistant\Base\Service\Ai\ChatService;
+use MagoAssistant\Mago\Api\ChatServiceInterface;
+use MagoAssistant\Mago\Api\ConversationRepositoryInterface;
+use MagoAssistant\Mago\Api\WebApi\ChatManagementInterface;
+use MagoAssistant\Mago\Logger\ErrorLogger;
+use MagoAssistant\Mago\Service\Ai\ChatService;
 
 class ChatManagement implements ChatManagementInterface
 {

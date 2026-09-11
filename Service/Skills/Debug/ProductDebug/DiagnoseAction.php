@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Debug\ProductDebug;
+namespace MagoAssistant\Mago\Service\Skills\Debug\ProductDebug;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
@@ -13,7 +13,7 @@ use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Api\StoreRepositoryInterface;
 use Magento\Store\Model\Store;
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
 
 class DiagnoseAction implements ActionInterface
 {

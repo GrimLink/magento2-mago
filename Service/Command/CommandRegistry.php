@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Command;
+namespace MagoAssistant\Mago\Service\Command;
 
-use MaggyAssistant\Base\Api\Command\CommandInterface;
+use MagoAssistant\Mago\Api\Command\CommandInterface;
 
 class CommandRegistry
 {

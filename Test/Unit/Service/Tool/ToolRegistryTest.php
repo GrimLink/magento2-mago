@@ -1,19 +1,19 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Tool;
+namespace MagoAssistant\Mago\Test\Unit\Service\Tool;
 
 use Magento\Framework\AuthorizationInterface;
-use MaggyAssistant\Base\Service\Skills\PermissionChecker;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeAction;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeAuthorization;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakePermissionChecker;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeSkill;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeTool;
+use MagoAssistant\Mago\Service\Skills\PermissionChecker;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeAction;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeAuthorization;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakePermissionChecker;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeSkill;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeTool;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

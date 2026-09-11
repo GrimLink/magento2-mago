@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Skills;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Skills;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -14,7 +14,7 @@ use Magento\Framework\View\Result\PageFactory;
 
 class Index extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::config';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::config';
 
     public function __construct(
         Context $context,
@@ -26,7 +26,7 @@ class Index extends Action implements HttpGetActionInterface
     public function execute(): ResultInterface
     {
         $resultPage = $this->pageFactory->create();
-        $resultPage->setActiveMenu('MaggyAssistant_Base::skills');
+        $resultPage->setActiveMenu('MagoAssistant_Mago::skills');
         $resultPage->getConfig()->getTitle()->prepend((string)__('Skills & Permissions'));
         return $resultPage;
     }

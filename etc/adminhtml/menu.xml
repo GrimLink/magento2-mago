@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
     <menu>
-        <add id="MaggyAssistant_Base::assistant_menu" title="Admin Assistant" module="MaggyAssistant_Base" parent="Magento_Backend::stores" resource="MaggyAssistant_Base::config" sortOrder="100"/>
-        <add id="MaggyAssistant_Base::statistics" title="Statistics" module="MaggyAssistant_Base" parent="MaggyAssistant_Base::assistant_menu" action="maggy/statistics/index" resource="MaggyAssistant_Base::config" sortOrder="10"/>
-        <add id="MaggyAssistant_Base::conversations" title="Conversations" module="MaggyAssistant_Base" parent="MaggyAssistant_Base::assistant_menu" action="maggy/conversations/index" resource="MaggyAssistant_Base::config" sortOrder="15"/>
-        <add id="MaggyAssistant_Base::skills" title="Skills &amp; Permissions" module="MaggyAssistant_Base" parent="MaggyAssistant_Base::assistant_menu" action="maggy/skills/index" resource="MaggyAssistant_Base::config" sortOrder="20"/>
-        <add id="MaggyAssistant_Base::configuration" title="Configuration" module="MaggyAssistant_Base" parent="MaggyAssistant_Base::assistant_menu" action="adminhtml/system_config/edit/section/maggy" resource="MaggyAssistant_Base::config" sortOrder="30"/>
+        <add id="MagoAssistant_Mago::assistant_menu" title="Admin Assistant" module="MagoAssistant_Mago" parent="Magento_Backend::stores" resource="MagoAssistant_Mago::config" sortOrder="100"/>
+        <add id="MagoAssistant_Mago::statistics" title="Statistics" module="MagoAssistant_Mago" parent="MagoAssistant_Mago::assistant_menu" action="mago/statistics/index" resource="MagoAssistant_Mago::config" sortOrder="10"/>
+        <add id="MagoAssistant_Mago::conversations" title="Conversations" module="MagoAssistant_Mago" parent="MagoAssistant_Mago::assistant_menu" action="mago/conversations/index" resource="MagoAssistant_Mago::config" sortOrder="15"/>
+        <add id="MagoAssistant_Mago::skills" title="Skills &amp; Permissions" module="MagoAssistant_Mago" parent="MagoAssistant_Mago::assistant_menu" action="mago/skills/index" resource="MagoAssistant_Mago::config" sortOrder="20"/>
+        <add id="MagoAssistant_Mago::configuration" title="Configuration" module="MagoAssistant_Mago" parent="MagoAssistant_Mago::assistant_menu" action="adminhtml/system_config/edit/section/mago" resource="MagoAssistant_Mago::config" sortOrder="30"/>
     </menu>
 </config>

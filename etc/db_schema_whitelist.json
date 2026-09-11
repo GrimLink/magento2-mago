@@ -1,5 +1,5 @@
 {
-    "maggy_conversation": {
+    "mago_conversation": {
         "column": {
             "entity_id": true,
             "admin_user_id": true,
@@ -11,10 +11,10 @@
             "PRIMARY": true
         },
         "index": {
-            "MAGGY_CONVERSATION_ADMIN_USER_ID": true
+            "MAGO_CONVERSATION_ADMIN_USER_ID": true
         }
     },
-    "maggy_message": {
+    "mago_message": {
         "column": {
             "entity_id": true,
             "conversation_id": true,
@@ -27,14 +27,14 @@
         },
         "constraint": {
             "PRIMARY": true,
-            "MAGGY_MSG_CONV_ID": true
+            "MAGO_MSG_CONV_ID": true
         },
         "index": {
-            "MAGGY_MESSAGE_CONVERSATION_ID": true,
-            "MAGGY_MESSAGE_ROLE": true
+            "MAGO_MESSAGE_CONVERSATION_ID": true,
+            "MAGO_MESSAGE_ROLE": true
         }
     },
-    "maggy_skill_permission": {
+    "mago_skill_permission": {
         "column": {
             "entity_id": true,
             "admin_user_id": true,
@@ -43,13 +43,13 @@
         },
         "constraint": {
             "PRIMARY": true,
-            "MAGGY_SKILL_PERM_USER_SKILL": true
+            "MAGO_SKILL_PERM_USER_SKILL": true
         },
         "index": {
-            "MAGGY_SKILL_PERM_ADMIN_USER_ID": true
+            "MAGO_SKILL_PERM_ADMIN_USER_ID": true
         }
     },
-    "maggy_usage_log": {
+    "mago_usage_log": {
         "column": {
             "entity_id": true,
             "admin_user_id": true,
@@ -68,12 +68,12 @@
             "PRIMARY": true
         },
         "index": {
-            "MAGGY_USAGE_LOG_ADMIN_USER_ID": true,
-            "MAGGY_USAGE_LOG_CREATED_AT": true,
-            "MAGGY_USAGE_LOG_PROVIDER": true
+            "MAGO_USAGE_LOG_ADMIN_USER_ID": true,
+            "MAGO_USAGE_LOG_CREATED_AT": true,
+            "MAGO_USAGE_LOG_PROVIDER": true
         }
     },
-    "maggy_doc": {
+    "mago_doc": {
         "column": {
             "entity_id": true,
             "source": true,
@@ -91,7 +91,7 @@
             "PRIMARY": true
         },
         "index": {
-            "MAGGY_DOC_FULLTEXT": true
+            "MAGO_DOC_FULLTEXT": true
         }
     }
 }

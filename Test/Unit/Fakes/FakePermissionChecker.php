@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Fakes;
+namespace MagoAssistant\Mago\Test\Unit\Fakes;
 
-use MaggyAssistant\Base\Service\Skills\PermissionChecker;
+use MagoAssistant\Mago\Service\Skills\PermissionChecker;
 
 final class FakePermissionChecker extends PermissionChecker
 {

@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Ui\Component\Listing\Column;
+namespace MagoAssistant\Mago\Ui\Component\Listing\Column;
 
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\UiComponent\ContextInterface;
@@ -31,7 +31,7 @@ class SkillActions extends Column
                     $item[$this->getData('name')] = [
                         'edit' => [
                             'href' => $this->urlBuilder->getUrl(
-                                'maggy/skills/edit',
+                                'mago/skills/edit',
                                 ['skill_name' => $item['name']]
                             ),
                             'label' => __('Edit'),

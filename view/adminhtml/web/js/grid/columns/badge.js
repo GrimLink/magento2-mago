@@ -5,7 +5,7 @@ define([
 
     return Column.extend({
         defaults: {
-            bodyTmpl: 'MaggyAssistant_Base/grid/cells/badge',
+            bodyTmpl: 'MagoAssistant_Mago/grid/cells/badge',
             badgeColors: {
                 'Analytics':     {bg: '#e3f2fd', text: '#1565c0'},
                 'Configuration': {bg: '#fce4ec', text: '#c62828'},

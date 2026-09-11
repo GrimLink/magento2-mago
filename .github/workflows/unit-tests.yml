@@ -65,7 +65,7 @@ jobs:
         working-directory: ${{ steps.setup-magento.outputs.path }}
         run: |
           composer config repositories.local path "$GITHUB_WORKSPACE"
-          composer require --no-install "maggy-assistant/magento2-base:@dev" "mage-os/module-ai-base:dev-main as 1.0.0"
+          composer require --no-install "mago-assistant/mago:@dev" "mage-os/module-ai-base:dev-main as 1.0.0"
 
       - uses: graycoreio/github-actions-magento2/cache-magento@v8.10.0
         with:
@@ -82,8 +82,8 @@ jobs:
         working-directory: ${{ steps.setup-magento.outputs.path }}
         run: |
           cat > /tmp/testsuite.xml << 'EOF'
-                  <testsuite name="MaggyAssistant_Base_Unit_Tests">
-                      <directory>../../../vendor/maggy-assistant/magento2-base/Test/Unit</directory>
+                  <testsuite name="MagoAssistant_Mago_Unit_Tests">
+                      <directory>../../../vendor/mago-assistant/mago/Test/Unit</directory>
                   </testsuite>
           EOF
           sed -i '/<testsuites>/r /tmp/testsuite.xml' dev/tests/unit/phpunit.xml.dist
@@ -91,4 +91,4 @@ jobs:
 
       - name: Run unit tests
         working-directory: ${{ steps.setup-magento.outputs.path }}
-        run: vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist --testsuite MaggyAssistant_Base_Unit_Tests
+        run: vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist --testsuite MagoAssistant_Mago_Unit_Tests

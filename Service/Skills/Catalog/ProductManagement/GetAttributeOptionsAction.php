@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Catalog\ProductManagement;
+namespace MagoAssistant\Mago\Service\Skills\Catalog\ProductManagement;
 
-use MaggyAssistant\Base\Api\Skill\ActionInterface;
-use MaggyAssistant\Base\Service\Api\InternalApiClient;
+use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Service\Api\InternalApiClient;
 
 class GetAttributeOptionsAction implements ActionInterface
 {

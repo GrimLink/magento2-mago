@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Api\Tool;
+namespace MagoAssistant\Mago\Api\Tool;
 
 /**
  * Tool whose AI-facing definition can be narrowed to a subset of its actions.

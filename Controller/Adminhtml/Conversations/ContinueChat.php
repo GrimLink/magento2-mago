@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Conversations;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Conversations;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -20,7 +20,7 @@ use Magento\Framework\Controller\ResultInterface;
  */
 class ContinueChat extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::config';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::config';
 
     public function __construct(
         Context $context,
@@ -35,11 +35,11 @@ class ContinueChat extends Action implements HttpGetActionInterface
         $conversationId = (int)$this->getRequest()->getParam('id');
         if (!$conversationId) {
             $this->messageManager->addErrorMessage(__('Conversation not found.'));
-            return $this->resultRedirectFactory->create()->setPath('maggy/conversations/index');
+            return $this->resultRedirectFactory->create()->setPath('mago/conversations/index');
         }
 
         $connection = $this->resourceConnection->getConnection();
-        $table = $this->resourceConnection->getTableName('maggy_conversation');
+        $table = $this->resourceConnection->getTableName('mago_conversation');
         $ownerId = (int)$connection->fetchOne(
             $connection->select()->from($table, ['admin_user_id'])->where('entity_id = ?', $conversationId)
         );
@@ -48,7 +48,7 @@ class ContinueChat extends Action implements HttpGetActionInterface
         if ($ownerId !== $currentUserId) {
             $this->messageManager->addErrorMessage(__('You can only continue your own conversations.'));
             return $this->resultRedirectFactory->create()->setPath(
-                'maggy/conversations/view',
+                'mago/conversations/view',
                 ['id' => $conversationId]
             );
         }
@@ -58,8 +58,8 @@ class ContinueChat extends Action implements HttpGetActionInterface
         $dashboardUrl = $this->getUrl('adminhtml/dashboard/index');
         $result->setContents(
             '<html><body><script>'
-            . 'try{sessionStorage.setItem("maggy_open","1");'
-            . 'sessionStorage.setItem("maggy_conv","' . $conversationId . '");'
+            . 'try{sessionStorage.setItem("mago_open","1");'
+            . 'sessionStorage.setItem("mago_conv","' . $conversationId . '");'
             . '}catch(e){}'
             . 'window.location.href="' . $dashboardUrl . '";'
             . '</script></body></html>'

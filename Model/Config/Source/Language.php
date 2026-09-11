@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Model\Config\Source;
+namespace MagoAssistant\Mago\Model\Config\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
 

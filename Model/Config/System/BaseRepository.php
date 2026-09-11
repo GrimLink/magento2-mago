@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Model\Config\System;
+namespace MagoAssistant\Mago\Model\Config\System;
 
 use Magento\Config\Model\ResourceModel\Config as ConfigData;
 use Magento\Config\Model\ResourceModel\Config\Data\CollectionFactory as ConfigDataCollectionFactory;
@@ -21,7 +21,7 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 class BaseRepository
 {

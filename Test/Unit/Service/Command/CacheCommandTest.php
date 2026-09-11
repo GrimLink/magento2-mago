@@ -1,16 +1,16 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Test\Unit\Service\Command;
+namespace MagoAssistant\Mago\Test\Unit\Service\Command;
 
-use MaggyAssistant\Base\Service\Command\CacheCommand;
-use MaggyAssistant\Base\Service\Tool\ToolRegistry;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeChatService;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakePermissionChecker;
-use MaggyAssistant\Base\Test\Unit\Fakes\FakeTool;
+use MagoAssistant\Mago\Service\Command\CacheCommand;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeChatService;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakePermissionChecker;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeTool;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

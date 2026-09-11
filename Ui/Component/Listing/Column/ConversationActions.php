@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Ui\Component\Listing\Column;
+namespace MagoAssistant\Mago\Ui\Component\Listing\Column;
 
 use Magento\Framework\AuthorizationInterface;
 use Magento\Framework\UrlInterface;
@@ -28,14 +28,14 @@ class ConversationActions extends Column
     public function prepareDataSource(array $dataSource): array
     {
         if (isset($dataSource['data']['items'])) {
-            $canDelete = $this->authorization->isAllowed('MaggyAssistant_Base::conversations_delete');
+            $canDelete = $this->authorization->isAllowed('MagoAssistant_Mago::conversations_delete');
 
             foreach ($dataSource['data']['items'] as &$item) {
                 if (isset($item['entity_id'])) {
                     $actions = [
                         'view' => [
                             'href' => $this->urlBuilder->getUrl(
-                                'maggy/conversations/view',
+                                'mago/conversations/view',
                                 ['id' => $item['entity_id']]
                             ),
                             'label' => __('View'),
@@ -45,7 +45,7 @@ class ConversationActions extends Column
                     if ($canDelete) {
                         $actions['delete'] = [
                             'href' => $this->urlBuilder->getUrl(
-                                'maggy/conversations/delete',
+                                'mago/conversations/delete',
                                 ['id' => $item['entity_id']]
                             ),
                             'label' => __('Delete'),

@@ -5,7 +5,7 @@
         <attribute type="expanded">1</attribute>
         <field id="language" translate="label comment" type="select" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
             <label>Response Language</label>
-            <source_model>MaggyAssistant\Base\Model\Config\Source\Language</source_model>
+            <source_model>MagoAssistant\Mago\Model\Config\Source\Language</source_model>
             <comment>Language for assistant responses. "Auto-detect" matches the user's language.</comment>
         </field>
         <field id="system_prompt" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
@@ -24,19 +24,19 @@
         </field>
         <field id="assistant_name" translate="label comment" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
             <label>Assistant Name</label>
-            <comment>Display name for the AI assistant (default: Maggy).</comment>
+            <comment>Display name for the AI assistant (default: Mago).</comment>
         </field>
         <field id="accent_color" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
             <label>Accent Color</label>
             <comment>Background color for the chat header, user messages and buttons (default: #F26322).</comment>
             <validate>validate-no-empty</validate>
-            <frontend_model>MaggyAssistant\Base\Block\Adminhtml\System\Config\ColorPicker</frontend_model>
+            <frontend_model>MagoAssistant\Mago\Block\Adminhtml\System\Config\ColorPicker</frontend_model>
         </field>
         <field id="text_color" translate="label comment" type="text" sortOrder="35" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
             <label>Text Color on Accent</label>
             <comment>Text and icon color on accent backgrounds — header, user messages, buttons (default: #FFFFFF).</comment>
             <validate>validate-no-empty</validate>
-            <frontend_model>MaggyAssistant\Base\Block\Adminhtml\System\Config\ColorPicker</frontend_model>
+            <frontend_model>MagoAssistant\Mago\Block\Adminhtml\System\Config\ColorPicker</frontend_model>
         </field>
     </group>
 </include>

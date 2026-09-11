@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Logger;
+namespace MagoAssistant\Mago\Logger;
 
 use Magento\Framework\Serialize\Serializer\Json;
 use Psr\Log\LoggerInterface;

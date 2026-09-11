@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Cron;
+namespace MagoAssistant\Mago\Cron;
 
-use MaggyAssistant\Base\Service\Usage\UsageLogCleaner;
+use MagoAssistant\Mago\Service\Usage\UsageLogCleaner;
 
 class CleanUsageLog
 {

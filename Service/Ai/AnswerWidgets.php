@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Ai;
+namespace MagoAssistant\Mago\Service\Ai;
 
 /**
  * Teaches the model the answer widgets the chat panel can render.

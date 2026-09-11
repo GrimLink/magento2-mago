@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Model\Config;
+namespace MagoAssistant\Mago\Model\Config;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
+use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 class Repository extends System\BaseRepository implements ConfigRepositoryInterface
 {

@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Api\ModuleInfo;
+namespace MagoAssistant\Mago\Api\ModuleInfo;
 
 /**
  * Composer's runtime record of what it installed, wrapped so it can be faked in tests

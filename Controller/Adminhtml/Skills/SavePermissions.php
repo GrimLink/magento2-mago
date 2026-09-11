@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Controller\Adminhtml\Skills;
+namespace MagoAssistant\Mago\Controller\Adminhtml\Skills;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -14,7 +14,7 @@ use Magento\Framework\App\ResourceConnection;
 
 class SavePermissions extends Action implements HttpPostActionInterface
 {
-    public const ADMIN_RESOURCE = 'MaggyAssistant_Base::config';
+    public const ADMIN_RESOURCE = 'MagoAssistant_Mago::config';
 
     public function __construct(
         Context $context,
@@ -30,12 +30,12 @@ class SavePermissions extends Action implements HttpPostActionInterface
 
         if (!$skillName) {
             $this->messageManager->addErrorMessage(__('Skill name is required.'));
-            return $this->resultRedirectFactory->create()->setPath('maggy/skills/index');
+            return $this->resultRedirectFactory->create()->setPath('mago/skills/index');
         }
 
         try {
             $connection = $this->resourceConnection->getConnection();
-            $table = $this->resourceConnection->getTableName('maggy_skill_permission');
+            $table = $this->resourceConnection->getTableName('mago_skill_permission');
 
             foreach ($permissions as $userId => $permission) {
                 $userId = (int)$userId;
@@ -68,7 +68,7 @@ class SavePermissions extends Action implements HttpPostActionInterface
         }
 
         return $this->resultRedirectFactory->create()->setPath(
-            'maggy/skills/edit',
+            'mago/skills/edit',
             ['skill_name' => $skillName]
         );
     }

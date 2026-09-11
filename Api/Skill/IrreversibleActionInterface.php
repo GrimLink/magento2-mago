@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Api\Skill;
+namespace MagoAssistant\Mago\Api\Skill;
 
 /**
  * A write action that cannot be undone once it ran (a delete, a cancellation, a refund).

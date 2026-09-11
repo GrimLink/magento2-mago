@@ -1,45 +1,45 @@
 <?xml version="1.0"?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
 
-    <route url="/V1/maggy/chat" method="POST">
-        <service class="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" method="sendMessage"/>
+    <route url="/V1/mago/chat" method="POST">
+        <service class="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" method="sendMessage"/>
         <resources>
-            <resource ref="MaggyAssistant_Base::assistant_read"/>
+            <resource ref="MagoAssistant_Mago::assistant_read"/>
         </resources>
     </route>
 
-    <route url="/V1/maggy/conversations" method="GET">
-        <service class="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" method="getConversations"/>
+    <route url="/V1/mago/conversations" method="GET">
+        <service class="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" method="getConversations"/>
         <resources>
-            <resource ref="MaggyAssistant_Base::assistant_read"/>
+            <resource ref="MagoAssistant_Mago::assistant_read"/>
         </resources>
     </route>
 
-    <route url="/V1/maggy/conversations/:conversationId" method="GET">
-        <service class="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" method="getConversation"/>
+    <route url="/V1/mago/conversations/:conversationId" method="GET">
+        <service class="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" method="getConversation"/>
         <resources>
-            <resource ref="MaggyAssistant_Base::assistant_read"/>
+            <resource ref="MagoAssistant_Mago::assistant_read"/>
         </resources>
     </route>
 
-    <route url="/V1/maggy/conversations/:conversationId" method="DELETE">
-        <service class="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" method="deleteConversation"/>
+    <route url="/V1/mago/conversations/:conversationId" method="DELETE">
+        <service class="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" method="deleteConversation"/>
         <resources>
-            <resource ref="MaggyAssistant_Base::assistant_write"/>
+            <resource ref="MagoAssistant_Mago::assistant_write"/>
         </resources>
     </route>
 
-    <route url="/V1/maggy/confirm/:messageId" method="POST">
-        <service class="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" method="confirmAction"/>
+    <route url="/V1/mago/confirm/:messageId" method="POST">
+        <service class="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" method="confirmAction"/>
         <resources>
-            <resource ref="MaggyAssistant_Base::assistant_write"/>
+            <resource ref="MagoAssistant_Mago::assistant_write"/>
         </resources>
     </route>
 
-    <route url="/V1/maggy/reject/:messageId" method="POST">
-        <service class="MaggyAssistant\Base\Api\WebApi\ChatManagementInterface" method="rejectAction"/>
+    <route url="/V1/mago/reject/:messageId" method="POST">
+        <service class="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" method="rejectAction"/>
         <resources>
-            <resource ref="MaggyAssistant_Base::assistant_write"/>
+            <resource ref="MagoAssistant_Mago::assistant_write"/>
         </resources>
     </route>
 

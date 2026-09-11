@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © Maggy Assistant
+ * Copyright © Mago Assistant
  */
 declare(strict_types=1);
 
-namespace MaggyAssistant\Base\Service\Skills\Content;
+namespace MagoAssistant\Mago\Service\Skills\Content;
 
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
-use MaggyAssistant\Base\Api\Tool\ToolInterface;
-use MaggyAssistant\Base\Service\Store\StoreScopeContext;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Service\Store\StoreScopeContext;
 
 class ContentGenerator implements ToolInterface
 {
