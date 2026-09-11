@@ -57,6 +57,27 @@ class PrivacyService
     }
 
     /**
+     * Rehydrate tokens in tool-call arguments before the tool runs. The model only ever saw tokens
+     * for scrubbed values, so it passes e.g. search="[email_1]"; the tool must receive the real
+     * address or its lookup finds nothing. Applied on every execution path (read, stream, confirm).
+     *
+     * @param array<array-key,mixed> $input
+     * @return array<array-key,mixed>
+     */
+    public function rehydrateArguments(array $input): array
+    {
+        foreach ($input as $key => $value) {
+            if (is_array($value)) {
+                $input[$key] = $this->rehydrateArguments($value);
+            } elseif (is_string($value)) {
+                $input[$key] = $this->vault->rehydrate($value);
+            }
+        }
+
+        return $input;
+    }
+
+    /**
      * Swap vault tokens in the model's reply back to real values for the admin. Safe on any string,
      * a no-op when the reply carries no tokens.
      */

@@ -365,7 +365,9 @@ class ChatService implements ChatServiceInterface
                     'input' => $toolCall['input'] ?? [],
                 ]);
             }
-            $input = $toolCall['input'] ?? [];
+            // The model only ever saw tokens for scrubbed values, so rehydrate the arguments to
+            // their real values before the tool runs (otherwise a search for "[email_1]" finds nothing).
+            $input = $this->privacyService->rehydrateArguments($toolCall['input'] ?? []);
             if ($adminUserId !== null) {
                 $input['_admin_user_id'] = $adminUserId;
             }

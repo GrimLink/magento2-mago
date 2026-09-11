@@ -46,6 +46,19 @@ class PrivacyServiceTest extends TestCase
     }
 
     #[Test]
+    public function itRehydratesTokensInToolCallArgumentsBeforeExecution(): void
+    {
+        $vault = new ConversationVault();
+        $service = $this->service($vault);
+        $service->scrubMessages([['role' => 'user', 'content' => 'find jan@example.com']]);
+
+        $input = $service->rehydrateArguments(['action' => 'lookup_customer', 'search' => '[email_1]']);
+
+        self::assertSame('jan@example.com', $input['search']);
+        self::assertSame('lookup_customer', $input['action']);
+    }
+
+    #[Test]
     public function itRehydratesTokensForTheAdmin(): void
     {
         $vault = new ConversationVault();
