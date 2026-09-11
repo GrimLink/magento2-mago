@@ -3,6 +3,15 @@
 Privacy mode keeps directly identifying customer data out of what the assistant sends to the LLM
 provider. It is the only mode (no toggle), per the legal research in issue #97.
 
+> ## ⚠️ Any tool that returns customer data MUST be classified
+>
+> Privacy relies on completeness. In V1 an **unclassified** tool passes through leniently. The
+> heuristic still catches email / phone / IBAN / BSN / VAT in its output, but a customer **name** or
+> a bare **linkable id** it returns will reach the LLM raw. If you add a skill/action that can return
+> personal data, you MUST classify it — either in `PiiClassificationRegistry` (first-party) or by
+> implementing `Api\Skill\FieldClassifierInterface` and registering it in di.xml (third-party). The
+> hard fail-closed-everything default (strip unless declared) is gated behind a future major.
+
 **Legal preference: not-sending over masking (#97 §8).** Tokenised data with a server-side map is
 still pseudonymised personal data (Recital 26, EDPB 01/2025); absent data cannot leak. So direct
 identifiers are **stripped** (never sent). Only a **bare linkable id** is **tokenised**, purely so the

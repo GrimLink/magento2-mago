@@ -6,8 +6,15 @@ declare(strict_types=1);
 
 namespace MagoAssistant\Mago\Service\Privacy;
 
+use MagoAssistant\Mago\Api\Skill\FieldClassifierInterface;
+
 /**
  * Declares, per tool action, how each output field crosses to the LLM (issue #97).
+ *
+ * ⚠️  Privacy relies on completeness. In V1 an action that is NOT classified here (or via a
+ * FieldClassifierInterface) passes through leniently: the heuristic still catches email / phone /
+ * IBAN / BSN / VAT in its output, but a customer NAME or a bare linkable ID it returns will reach
+ * the LLM. Any tool that can return customer personal data MUST be classified.
  *
  * The legal research (issue #97 §8) is the authority here: the preference is NOT sending over
  * masking. Tokenised data with a server-side map is still pseudonymised personal data (Recital 26,
@@ -132,6 +139,26 @@ class PiiClassificationRegistry
         'admin_url' => [PiiClass::STRIP],
     ];
 
+    /** @var array<string,array<string,array{0:string,1?:string}>> action name => field map */
+    private readonly array $classification;
+
+    /**
+     * The built-in map above covers the first-party PII tools. A third-party (or future) action can
+     * declare its own classification by implementing FieldClassifierInterface and being registered in
+     * the `classifiers` argument via di.xml — an opt-in extension point, no core edit and no @api
+     * break. An injected classifier overrides a built-in of the same action name.
+     *
+     * @param FieldClassifierInterface[] $classifiers
+     */
+    public function __construct(array $classifiers = [])
+    {
+        $classification = self::CLASSIFICATION;
+        foreach ($classifiers as $classifier) {
+            $classification[$classifier->getClassifiedActionName()] = $classifier->getFieldClassification();
+        }
+        $this->classification = $classification;
+    }
+
     /**
      * The field map for an action, or null when the action is not classified (a PII-free tool that
      * passes through, or one still to be declared).
@@ -140,11 +167,11 @@ class PiiClassificationRegistry
      */
     public function classesFor(string $action): ?array
     {
-        return self::CLASSIFICATION[$action] ?? null;
+        return $this->classification[$action] ?? null;
     }
 
     public function isClassified(string $action): bool
     {
-        return isset(self::CLASSIFICATION[$action]);
+        return isset($this->classification[$action]);
     }
 }
