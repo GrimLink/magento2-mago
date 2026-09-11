@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace MaggyAssistant\Base\Service\Docs;
 
 use Magento\Framework\FlagManager;
+use Magento\Framework\Lock\LockManagerInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
 use MaggyAssistant\Base\Logger\ErrorLogger;
 use MaggyAssistant\Base\Model\Doc\Repository as DocRepository;
@@ -16,6 +17,7 @@ class DocsSyncService
     private const FLAG_SHA = 'maggy_docs_source_sha';
     private const FLAG_SYNCED_AT = 'maggy_docs_synced_at';
     private const FLAG_ERROR = 'maggy_docs_last_error';
+    private const LOCK_NAME = 'maggy_docs_sync';
     private const VARCHAR_MAX = 512;
 
     public function __construct(
@@ -24,7 +26,8 @@ class DocsSyncService
         private readonly ExlMarkdownNormalizer $normalizer,
         private readonly DocRepository $docRepository,
         private readonly FlagManager $flagManager,
-        private readonly ErrorLogger $errorLogger
+        private readonly ErrorLogger $errorLogger,
+        private readonly LockManagerInterface $lockManager
     ) {
     }
 
@@ -40,6 +43,31 @@ class DocsSyncService
             return ['skipped' => 'disabled'];
         }
 
+        // Concurrent replaceAll() writers (cron + CLI) can deadlock on the fulltext index;
+        // the loser skips instead of waiting.
+        try {
+            $locked = $this->lockManager->lock(self::LOCK_NAME, 0);
+        } catch (\Throwable $e) {
+            $this->errorLogger->addLog('DocsSync', $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+        if (!$locked) {
+            return ['skipped' => 'another sync is already running'];
+        }
+
+        try {
+            return $this->doSync($force, $progress);
+        } finally {
+            $this->lockManager->unlock(self::LOCK_NAME);
+        }
+    }
+
+    /**
+     * @param callable(string $step, int $current, int $total): void $progress
+     * @return array<string, mixed>
+     */
+    private function doSync(bool $force, callable $progress): array
+    {
         $repo = $this->config->getDocsSourceRepo();
         $ref = $this->config->getDocsRef();
 
