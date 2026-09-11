@@ -98,8 +98,9 @@ class Repository
     }
 
     /**
-     * Replace the whole corpus: truncate + bulk insert with the fulltext index temporarily
-     * disabled to avoid InnoDB deadlocks on the FTS auxiliary tables.
+     * Atomic corpus swap: fulltext changes apply at commit, so searches keep matching the old
+     * corpus mid-sync and a failed sync keeps it. Concurrency is serialized in DocsSyncService.
+     * Deleted doc ids linger in the FTS aux tables until an ALTER ... ENGINE=InnoDB rebuild.
      *
      * @param array<int, array<string, mixed>> $rows
      */
@@ -108,16 +109,18 @@ class Repository
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName(self::TABLE);
 
-        $connection->query("ALTER TABLE {$table} DISABLE KEYS");
+        $connection->beginTransaction();
         try {
-            $connection->truncateTable($table);
+            $connection->delete($table);
             foreach (array_chunk($rows, 50) as $chunk) {
                 if ($chunk) {
                     $connection->insertMultiple($table, $chunk);
                 }
             }
-        } finally {
-            $connection->query("ALTER TABLE {$table} ENABLE KEYS");
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
         }
     }
 }

@@ -108,7 +108,7 @@ A cron job (`maggy_docs` group, its own process) indexes the docs into the `magg
 bin/magento maggy:docs:index --force
 ```
 
-Sync is cheap to run often because it is **change-detected by git tree SHA**: an unchanged source repo costs a single API call and skips re-fetching entirely. This is why the default schedule can safely be raised when you feed docs that update more often than the Mage-OS mirror. On a real change, every `help/**.md` is fetched (including `_includes/`, needed to resolve `{{$include}}` partials), Experience League markup is normalized to plain text, and the table is swapped in a single transaction — a failed sync keeps the previous corpus.
+Sync is cheap to run often because it is **change-detected by git tree SHA**: an unchanged source repo costs a single API call and skips re-fetching entirely. This is why the default schedule can safely be raised when you feed docs that update more often than the Mage-OS mirror. On a real change, every `help/**.md` is fetched (including `_includes/`, needed to resolve `{{$include}}` partials), Experience League markup is normalized to plain text, and the table is swapped in a single transaction — a failed sync keeps the previous corpus, and searches keep answering from the old corpus until the new one is committed. Only one sync runs at a time: a second invocation (cron overlapping a manual run, or a double-started command) reports `another sync is already running` and exits instead of interfering.
 
 ### Why MySQL FULLTEXT (not embeddings)
 
