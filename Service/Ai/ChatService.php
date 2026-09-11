@@ -136,9 +136,32 @@ class ChatService implements ChatServiceInterface
         $instructedTools = [];
         $nudged = false;
 
+        // Rehydrate the text the admin sees, holding a token that splits across chunks. Everything
+        // stored and replayed to the provider stays tokenised; only this display copy is rehydrated.
+        $carry = '';
+        $flushCarry = function () use ($onChunk, &$carry): void {
+            if ($carry !== '') {
+                $onChunk('text', ['text' => $this->privacyService->rehydrate($carry)]);
+                $carry = '';
+            }
+        };
+        $streamOut = function (string $event, array $data) use ($onChunk, &$carry, $flushCarry): void {
+            if ($event !== 'text') {
+                $flushCarry();
+                $onChunk($event, $data);
+
+                return;
+            }
+            [$emit, $carry] = $this->privacyService->rehydrateStreamDelta($carry, (string)($data['text'] ?? ''));
+            if ($emit !== '') {
+                $onChunk('text', ['text' => $emit]);
+            }
+        };
+
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
-                $response = $this->client->stream($client, $messages, $tools, $onChunk);
+                $response = $this->client->stream($client, $messages, $tools, $streamOut);
+                $flushCarry();
             } catch (\Throwable $e) {
                 $this->errorLogger->addLog('ChatService Stream', $e->getMessage());
                 throw $e;

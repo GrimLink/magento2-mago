@@ -120,4 +120,25 @@ class PrivacyService
     {
         return $this->vault->rehydrate($text);
     }
+
+    /**
+     * Rehydrate a streamed text delta for the admin. A token can split across SSE chunks, so any
+     * trailing partial token (text ending in "[", "[cust", "[customer_1"...) is held back as the
+     * returned carry and prepended to the next delta; the rest is rehydrated and emitted now. The
+     * stored message stays tokenised — only what the admin sees is rehydrated.
+     *
+     * @return array{0:string,1:string} [text to emit now, carry for the next delta]
+     */
+    public function rehydrateStreamDelta(string $carry, string $delta): array
+    {
+        $text = $carry . $delta;
+        $newCarry = '';
+        if (preg_match('/\[[a-z]*(?:_\d*)?$/', $text, $m, PREG_OFFSET_CAPTURE) === 1) {
+            $offset = (int)$m[0][1];
+            $newCarry = substr($text, $offset);
+            $text = substr($text, 0, $offset);
+        }
+
+        return [$this->vault->rehydrate($text), $newCarry];
+    }
 }

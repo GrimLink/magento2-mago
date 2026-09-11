@@ -59,6 +59,20 @@ class PrivacyServiceTest extends TestCase
     }
 
     #[Test]
+    public function itRehydratesATokenThatSplitsAcrossStreamedChunks(): void
+    {
+        $service = $this->service(new ConversationVault());
+        $service->scrubMessages([['role' => 'user', 'content' => 'mail jan@example.com']]);
+
+        [$emit1, $carry1] = $service->rehydrateStreamDelta('', 'Mailing [email');
+        [$emit2, $carry2] = $service->rehydrateStreamDelta($carry1, '_1] now');
+
+        self::assertSame('Mailing ', $emit1);
+        self::assertSame('jan@example.com now', $emit2);
+        self::assertSame('', $carry2);
+    }
+
+    #[Test]
     public function itDetectsATokenInWriteArgumentsSoAWriteCanBeRefused(): void
     {
         $service = $this->service(new ConversationVault());
