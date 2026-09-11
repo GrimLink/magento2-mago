@@ -127,6 +127,7 @@ class ChatService implements ChatServiceInterface
         $messages = $this->prependSystemMessage($messages);
         $instructedTools = [];
         $nudged = false;
+        $allToolCalls = [];
 
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
@@ -144,6 +145,9 @@ class ChatService implements ChatServiceInterface
                     $nudged = true;
                     continue;
                 }
+                if (!empty($allToolCalls)) {
+                    $response['executed_tool_calls'] = $allToolCalls;
+                }
                 return $response;
             }
 
@@ -151,27 +155,33 @@ class ChatService implements ChatServiceInterface
             // executed below and answered with the denial as a tool result)
             foreach ($response['tool_calls'] as $toolCall) {
                 if ($this->requiresConfirmation($toolCall, $adminUserId)) {
-                    // Send confirm event with tool details so frontend can show what will happen
+                    // Send confirm event with tool details so frontend can show what will happen.
+                    // The same details go back on the calls themselves: the stored row is what a
+                    // reloaded conversation rebuilds its card from, and the raw call carries
+                    // neither the description nor the impact list the card is made of.
                     $confirmTools = [];
+                    $describedCalls = [];
                     foreach ($response['tool_calls'] as $tc) {
-                        if (!$this->requiresConfirmation($tc, $adminUserId)) {
-                            continue;
-                        }
-                        $t = $this->toolRegistry->getTool($tc['name'], $adminUserId);
+                        $t = $this->requiresConfirmation($tc, $adminUserId)
+                            ? $this->toolRegistry->getTool($tc['name'], $adminUserId)
+                            : null;
                         if ($t === null) {
+                            $describedCalls[] = $tc;
                             continue;
                         }
-                        $confirmTools[] = [
+                        $details = [
                             'id' => (string)($tc['id'] ?? ''),
                             'name' => $tc['name'],
                             'description' => $t->getDescription(),
                             'input' => $tc['input'] ?? [],
                         ] + $this->describeRisk($t, $tc['input'] ?? [], $adminUserId);
+                        $confirmTools[] = $details;
+                        $describedCalls[] = $tc + $details;
                     }
                     $onChunk('confirm', ['tools' => $confirmTools]);
                     return [
                         'content' => $response['content'],
-                        'tool_calls' => $response['tool_calls'],
+                        'tool_calls' => $describedCalls,
                         'pending_confirmation' => true,
                     ];
                 }
@@ -187,23 +197,31 @@ class ChatService implements ChatServiceInterface
             foreach ($response['tool_calls'] as $toolCall) {
                 // A denied call never runs, so do not announce it as running
                 $reportStatus = !$this->isToolCallDenied($toolCall, $adminUserId);
+                $runningMessage = $this->getToolStatusMessage(
+                    $toolCall['name'],
+                    $toolCall['input']['action'] ?? '',
+                    $toolCall['input'] ?? []
+                );
                 if ($reportStatus) {
                     $onChunk('tool_status', [
                         'name' => $toolCall['name'],
                         'status' => 'running',
-                        'message' => $this->getToolStatusMessage(
-                            $toolCall['name'],
-                            $toolCall['input']['action'] ?? '',
-                            $toolCall['input'] ?? []
-                        ),
+                        'message' => $runningMessage,
                     ]);
                 }
 
+                $startedAt = microtime(true);
                 $result = $this->executeTool($toolCall, $adminUserId);
+                $elapsedMs = (int)round((microtime(true) - $startedAt) * 1000);
+                $status = $this->statusAfter($toolCall['name'], $result, $elapsedMs);
 
                 if ($reportStatus) {
-                    $onChunk('tool_status', $this->statusAfter($toolCall['name'], $result));
+                    $onChunk('tool_status', $status);
                 }
+
+                $allToolCalls[] = $reportStatus
+                    ? $this->withStatus($toolCall, $runningMessage, $status, $elapsedMs)
+                    : $toolCall;
 
                 $messages[] = [
                     'role' => 'tool',
@@ -260,13 +278,39 @@ class ChatService implements ChatServiceInterface
                 ]);
             }
 
+            $startedAt = microtime(true);
             $results[$toolCall['id']] = $this->executeTool($toolCall, $adminUserId);
+            $elapsedMs = (int)round((microtime(true) - $startedAt) * 1000);
 
             if ($reportStatus) {
-                $onChunk('tool_status', $this->statusAfter($toolCall['name'], $results[$toolCall['id']]));
+                $onChunk('tool_status', $this->statusAfter($toolCall['name'], $results[$toolCall['id']], $elapsedMs));
             }
         }
         return $results;
+    }
+
+    /**
+     * The tool call as it should be stored: what ran, and how it ended.
+     *
+     * A reloaded conversation has only this row to work from, so the line the live stream drew
+     * while the tool ran is kept with the call rather than rebuilt from the tool name alone.
+     *
+     * @param array<string, mixed> $toolCall
+     * @param string $runningMessage
+     * @param array<string, string> $status
+     * @param int $elapsedMs
+     * @return array<string, mixed>
+     */
+    private function withStatus(array $toolCall, string $runningMessage, array $status, int $elapsedMs): array
+    {
+        $toolCall['status'] = $status['status'];
+        $toolCall['status_message'] = $runningMessage;
+        $toolCall['status_duration_ms'] = $elapsedMs;
+        if (isset($status['message'])) {
+            $toolCall['status_error'] = $status['message'];
+        }
+
+        return $toolCall;
     }
 
     /**
@@ -274,15 +318,21 @@ class ChatService implements ChatServiceInterface
      *
      * @param string $toolName
      * @param array<string, mixed> $result
-     * @return array<string, string>
+     * @param int $elapsedMs
+     * @return array<string, mixed>
      */
-    private function statusAfter(string $toolName, array $result): array
+    private function statusAfter(string $toolName, array $result, int $elapsedMs): array
     {
         if (isset($result['error'])) {
-            return ['name' => $toolName, 'status' => 'failed', 'message' => (string)$result['error']];
+            return [
+                'name' => $toolName,
+                'status' => 'failed',
+                'message' => (string)$result['error'],
+                'duration_ms' => $elapsedMs,
+            ];
         }
 
-        return ['name' => $toolName, 'status' => 'done'];
+        return ['name' => $toolName, 'status' => 'done', 'duration_ms' => $elapsedMs];
     }
 
     /**
