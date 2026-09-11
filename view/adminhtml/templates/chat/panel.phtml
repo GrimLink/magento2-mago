@@ -78,6 +78,12 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
             <div class="mago-header-text">
                 <div class="mago-title-row">
                     <span class="mago-title"><?= $escaper->escapeHtml($assistantName) ?></span>
+                    <?php /* EU AI Act art. 50: make clear the administrator is interacting with AI. */ ?>
+                    <span class="mago-ai-badge"
+                          style="font-size:11px;line-height:1;padding:2px 7px;border-radius:9px;background:rgba(0,0,0,.07);opacity:.75;white-space:nowrap;"
+                          title="<?= $escaper->escapeHtmlAttr(__('You are interacting with an AI assistant, not a human.')) ?>">
+                        <?= $escaper->escapeHtml(__('AI assistant')) ?>
+                    </span>
                     <span class="mago-working-pill" aria-live="polite">
                         <span class="mago-spinner"></span><?= $escaper->escapeHtml(__('Working')) ?>
                     </span>
