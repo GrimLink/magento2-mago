@@ -138,6 +138,7 @@ class ChatService implements ChatServiceInterface
 
         // Rehydrate the text the admin sees, holding a token that splits across chunks. Everything
         // stored and replayed to the provider stays tokenised; only this display copy is rehydrated.
+        /** @var string $carry */
         $carry = '';
         $flushCarry = function () use ($onChunk, &$carry): void {
             if ($carry !== '') {

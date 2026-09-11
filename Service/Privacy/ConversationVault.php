@@ -9,15 +9,13 @@ namespace MagoAssistant\Mago\Service\Privacy;
 use MagoAssistant\Mago\Api\Privacy\VaultStorageInterface;
 
 /**
- * The reversible token map for one conversation (issue #97). A PII value is replaced with a stable,
- * type-carrying token on the way to the LLM and swapped back on the way to the admin. The same value
- * always yields the same token within the conversation, so a token emitted on one turn still resolves
- * when the conversation history is replayed on the next.
+ * The reversible token map for one conversation (issue #97): a PII value becomes a stable,
+ * type-carrying token towards the LLM and is swapped back for the admin. The same value always
+ * yields the same token within the conversation, so a token from an earlier turn still resolves.
  *
- * With a VaultStorageInterface bound to a conversation (beginConversation), the map survives across
- * requests: a token minted last turn, or before a confirmed write ran in its own request, still
- * resolves. Without storage (or an unbound vault) it is request-scoped memory. Storage failure is
- * silent — the vault just degrades to request scope.
+ * A bound VaultStorageInterface (beginConversation) makes the map survive across requests, so a
+ * token minted last turn or before a confirmed write still resolves. Without storage it is
+ * request-scoped memory, and a storage failure silently degrades to that.
  */
 class ConversationVault
 {
@@ -90,8 +88,8 @@ class ConversationVault
     }
 
     /**
-     * Register a token↔value pair and keep the per-type counter ahead of any number already issued,
-     * whether it was just minted or loaded from storage.
+     * Register a token and its value, and keep the per-type counter ahead of any number already
+     * issued, whether it was just minted or loaded from storage.
      */
     private function remember(string $type, string $value, string $token): void
     {

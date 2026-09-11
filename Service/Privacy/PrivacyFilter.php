@@ -8,37 +8,26 @@ namespace MagoAssistant\Mago\Service\Privacy;
 
 /**
  * The single choke point (issue #97): a tool result is filtered here before it becomes the tool
- * message sent to the LLM (ChatService::executeTool()'s return, via capToolResult()).
- *
- * For a classified action: public fields pass, tokenise fields become stable vault tokens, and
- * every other scalar field — a strip-classified identifier, or one the action never declared — is
- * dropped (the legal preference is not-sending over masking, #97 §8).
- *
- * For an UNclassified action the behaviour depends on $stripUnclassified:
- *  - false (V1 default): pass through untouched. The unclassified tools are the PII-free ones
- *    (aggregates, catalog, config, docs), which the egress map allows freely.
- *  - true: strip every scalar (the eventual fail-closed-everything state once every tool declares
- *    its classification on the @api interface — #97 decision 8, at 2.0.0).
- *
- * Structure is preserved: nested arrays are always walked, so "results"/"recent"/"order" wrappers
- * and their records keep their shape; classification applies to the scalar leaves inside them.
+ * message sent to the LLM (ChatService::executeTool()'s return). For a classified action, public
+ * fields pass, tokenise fields become stable vault tokens, and every other scalar (strip-classified,
+ * or undeclared) is dropped; the legal preference is not-sending over masking (#97 section 8). An
+ * unclassified action passes through when $stripUnclassified is false (V1: the unclassified tools are
+ * the PII-free ones), or is stripped scalar-by-scalar when true (the future fail-closed default).
+ * Nested arrays are always walked, so wrappers and records keep their shape.
  */
 class PrivacyFilter
 {
     /**
      * Dropped from every result whatever its classification: admin_url embeds the admin secret key
-     * (SecureAdminUrl appends /key/<hash>/), which must never reach the LLM. The panel re-attaches a
-     * deep link UI-side. (The AdminNavigator's own "url" field is the tool's deliverable and a
-     * separate secret-key concern — the admin_url sibling issue, not this filter.)
+     * (/key/<hash>/) and must never reach the LLM. (AdminNavigator's own "url" field is the tool's
+     * deliverable, a separate concern; see the admin_url sibling issue.)
      */
     private const ALWAYS_STRIP = ['admin_url'];
 
     /**
-     * Passed through whatever the classification, so a tool's failure survives filtering: without
-     * this a classified action returning only {"error": "Order not found"} would reach the model as
-     * {} and it could not explain the failure (or an ACL denial). Their value is still run through
-     * the PII heuristic first: a lookup that missed echoes the (rehydrated) search term back in its
-     * message ("No customers found matching jan@example.com"), and that must not cross raw.
+     * Kept whatever the classification so a tool's failure or ACL denial can still be explained,
+     * otherwise a classified action returning only an error would reach the model as {}. The value is
+     * still run through the heuristic, since a missed lookup echoes the rehydrated search term back.
      */
     private const ALWAYS_ALLOW = ['error', 'message'];
 

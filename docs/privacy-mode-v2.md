@@ -1,4 +1,4 @@
-# Privacy mode — V2 plan (issue #97)
+# Privacy mode V2 plan (issue #97)
 
 V1 (see `privacy-mode.md`) keeps customer PII out of what the assistant sends to the LLM on every
 egress path, with classification held centrally in `PiiClassificationRegistry` plus an opt-in
@@ -27,9 +27,9 @@ as a *required* method. Every action declares how its own output fields cross to
 **Cost / blast radius.** This is a hard `@api` break:
 - **~61 action classes** implement `ActionInterface` and must each add the method (the ~9 PII actions
   return their real map; the ~52 PII-free actions return `[]`, which under the new default means
-  "everything public" only for the fields they name — see §2 on how PII-free tools stay usable).
+  "everything public" only for the fields they name, see §2 on how PII-free tools stay usable).
 - `AbstractSkill` and any base action class.
-- **Every third-party tool** breaks (fatal on the missing method) until updated — this is why it is a
+- **Every third-party tool** breaks (fatal on the missing method) until updated, this is why it is a
   major version and must be announced with a migration note.
 
 **Migration path for integrators.** Publish before the release: "implement `getFieldClassification()`
@@ -48,7 +48,7 @@ expectations.
 field an action does not declare is **stripped**, for every tool. Undeclared is never public.
 
 **Why it waits for §1.** With the lenient default off and no universal declaration, the PII-free tools
-(product_data, cms_data, aggregates, docs_search, config, cache/indexer/navigation — the bulk of the
+(product_data, cms_data, aggregates, docs_search, config, cache/indexer/navigation, the bulk of the
 ~52) would have their output stripped to nothing and the assistant would break for most queries. So
 the hard default can only flip **after** every tool declares its fields (§1). The two are one change.
 
@@ -56,10 +56,10 @@ the hard default can only flip **after** every tool declares its fields (§1). T
 - A tool that returns `[]` from `getFieldClassification()` and emits fields → those fields are stripped
   (so a PII-free tool must still declare its public fields as `PiiClass::PUBLIC`, or return them under
   a declared-public map). Decide during V2 whether "declares `[]`" means "strip all" (strict) or
-  "the tool asserts it is PII-free, pass scalars" — recommend strict + a `public`-all helper for
+  "the tool asserts it is PII-free, pass scalars", recommend strict + a `public`-all helper for
   genuinely public tools, so nothing is public by omission.
-- A brand-new or third-party tool that forgets to classify leaks **nothing** — it fails closed.
-- The `docs/privacy-mode.md` "⚠️ unclassified tool leaks names/ids" warning is removed; it no longer
+- A brand-new or third-party tool that forgets to classify leaks **nothing**, it fails closed.
+- The `docs/privacy-mode.md` "unclassified tool leaks names/ids" warning is removed; it no longer
   applies.
 
 **Keep from V1 (do not regress).** The always-rules survive the flip: `admin_url` always stripped, the

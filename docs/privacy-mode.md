@@ -1,14 +1,14 @@
-# Privacy mode — V1 (issue #97)
+# Privacy mode V1 (issue #97)
 
 Privacy mode keeps directly identifying customer data out of what the assistant sends to the LLM
 provider. It is the only mode (no toggle), per the legal research in issue #97.
 
-> ## ⚠️ Any tool that returns customer data MUST be classified
+> ## Any tool that returns customer data MUST be classified
 >
 > Privacy relies on completeness. In V1 an **unclassified** tool passes through leniently. The
 > heuristic still catches email / phone / IBAN / BSN / VAT in its output, but a customer **name** or
 > a bare **linkable id** it returns will reach the LLM raw. If you add a skill/action that can return
-> personal data, you MUST classify it — either in `PiiClassificationRegistry` (first-party) or by
+> personal data, you MUST classify it, either in `PiiClassificationRegistry` (first-party) or by
 > implementing `Api\Skill\FieldClassifierInterface` and registering it in di.xml (third-party). The
 > hard fail-closed-everything default (strip unless declared) is gated behind a future major.
 
@@ -39,7 +39,8 @@ return $this->capToolResult($result, $toolCall['name']);
 | `PiiClassificationRegistry.php` | Per-action field → class map (strip-first), seeded from the real output shapes of the four PII-carrying tools + the linkable-ids-only tools. |
 | `ConversationVault.php` | Reversible per-conversation token map; stable, typed tokens. |
 | `PrivacyFilter.php` | Choke-point filter. Classified action: public passes, tokenise → token, everything else stripped. Unclassified action: pass-through in V1 (`$stripUnclassified=false`), or fail-closed strip when strict. |
-| `PrivacyService.php` | Request-scoped facade ChatService calls: `filterToolResult()` + `rehydrate()`. |
+| `PiiHeuristic.php` | Detects email / IBAN / BSN / VAT / Dutch phone in free text (checksums), for the paths with no declared field to classify. |
+| `PrivacyService.php` | Request-scoped facade ChatService uses: filter results, scrub messages, rehydrate arguments and the reply, begin the conversation vault. |
 
 ## What crosses to the LLM
 
@@ -72,17 +73,23 @@ vendor/bin/phpunit --no-configuration --bootstrap vendor/autoload.php \
   vendor/mago-assistant/mago/Test/Unit
 ```
 
-## V1 scope vs the full #97 spec
+## Covered
 
-Covered: the output-path choke point, strip-first classification for the PII/linkable tools, the
-reversible vault, the ChatService wiring.
+- Output-path choke point with strip-first classification for the PII/linkable tools.
+- Input-side scrubbing of typed PII, replayed history and the custom system prompt (`PiiHeuristic`:
+  email, IBAN, BSN, VAT, Dutch phone).
+- Tool-call arguments rehydrated before a read runs; a write that still carries a token is refused.
+- Persistent per-conversation vault (`mago_pii_token`, with graceful fallback to request scope until
+  `setup:upgrade` creates the table).
+- Display rehydration for the admin: the streamed reply and the history view show real values while
+  the stored copy stays tokenised.
+- Opt-in `FieldClassifierInterface` so a third-party tool can classify itself.
+- AI Act "AI assistant" label in the chat header.
 
-Deliberately deferred (documented, not bugs):
-- **Rehydration for display** is not wired. Per #97 §8 the bare-id tokens "need no rehydration"; the
-  admin reaches the record through the admin-panel deep link (to be re-attached UI-side).
-- **Persistent per-conversation vault.** V1 vault is request-scoped — correct within one turn; cross-turn
-  history replay needs persistence.
-- **Strict fail-closed for every tool** waits on the classification moving onto the `@api` interface as
-  a required method (#97 decision 8, the 2.0.0 break). Until then unclassified PII-free tools pass through.
-- **Input-side scrubbing, tool-call arguments, page_form heuristic, verification harness (L0–L4)** —
-  separate items in the #97 to-do.
+## Deferred (see `privacy-mode-v2.md` and the sibling tickets)
+
+- **Strict fail-closed for every tool** (strip unless declared) waits on classification becoming a
+  required `@api` method (V2, a major release).
+- page_form field classification (once PR #67 lands in main).
+- The three sibling security issues: ConfigReader allowlist (#106), admin_url secret key (#107),
+  retention and right-to-erasure (#108).

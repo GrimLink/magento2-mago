@@ -1,4 +1,4 @@
-# Privacy mode V1 — proof
+# Privacy mode V1 proof
 
 Real output of the V1 filter (`Service/Privacy/PrivacyFilter`) on the two heaviest tools. This is
 what actually happens at the `ChatService::executeTool()` choke point before anything reaches the

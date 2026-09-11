@@ -7,17 +7,8 @@ declare(strict_types=1);
 namespace MagoAssistant\Mago\Service\Privacy;
 
 /**
- * The privacy-mode entry point ChatService talks to (issue #97). One request-scoped instance holds
- * the conversation vault, so a value tokenised while filtering a tool result reads back as the same
- * token everywhere in the request. Magento shares one instance of a non-virtual type per request by
- * default, which is what makes that hold.
- *
- * V1 scope: rehydrate() exists for the eventual admin-facing display pass (per #97 decision 4 that
- * is client-side, so tokens split across SSE chunks still resolve) but is not wired into the stream
- * yet — the admin currently sees the tokens in the reply, which #97 §8 accepts for bare-id tokens.
- * The vault is request-scoped; cross-turn history replay and confirmed writes (a separate request)
- * need a vault persisted per conversation — a documented follow-up, guarded meanwhile by
- * containsToken() refusing a write that still carries a token.
+ * The privacy-mode entry point ChatService uses (issue #97). One request-scoped instance holds the
+ * conversation vault, so a value tokenised anywhere in the request reads back as the same token.
  */
 class PrivacyService
 {
@@ -50,10 +41,9 @@ class PrivacyService
     }
 
     /**
-     * Scrub free text in the outbound messages just before they reach the LLM: the admin's typed
-     * message, replayed history and the custom system prompt all pass through here. Tool results are
-     * already filtered upstream, so the heuristic finds nothing new in them (the pass is idempotent).
-     * This is the one place that covers PII the admin types, which no field classification can catch.
+     * Scrub free text in the outbound messages before they reach the LLM: the typed message, replayed
+     * history and the custom system prompt. This is the one place that catches PII the admin types,
+     * which no field classification can. Idempotent, so already-filtered tool results are untouched.
      *
      * @param array<int,array<string,mixed>> $messages
      * @return array<int,array<string,mixed>>
@@ -91,10 +81,9 @@ class PrivacyService
     }
 
     /**
-     * True when any argument still carries a vault token. Used on the write path: the vault is
-     * request-scoped in V1, so a token in a confirmed write (a separate request, empty vault) would
-     * otherwise be written verbatim as "[order_1]" into real data — and a prompt injection could try
-     * to move a masked value into a write. A write is refused rather than run with a token in it.
+     * True when any argument still carries a vault token. A write is refused rather than run with one,
+     * so a masked value is never written verbatim as "[order_1]" into real data, nor moved into a
+     * write by prompt injection.
      *
      * @param array<array-key,mixed> $input
      */
@@ -122,10 +111,9 @@ class PrivacyService
     }
 
     /**
-     * Rehydrate a streamed text delta for the admin. A token can split across SSE chunks, so any
-     * trailing partial token (text ending in "[", "[cust", "[customer_1"...) is held back as the
-     * returned carry and prepended to the next delta; the rest is rehydrated and emitted now. The
-     * stored message stays tokenised — only what the admin sees is rehydrated.
+     * Rehydrate a streamed text delta for the admin. A token can split across SSE chunks, so a
+     * trailing partial token is held back as the returned carry and prepended to the next delta; the
+     * rest is rehydrated now. The stored message stays tokenised; only the displayed copy is restored.
      *
      * @return array{0:string,1:string} [text to emit now, carry for the next delta]
      */

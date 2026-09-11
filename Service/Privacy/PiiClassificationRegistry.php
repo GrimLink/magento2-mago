@@ -11,21 +11,20 @@ use MagoAssistant\Mago\Api\Skill\FieldClassifierInterface;
 /**
  * Declares, per tool action, how each output field crosses to the LLM (issue #97).
  *
- * ⚠️  Privacy relies on completeness. In V1 an action that is NOT classified here (or via a
- * FieldClassifierInterface) passes through leniently: the heuristic still catches email / phone /
- * IBAN / BSN / VAT in its output, but a customer NAME or a bare linkable ID it returns will reach
- * the LLM. Any tool that can return customer personal data MUST be classified.
+ * Completeness matters: an action not classified here (or via a FieldClassifierInterface) passes
+ * through leniently, so a name or bare id it returns reaches the LLM. Any tool that can return
+ * customer personal data must be classified.
  *
  * The legal research (issue #97 §8) is the authority here: the preference is NOT sending over
  * masking. Tokenised data with a server-side map is still pseudonymised personal data (Recital 26,
  * EDPB 01/2025), while absent data cannot leak. So direct identifiers (name, email, phone, address,
- * review nickname, review free text) are STRIP — never sent. Only a bare linkable id is TOKENISE,
- * and only so the assistant can still refer to a row across turns ([customer_N], [order_N]). The
+ * review nickname, review free text) are STRIP: never sent. Only a bare linkable id is TOKENISE, and
+ * only so the assistant can still refer to a row across turns ([customer_N], [order_N]). The
  * admin_url is stripped because it embeds the admin secret key; the panel re-attaches a deep link
  * UI-side.
  *
- * Actions the map does not name (product_data, aggregates, cms_data, docs_search, config, cache /
- * indexer / navigation) carry no customer PII and pass through untouched — see PrivacyFilter's
+ * Actions the map does not name (product_data, aggregates, cms_data, docs_search, config, cache,
+ * indexer, navigation) carry no customer PII and pass through untouched. See PrivacyFilter's
  * $stripUnclassified flag for the eventual fail-closed-everything state (issue #97 decision 8, once
  * every tool declares its classification on the @api interface at 2.0.0).
  *
@@ -145,7 +144,7 @@ class PiiClassificationRegistry
     /**
      * The built-in map above covers the first-party PII tools. A third-party (or future) action can
      * declare its own classification by implementing FieldClassifierInterface and being registered in
-     * the `classifiers` argument via di.xml — an opt-in extension point, no core edit and no @api
+     * the `classifiers` argument via di.xml: an opt-in extension point, no core edit and no @api
      * break. An injected classifier overrides a built-in of the same action name.
      *
      * @param FieldClassifierInterface[] $classifiers
