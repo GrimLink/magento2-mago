@@ -39,14 +39,18 @@ return $this->capToolResult($result, $toolCall['name']);
 | `lookup_customer` | name, email, telephone, admin_url | entity_id → `[customer_N]` | country, city, registered |
 | `recent_signups` | admin_url | customer_id → `[customer_N]` | group_id, registered, store_id, period, total_new |
 | `top_spenders` | admin_url | customer_id → `[customer_N]` | total_spent, order_count, period |
-| `customer_orders` | admin_url | entity_id, order_number → `[order_N]` | total, status, items, date |
+| `customer_orders` | admin_url | customer_id → `[customer_N]`, entity_id, order_number → `[order_N]` | period, total_orders, total, status, items, date |
 | `lookup_order` | customer, email, admin_url | entity_id, order_number → `[order_N]` | total, status, date, item lines (sku/name/qty/price) |
-| `search_orders` | customer | entity_id, order_number → `[order_N]` | order_total, status, date, product_sku/name/qty/line_total |
+| `search_orders` | customer | entity_id, order_number → `[order_N]` | query, period, results_count, order_total, status, date, product_sku/name/qty/line_total |
 | `recent_orders` | admin_url | entity_id, order_number → `[order_N]` | total, status, items, store_id, date |
 | `list_pending` / `list_approved` | title, nickname, detail (free text), admin_url | review_id → `[review_N]` | product_id, created_at, total |
 
 Unclassified tools (aggregates, product_data, cms_data, docs_search, config, cache/indexer/nav) carry
 no customer PII and pass through untouched.
+
+Two rules apply to every result regardless of classification: `admin_url` is always stripped (it
+embeds the admin secret key; the panel re-attaches a deep link UI-side), and the `error` / `message`
+envelope is always kept (so a failed call or an ACL denial still reaches the model to be explained).
 
 ## Running the tests
 

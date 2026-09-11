@@ -64,6 +64,9 @@ class PiiClassificationRegistry
         ],
         // --- sales_data ---
         'customer_orders' => [
+            'customer_id' => [PiiClass::TOKENISE, self::TYPE_CUSTOMER],
+            'period' => [PiiClass::PUBLIC],
+            'total_orders' => [PiiClass::PUBLIC],
             'entity_id' => [PiiClass::TOKENISE, self::TYPE_ORDER],
             'order_number' => [PiiClass::TOKENISE, self::TYPE_ORDER],
             'total' => [PiiClass::PUBLIC],
@@ -89,6 +92,9 @@ class PiiClassificationRegistry
             'row_total' => [PiiClass::PUBLIC],
         ],
         'search_orders' => [
+            'query' => [PiiClass::PUBLIC],
+            'period' => [PiiClass::PUBLIC],
+            'results_count' => [PiiClass::PUBLIC],
             'entity_id' => [PiiClass::TOKENISE, self::TYPE_ORDER],
             'order_number' => [PiiClass::TOKENISE, self::TYPE_ORDER],
             'order_total' => [PiiClass::PUBLIC],

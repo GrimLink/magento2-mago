@@ -148,6 +148,42 @@ class PrivacyFilterTest extends TestCase
     }
 
     #[Test]
+    public function itKeepsTheErrorEnvelopeSoAFailedLookupCanStillBeExplained(): void
+    {
+        $result = $this->filter()->filter('lookup_order', ['error' => 'Order not found: 000000549']);
+
+        self::assertSame(['error' => 'Order not found: 000000549'], $result);
+    }
+
+    #[Test]
+    public function itStripsAdminUrlEvenFromAnUnclassifiedPassThroughTool(): void
+    {
+        $result = $this->filter()->filter('admin_navigator_deeplink', [
+            'label' => 'Customer grid',
+            'admin_url' => 'https://shop.test/admin/customer/index/key/abc123secret/',
+        ]);
+
+        self::assertSame(['label' => 'Customer grid'], $result);
+        self::assertStringNotContainsString('abc123secret', (string)json_encode($result));
+    }
+
+    #[Test]
+    public function itTokenisesTheCustomerIdAndKeepsThePeriodOnCustomerOrders(): void
+    {
+        $result = $this->filter()->filter('customer_orders', [
+            'customer_id' => 42,
+            'period' => '30days',
+            'total_orders' => 2,
+            'orders' => [['entity_id' => 7, 'order_number' => '000000549', 'total' => 10.0, 'status' => 'x', 'items' => 1, 'date' => 'd']],
+        ]);
+
+        self::assertSame('[customer_1]', $result['customer_id']);
+        self::assertSame('30days', $result['period']);
+        self::assertSame(2, $result['total_orders']);
+        self::assertSame('[order_1]', $result['orders'][0]['entity_id']);
+    }
+
+    #[Test]
     public function itFailsClosedStrippingUnclassifiedToolsWhenStrictModeIsOn(): void
     {
         $filtered = $this->filter(null, true)->filter('some_third_party_tool', [
