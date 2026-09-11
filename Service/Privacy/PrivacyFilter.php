@@ -121,6 +121,15 @@ class PrivacyFilter
      */
     private function keep(mixed $value): mixed
     {
-        return is_string($value) ? $this->heuristic->tokeniseFreeText($value, $this->vault) : $value;
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        // Defang any token-lookalike arriving in tool output BEFORE minting real tokens, so a forged
+        // "[email_1]" planted in an unclassified tool's data (a poisoned product name, CMS text)
+        // cannot reach the model and be echoed into an argument that then rehydrates to a real value.
+        $value = (string)preg_replace('/\[([a-z]+_\d+)\]/', '($1)', $value);
+
+        return $this->heuristic->tokeniseFreeText($value, $this->vault);
     }
 }

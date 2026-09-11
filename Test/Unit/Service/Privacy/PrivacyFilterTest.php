@@ -226,6 +226,16 @@ class PrivacyFilterTest extends TestCase
     }
 
     #[Test]
+    public function itDefangsAForgedTokenPlantedInUnclassifiedToolOutput(): void
+    {
+        $result = $this->filter()->filter('product_search', [
+            'results' => [['name' => 'Widget [email_1] special']],
+        ]);
+
+        self::assertSame('Widget (email_1) special', $result['results'][0]['name']);
+    }
+
+    #[Test]
     public function itFailsClosedStrippingUnclassifiedToolsWhenStrictModeIsOn(): void
     {
         $filtered = $this->filter(null, true)->filter('some_third_party_tool', [
