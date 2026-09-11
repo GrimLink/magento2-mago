@@ -29,6 +29,15 @@ class PrivacyService
     }
 
     /**
+     * Bind the vault to the current conversation so tokens persist and resolve across turns and the
+     * confirmed-write round-trip. Called once at the start of a chat request.
+     */
+    public function beginConversation(int $conversationId): void
+    {
+        $this->vault->beginConversation($conversationId);
+    }
+
+    /**
      * Filter a tool result before it reaches the LLM. $action is the skill action (or the tool name
      * when there is no action), matching how the classification is keyed.
      *
