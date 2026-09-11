@@ -62,7 +62,7 @@ class ChatService implements ChatServiceInterface
         $tools = $this->toolRegistry->getToolDefinitions($adminUserId);
         $maxIterations = $this->configRepository->getMaxToolIterations();
 
-        $messages = $this->prependSystemMessage($messages);
+        $messages = $this->privacyService->scrubMessages($this->prependSystemMessage($messages));
         $instructedTools = [];
         $nudged = false;
 
@@ -126,7 +126,7 @@ class ChatService implements ChatServiceInterface
         $tools = $this->toolRegistry->getToolDefinitions($adminUserId);
         $maxIterations = $this->configRepository->getMaxToolIterations();
 
-        $messages = $this->prependSystemMessage($messages);
+        $messages = $this->privacyService->scrubMessages($this->prependSystemMessage($messages));
         $instructedTools = [];
         $nudged = false;
 

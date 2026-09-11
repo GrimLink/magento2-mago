@@ -18,6 +18,7 @@ use MagoAssistant\Mago\Service\Ai\ChatService;
 use MagoAssistant\Mago\Service\Ai\Client;
 use MagoAssistant\Mago\Service\Privacy\ConversationVault;
 use MagoAssistant\Mago\Service\Privacy\PiiClassificationRegistry;
+use MagoAssistant\Mago\Service\Privacy\PiiHeuristic;
 use MagoAssistant\Mago\Service\Privacy\PrivacyFilter;
 use MagoAssistant\Mago\Service\Privacy\PrivacyService;
 use MagoAssistant\Mago\Service\Skills\PermissionChecker;
@@ -117,7 +118,7 @@ final class ChatServiceTest extends TestCase
     {
         $vault = new ConversationVault();
 
-        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault), $vault);
+        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault), $vault, new PiiHeuristic());
     }
 
     /**

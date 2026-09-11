@@ -19,7 +19,8 @@ class PrivacyService
 {
     public function __construct(
         private readonly PrivacyFilter $filter,
-        private readonly ConversationVault $vault
+        private readonly ConversationVault $vault,
+        private readonly PiiHeuristic $heuristic
     ) {
     }
 
@@ -33,6 +34,26 @@ class PrivacyService
     public function filterToolResult(string $action, array $result): array
     {
         return $this->filter->filter($action, $result);
+    }
+
+    /**
+     * Scrub free text in the outbound messages just before they reach the LLM: the admin's typed
+     * message, replayed history and the custom system prompt all pass through here. Tool results are
+     * already filtered upstream, so the heuristic finds nothing new in them (the pass is idempotent).
+     * This is the one place that covers PII the admin types, which no field classification can catch.
+     *
+     * @param array<int,array<string,mixed>> $messages
+     * @return array<int,array<string,mixed>>
+     */
+    public function scrubMessages(array $messages): array
+    {
+        foreach ($messages as $index => $message) {
+            if (is_string($message['content'] ?? null) && $message['content'] !== '') {
+                $messages[$index]['content'] = $this->heuristic->tokeniseFreeText($message['content'], $this->vault);
+            }
+        }
+
+        return $messages;
     }
 
     /**
