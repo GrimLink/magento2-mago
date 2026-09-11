@@ -370,9 +370,7 @@ class ChatService implements ChatServiceInterface
                 $input['_admin_user_id'] = $adminUserId;
             }
             $result = $tool->execute($input);
-            // Privacy mode (#97): filter the result at this single choke point before it can reach
-            // the LLM. Direct identifiers are stripped, bare linkable ids tokenised; keyed by the
-            // skill action (or the tool name when there is none).
+            // Privacy filter runs here, before the result is capped and sent to the LLM.
             $result = $this->privacyService->filterToolResult(
                 (string)($input['action'] ?? '') !== '' ? (string)$input['action'] : $toolCall['name'],
                 $result
