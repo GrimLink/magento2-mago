@@ -15,6 +15,7 @@ use MagoAssistant\Mago\Logger\DebugLogger;
 use MagoAssistant\Mago\Logger\ErrorLogger;
 use Magento\Framework\AuthorizationInterface;
 use MagoAssistant\Mago\Service\Store\StoreScopeContext;
+use MagoAssistant\Mago\Service\Privacy\PrivacyService;
 use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 use MagoAssistant\Mago\Service\Usage\UsageLogger;
 
@@ -34,7 +35,8 @@ class ChatService implements ChatServiceInterface
         private readonly UsageLogger $usageLogger,
         private readonly AuthorizationInterface $authorization,
         private readonly StoreScopeContext $storeScopeContext,
-        private readonly AnswerWidgets $answerWidgets
+        private readonly AnswerWidgets $answerWidgets,
+        private readonly PrivacyService $privacyService
     ) {
     }
 
@@ -368,6 +370,13 @@ class ChatService implements ChatServiceInterface
                 $input['_admin_user_id'] = $adminUserId;
             }
             $result = $tool->execute($input);
+            // Privacy mode (#97): filter the result at this single choke point before it can reach
+            // the LLM. Direct identifiers are stripped, bare linkable ids tokenised; keyed by the
+            // skill action (or the tool name when there is none).
+            $result = $this->privacyService->filterToolResult(
+                (string)($input['action'] ?? '') !== '' ? (string)$input['action'] : $toolCall['name'],
+                $result
+            );
             if ($this->configRepository->isDebugEnabled()) {
                 $this->debugLogger->addLog('Tool Result', ['tool' => $toolCall['name'], 'result' => $result]);
             }

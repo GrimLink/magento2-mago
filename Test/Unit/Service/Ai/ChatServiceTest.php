@@ -16,6 +16,10 @@ use MagoAssistant\Mago\Logger\ErrorLogger;
 use MagoAssistant\Mago\Service\Ai\AnswerWidgets;
 use MagoAssistant\Mago\Service\Ai\ChatService;
 use MagoAssistant\Mago\Service\Ai\Client;
+use MagoAssistant\Mago\Service\Privacy\ConversationVault;
+use MagoAssistant\Mago\Service\Privacy\PiiClassificationRegistry;
+use MagoAssistant\Mago\Service\Privacy\PrivacyFilter;
+use MagoAssistant\Mago\Service\Privacy\PrivacyService;
 use MagoAssistant\Mago\Service\Skills\PermissionChecker;
 use MagoAssistant\Mago\Service\Store\StoreScopeContext;
 use MagoAssistant\Mago\Service\Tool\ToolRegistry;
@@ -104,8 +108,16 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $authorization,
             new StoreScopeContext($this->singleStoreManager()),
-            new AnswerWidgets()
+            new AnswerWidgets(),
+            $this->privacyService()
         );
+    }
+
+    private function privacyService(): PrivacyService
+    {
+        $vault = new ConversationVault();
+
+        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault), $vault);
     }
 
     /**
@@ -452,7 +464,8 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $this->createMock(AuthorizationInterface::class),
             new StoreScopeContext($storeManager),
-            new AnswerWidgets()
+            new AnswerWidgets(),
+            $this->privacyService()
         );
     }
 
