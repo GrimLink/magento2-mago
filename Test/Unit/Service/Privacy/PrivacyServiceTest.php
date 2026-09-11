@@ -18,7 +18,7 @@ class PrivacyServiceTest extends TestCase
 {
     private function service(ConversationVault $vault): PrivacyService
     {
-        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault), $vault, new PiiHeuristic());
+        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault, new PiiHeuristic()), $vault, new PiiHeuristic());
     }
 
     #[Test]
@@ -56,6 +56,16 @@ class PrivacyServiceTest extends TestCase
 
         self::assertSame('jan@example.com', $input['search']);
         self::assertSame('lookup_customer', $input['action']);
+    }
+
+    #[Test]
+    public function itDetectsATokenInWriteArgumentsSoAWriteCanBeRefused(): void
+    {
+        $service = $this->service(new ConversationVault());
+
+        self::assertTrue($service->containsToken(['comment' => 'Call [customer_1] back']));
+        self::assertTrue($service->containsToken(['nested' => ['ref' => '[order_2]']]));
+        self::assertFalse($service->containsToken(['status' => 'processing', 'qty' => 3]));
     }
 
     #[Test]

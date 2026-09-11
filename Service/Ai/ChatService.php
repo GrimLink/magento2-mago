@@ -358,6 +358,10 @@ class ChatService implements ChatServiceInterface
             return ['error' => $denial];
         }
 
+        $action = (string)($toolCall['input']['action'] ?? '') !== ''
+            ? (string)$toolCall['input']['action']
+            : $toolCall['name'];
+
         try {
             if ($this->configRepository->isDebugEnabled()) {
                 $this->debugLogger->addLog('Tool Execute', [
@@ -365,18 +369,24 @@ class ChatService implements ChatServiceInterface
                     'input' => $toolCall['input'] ?? [],
                 ]);
             }
-            // The model only ever saw tokens for scrubbed values, so rehydrate the arguments to
-            // their real values before the tool runs (otherwise a search for "[email_1]" finds nothing).
-            $input = $this->privacyService->rehydrateArguments($toolCall['input'] ?? []);
+            $input = $toolCall['input'] ?? [];
+            if ($tool->isReadOnlyAction($input)) {
+                // The model only ever saw tokens for scrubbed values, so rehydrate a read's arguments
+                // to their real values (otherwise a search for "[email_1]" finds nothing).
+                $input = $this->privacyService->rehydrateArguments($input);
+            } elseif ($this->privacyService->containsToken($input)) {
+                // A write must never run with a masked value in it: the vault is request-scoped, so a
+                // token here is either a cross-request confirmed write (would persist "[order_1]"
+                // verbatim) or an attempt to move masked PII into stored data. Refuse instead.
+                return ['error' => 'This action refers to a value that is masked for privacy. Ask the '
+                    . 'administrator to enter it directly on the form or in the request.'];
+            }
             if ($adminUserId !== null) {
                 $input['_admin_user_id'] = $adminUserId;
             }
             $result = $tool->execute($input);
             // Privacy filter runs here, before the result is capped and sent to the LLM.
-            $result = $this->privacyService->filterToolResult(
-                (string)($input['action'] ?? '') !== '' ? (string)$input['action'] : $toolCall['name'],
-                $result
-            );
+            $result = $this->privacyService->filterToolResult($action, $result);
             if ($this->configRepository->isDebugEnabled()) {
                 $this->debugLogger->addLog('Tool Result', ['tool' => $toolCall['name'], 'result' => $result]);
             }
@@ -386,7 +396,9 @@ class ChatService implements ChatServiceInterface
                 'tool' => $toolCall['name'],
                 'error' => $e->getMessage(),
             ]);
-            return ['error' => $e->getMessage()];
+            // The exception message can embed a rehydrated argument, so it goes through the filter
+            // (its "error" envelope is re-scrubbed) rather than straight to the LLM.
+            return $this->privacyService->filterToolResult($action, ['error' => $e->getMessage()]);
         }
     }
 

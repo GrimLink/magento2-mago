@@ -21,8 +21,8 @@ class PiiHeuristic
     private const EMAIL = '/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/i';
     private const IBAN = '/\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/i';
     private const VAT_NL = '/\bNL\d{9}B\d{2}\b/i';
-    private const BSN = '/\b\d{9}\b/';
-    private const PHONE_NL = '/(?:\+31|0)6(?:[\s\-]?\d){8}\b/';
+    private const BSN = '/\b\d{3}[\s.\-]?\d{3}[\s.\-]?\d{3}\b/';
+    private const PHONE_NL = '/(?:\+31|0031|0)[\s\-]?6(?:[\s\-]?\d){8}\b/';
 
     public function tokeniseFreeText(string $text, ConversationVault $vault): string
     {
@@ -71,6 +71,11 @@ class PiiHeuristic
 
     private function isValidBsn(string $bsn): bool
     {
+        $bsn = preg_replace('/\D/', '', $bsn) ?? '';
+        if (strlen($bsn) !== 9 || (int)$bsn === 0) {
+            return false;
+        }
+
         $sum = 0;
         foreach (str_split($bsn) as $index => $digit) {
             $weight = $index === 8 ? -1 : 9 - $index;

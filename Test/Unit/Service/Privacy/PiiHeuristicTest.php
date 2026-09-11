@@ -54,6 +54,20 @@ class PiiHeuristicTest extends TestCase
     }
 
     #[Test]
+    public function itTokenisesInternationalAndGroupedFormats(): void
+    {
+        self::assertSame('call [phone_1]', $this->scrub('call +31 6 12345678'));
+        self::assertSame('call [phone_1]', $this->scrub('call 0031612345678'));
+        self::assertSame('bsn [bsn_1]', $this->scrub('bsn 111 222 333'));
+    }
+
+    #[Test]
+    public function itLeavesAnAllZeroNineDigitNumberAlone(): void
+    {
+        self::assertSame('code 000000000', $this->scrub('code 000000000'));
+    }
+
+    #[Test]
     public function itLeavesTextWithoutPiiUntouched(): void
     {
         $text = 'How many orders did we ship in Amsterdam last week?';

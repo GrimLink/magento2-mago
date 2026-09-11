@@ -118,7 +118,7 @@ final class ChatServiceTest extends TestCase
     {
         $vault = new ConversationVault();
 
-        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault), $vault, new PiiHeuristic());
+        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault, new PiiHeuristic()), $vault, new PiiHeuristic());
     }
 
     /**

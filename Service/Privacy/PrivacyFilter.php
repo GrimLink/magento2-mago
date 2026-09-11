@@ -36,14 +36,16 @@ class PrivacyFilter
     /**
      * Passed through whatever the classification, so a tool's failure survives filtering: without
      * this a classified action returning only {"error": "Order not found"} would reach the model as
-     * {} and it could not explain the failure (or an ACL denial). These carry no PII of their own;
-     * a search term echoed in "message" already travelled in the user's message (deferred input path).
+     * {} and it could not explain the failure (or an ACL denial). Their value is still run through
+     * the PII heuristic first: a lookup that missed echoes the (rehydrated) search term back in its
+     * message ("No customers found matching jan@example.com"), and that must not cross raw.
      */
     private const ALWAYS_ALLOW = ['error', 'message'];
 
     public function __construct(
         private readonly PiiClassificationRegistry $registry,
         private readonly ConversationVault $vault,
+        private readonly PiiHeuristic $heuristic,
         private readonly bool $stripUnclassified = false
     ) {
     }
@@ -69,28 +71,39 @@ class PrivacyFilter
     {
         $out = [];
         foreach ($node as $key => $value) {
+            $keyStr = is_string($key) ? $key : null;
+
+            if ($keyStr !== null && in_array($keyStr, self::ALWAYS_STRIP, true)) {
+                continue;
+            }
+
+            $rule = $keyStr !== null && $classes !== null ? ($classes[$keyStr] ?? null) : null;
+
+            // An explicit STRIP rule wins over the structure: a field declared STRIP is dropped
+            // whether it arrives as a scalar or as a nested array (so a customer object under a
+            // STRIP key cannot leak its leaves through the recursion below).
+            if ($rule !== null && $rule[0] === PiiClass::STRIP) {
+                continue;
+            }
+
             if (is_array($value)) {
                 $out[$key] = $this->apply($value, $classes, $lenient);
                 continue;
             }
 
-            if (is_string($key) && in_array($key, self::ALWAYS_STRIP, true)) {
-                continue;
-            }
-            if (is_string($key) && in_array($key, self::ALWAYS_ALLOW, true)) {
-                $out[$key] = $value;
+            if ($keyStr !== null && in_array($keyStr, self::ALWAYS_ALLOW, true)) {
+                $out[$key] = $this->keep($value);
                 continue;
             }
             if ($lenient) {
-                $out[$key] = $value;
+                $out[$key] = $this->keep($value);
                 continue;
             }
 
-            $rule = is_string($key) && $classes !== null ? ($classes[$key] ?? null) : null;
             $class = $rule[0] ?? PiiClass::STRIP;
 
             if ($class === PiiClass::PUBLIC) {
-                $out[$key] = $value;
+                $out[$key] = $this->keep($value);
             } elseif ($class === PiiClass::TOKENISE) {
                 $out[$key] = $this->vault->tokenise((string)$value, $rule[1] ?? 'value');
             }
@@ -98,5 +111,16 @@ class PrivacyFilter
         }
 
         return $out;
+    }
+
+    /**
+     * A kept value (public, envelope or lenient pass-through) still goes through the PII heuristic:
+     * a rehydrated argument the tool echoes back (a lookup miss repeating the search email in its
+     * message, or search_orders echoing the query) would otherwise cross to the LLM raw. The vault
+     * returns the same token, so the model's continuity is unaffected; a non-string is left as is.
+     */
+    private function keep(mixed $value): mixed
+    {
+        return is_string($value) ? $this->heuristic->tokeniseFreeText($value, $this->vault) : $value;
     }
 }

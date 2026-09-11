@@ -8,6 +8,7 @@ namespace MagoAssistant\Mago\Test\Unit\Service\Privacy;
 
 use MagoAssistant\Mago\Service\Privacy\ConversationVault;
 use MagoAssistant\Mago\Service\Privacy\PiiClassificationRegistry;
+use MagoAssistant\Mago\Service\Privacy\PiiHeuristic;
 use MagoAssistant\Mago\Service\Privacy\PrivacyFilter;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -52,7 +53,7 @@ class PrivacyFilterTest extends TestCase
 
     private function filter(?ConversationVault $vault = null, bool $stripUnclassified = false): PrivacyFilter
     {
-        return new PrivacyFilter(new PiiClassificationRegistry(), $vault ?? new ConversationVault(), $stripUnclassified);
+        return new PrivacyFilter(new PiiClassificationRegistry(), $vault ?? new ConversationVault(), new PiiHeuristic(), $stripUnclassified);
     }
 
     #[Test]
@@ -181,6 +182,47 @@ class PrivacyFilterTest extends TestCase
         self::assertSame('30days', $result['period']);
         self::assertSame(2, $result['total_orders']);
         self::assertSame('[order_1]', $result['orders'][0]['entity_id']);
+    }
+
+    #[Test]
+    public function itReScrubsARehydratedIdentifierEchoedBackInAPublicField(): void
+    {
+        // search_orders echoes the query verbatim (classified PUBLIC); a rehydrated email used as
+        // the query must not cross to the LLM raw.
+        $result = $this->filter()->filter('search_orders', [
+            'query' => 'jan@example.com',
+            'results_count' => 0,
+            'orders' => [],
+        ]);
+
+        self::assertSame('[email_1]', $result['query']);
+        self::assertStringNotContainsString('jan@example.com', (string)json_encode($result));
+    }
+
+    #[Test]
+    public function itReScrubsARehydratedIdentifierEchoedBackInTheMessageEnvelope(): void
+    {
+        $result = $this->filter()->filter('lookup_customer', [
+            'results' => [],
+            'message' => 'No customers found matching "jan@example.com"',
+        ]);
+
+        self::assertStringNotContainsString('jan@example.com', (string)json_encode($result));
+    }
+
+    #[Test]
+    public function anExplicitStripKeyIsDroppedEvenWhenItsValueIsANestedArray(): void
+    {
+        // lookup_order classifies "customer" STRIP; a shape that nests it must not leak the leaves.
+        $result = $this->filter()->filter('lookup_order', [
+            'order' => [
+                'entity_id' => 7,
+                'customer' => ['name' => 'Jan Jansen', 'email' => 'jan@example.com'],
+            ],
+        ]);
+
+        self::assertArrayNotHasKey('customer', $result['order']);
+        self::assertStringNotContainsString('Jan Jansen', (string)json_encode($result));
     }
 
     #[Test]

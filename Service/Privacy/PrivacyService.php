@@ -8,12 +8,16 @@ namespace MagoAssistant\Mago\Service\Privacy;
 
 /**
  * The privacy-mode entry point ChatService talks to (issue #97). One request-scoped instance holds
- * the conversation vault, so a value tokenised while filtering a tool result rehydrates to the same
- * value when the model's reply is shown to the admin. Magento shares one instance of a non-virtual
- * type per request by default, which is what makes that hold.
+ * the conversation vault, so a value tokenised while filtering a tool result reads back as the same
+ * token everywhere in the request. Magento shares one instance of a non-virtual type per request by
+ * default, which is what makes that hold.
  *
- * V1 scope: the vault is request-scoped. Cross-turn history replay needs a vault persisted per
- * conversation (#97 mechanism) — a documented follow-up, not a correctness bug within one turn.
+ * V1 scope: rehydrate() exists for the eventual admin-facing display pass (per #97 decision 4 that
+ * is client-side, so tokens split across SSE chunks still resolve) but is not wired into the stream
+ * yet — the admin currently sees the tokens in the reply, which #97 §8 accepts for bare-id tokens.
+ * The vault is request-scoped; cross-turn history replay and confirmed writes (a separate request)
+ * need a vault persisted per conversation — a documented follow-up, guarded meanwhile by
+ * containsToken() refusing a write that still carries a token.
  */
 class PrivacyService
 {
@@ -75,6 +79,28 @@ class PrivacyService
         }
 
         return $input;
+    }
+
+    /**
+     * True when any argument still carries a vault token. Used on the write path: the vault is
+     * request-scoped in V1, so a token in a confirmed write (a separate request, empty vault) would
+     * otherwise be written verbatim as "[order_1]" into real data — and a prompt injection could try
+     * to move a masked value into a write. A write is refused rather than run with a token in it.
+     *
+     * @param array<array-key,mixed> $input
+     */
+    public function containsToken(array $input): bool
+    {
+        foreach ($input as $value) {
+            if (is_array($value) && $this->containsToken($value)) {
+                return true;
+            }
+            if (is_string($value) && preg_match('/\[[a-z]+_\d+\]/', $value) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
