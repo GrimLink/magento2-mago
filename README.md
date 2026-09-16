@@ -1,6 +1,70 @@
-# Admin Assistant for Magento 2
+<p align="center">
+  <a href="https://askmago.com"><img src="docs/images/mago-lockup.svg" alt="Mago" width="360"></a>
+</p>
 
-AI-powered admin assistant — chat with your store using the AI provider of your choice.
+<h1 align="center">Ask Mago anything. Or tell it what to do.</h1>
+
+<p align="center">
+  <strong>The free, open source AI admin assistant for Magento 2 and Mage-OS.</strong><br>
+  Ask what sold best this week and get a live answer — or tell it to change a setting, and it does, after your OK.
+</p>
+
+<p align="center">
+  <a href="https://askmago.com">askmago.com</a> ·
+  <a href="#installation">Install</a> ·
+  <a href="#what-you-can-ask">What you can ask</a> ·
+  <a href="docs/skills-architecture.md">Build an addon</a>
+</p>
+
+<p align="center">
+  <img alt="Free for merchants" src="https://img.shields.io/badge/price-free-FF7A33">
+  <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-373330">
+  <img alt="Magento 2.4.9+" src="https://img.shields.io/badge/Magento-2.4.9%2B-373330">
+  <img alt="Mage-OS 3+" src="https://img.shields.io/badge/Mage--OS-3.0%2B-373330">
+  <img alt="PHP 8.2+" src="https://img.shields.io/badge/PHP-8.2%2B-373330">
+</p>
+
+---
+
+## Meet Mago
+
+Running a Magento store means living in the admin panel: digging through reports, hunting for
+that one configuration setting, flushing the cache after every deploy. Mago puts a chat window
+in your admin and does that work with you.
+
+Type a question in plain language and Mago answers with **live data from your own store** —
+revenue, best sellers, customers, configuration, content. Tell it to change something and it
+**does it for you**, but only after you've confirmed. It streams its answer as it works, shows
+numbers as stat cards, charts and tables where that helps, and never touches anything your
+admin role doesn't allow.
+
+<p align="center">
+  <img src="docs/images/mago-chat.png" alt="Mago chat in the Magento admin: a best-sellers question answered with a bar chart, followed by a settings change waiting for confirmation" width="640">
+</p>
+
+### Why merchants like it
+
+- **Free, forever.** Mago is open source under the MIT licence — no licence fee, no seats, no subscription. You only pay your AI provider for what you use, and Mago keeps its prompts small so a typical action costs a few cents.
+- **Your AI, your key.** Bring your own Anthropic or OpenAI key (or Gemini, Azure, DeepSeek, Ollama and more). Requests go straight from your store to your provider — there is no Mago server in between.
+- **Nothing changes without your OK.** Reading is instant; every write asks first. Irreversible actions such as cancelling an order or issuing a refund show their impact before you confirm.
+- **Follows your admin roles.** Read and write access run through Magento's own ACL, so every admin sees exactly what their role allows.
+- **Answers you can act on.** Stat cards, charts, tables and record lists, plus deep links straight into the admin page you need.
+- **Grows with the community.** Agencies and module vendors add new skills as addons, without touching core.
+
+### What you can ask
+
+| Ask a question… | …or give an instruction |
+|---|---|
+| "What were our best sellers this week?" | "Set the free shipping threshold to €75" |
+| "How did revenue compare to last month?" | "Flush the cache" (`/cache flush` works too) |
+| "Which customers ordered more than three times?" | "Reindex the catalog" |
+| "Where do I change the tax display setting?" | "Write a product description for SKU LT-2201" |
+| "Which products have no image?" | "Disable the Christmas CMS block" |
+| "How do I set up a cart price rule?" *(answered from the official docs)* | "Cancel order #100004521" *(shows impact, asks to confirm)* |
+
+See [docs/skills-examples.md](docs/skills-examples.md) for more example prompts per skill.
+
+---
 
 ## Features
 
@@ -152,6 +216,21 @@ and how to add scenarios.
 | `MagoAssistant_Mago::config` | Module configuration access |
 | `MagoAssistant_Mago::assistant_read` | Read-only tools (analytics, config reading, navigation) |
 | `MagoAssistant_Mago::assistant_write` | Write tools (config changes, CMS, content generation) |
+
+## Data & privacy
+
+Mago stores nothing outside your Magento installation. Every request goes directly from your
+store to the AI provider you configured, using your own API key; what that provider does with
+the request is governed by its API terms. Mago only reads what the current admin's role allows
+and never writes without an explicit confirmation. Details in
+[docs/skills-architecture.md](docs/skills-architecture.md#data--privacy).
+
+## Community
+
+Mago is built in the open with developers, community builders and backers from the Dutch
+Magento ecosystem. Issues and pull requests are welcome at
+[github.com/mago-assistant](https://github.com/mago-assistant); brand assets and press
+material live at [askmago.com/brand.html](https://askmago.com/brand.html).
 
 ## License
 
