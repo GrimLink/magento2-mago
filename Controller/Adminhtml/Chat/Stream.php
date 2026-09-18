@@ -213,11 +213,16 @@ class Stream extends Action implements HttpPostActionInterface
             $content = $result['content'] ?? '';
             $pendingConfirmation = !empty($result['pending_confirmation']);
 
+            $toolCalls = $result['tool_calls'] ?? null;
+            if (empty($toolCalls) && !empty($result['executed_tool_calls'])) {
+                $toolCalls = $result['executed_tool_calls'];
+            }
+
             $messageId = $this->conversationRepository->addMessage(
                 $conversationId,
                 'assistant',
                 $content,
-                $result['tool_calls'] ?? null,
+                $toolCalls,
                 $pendingConfirmation
             );
 

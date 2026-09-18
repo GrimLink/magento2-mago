@@ -654,10 +654,37 @@ define([
                 showGreeting();
                 return;
             }
+            // Tool calls live on the assistant row that ran them, but the answer they produced is
+            // the next row, so they are carried forward until there is a bubble to hang them on.
+            var pendingTools = [];
             loaded.forEach(function(m) {
-                if (m.role === 'user' || m.role === 'assistant') {
+                var tools = parseToolCalls(m);
+                if (m.role === 'assistant' && tools.length) {
+                    pendingTools = pendingTools.concat(tools);
+                }
+
+                var isConfirmRow = m.role === 'assistant' && !(m.content || '').trim() && tools.length;
+                if (isConfirmRow) {
                     addDateSep(m.created_at);
-                    addMsg(m.role, renderMd(m.content || ''), m.created_at);
+                    // No timestamp: live this bubble only ever holds the card, and the time of the
+                    // turn is printed under the answer that follows it.
+                    var confirmEl = addMsg('assistant', '');
+                    replayTools(confirmEl, pendingTools, tools);
+                    pendingTools = [];
+                    if (parseInt(m.pending_confirmation, 10) === 1) {
+                        showConfirmButtons(confirmEl, {messageId: m.entity_id}, tools);
+                    } else {
+                        restoreWriteResult(confirmEl, tools);
+                    }
+                } else if ((m.role === 'user' || m.role === 'assistant') && (m.content || '').trim()) {
+                    addDateSep(m.created_at);
+                    // No timestamp: a live bubble never carries one, and a reloaded conversation
+                    // that grows them is not the same conversation the admin was just looking at.
+                    var msgEl = addMsg(m.role, renderMd(m.content));
+                    if (m.role === 'assistant' && pendingTools.length) {
+                        replayTools(msgEl, pendingTools);
+                        pendingTools = [];
+                    }
                 }
             });
             saveState();
@@ -844,6 +871,74 @@ define([
         }
     });
 
+    // An answered write comes back as the card it ended on: the S03 line with its request and
+    // duration, the S04 card when it failed, or a muted line when it was declined. Without the
+    // stored outcome there is nothing to tell these apart, so the row stays as it was asked.
+    function restoreWriteResult(msgEl, tools) {
+        var first = tools[0] || null;
+        if (!first || !first.status) return;
+
+        var title = skillTitle(first.name);
+        var failed = tools.filter(function(t) { return t.status === 'failed'; })[0];
+        if (failed) {
+            msgEl.appendChild(UI.skillFailed({
+                title: title + ' failed',
+                text: failed.status_error || 'The action did not complete.',
+                code: tools.length === 1 ? failed.name : null
+            }));
+            return;
+        }
+
+        // The live card sums every tool in the run; the restored one has to add up the same way
+        // or a bulk confirmation comes back showing only its first action's time.
+        var total = tools.reduce(function(sum, t) { return sum + (parseInt(t.status_duration_ms, 10) || 0); }, 0);
+        var single = tools.length === 1 ? first : null;
+        msgEl.appendChild(UI.skillLine({
+            title: title,
+            action: single && single.input ? single.input.action : null,
+            duration: formatDuration(total),
+            state: first.status === 'skipped' ? 'skipped' : 'done',
+            request: single ? single.input : undefined
+        }));
+    }
+
+    // The live card measures in the browser and prints one decimal with a comma; a restored one
+    // reads the server's milliseconds and has to land on the same shape.
+    function formatDuration(ms) {
+        var value = parseInt(ms, 10);
+        if (!value) return undefined;
+
+        return (value / 1000).toFixed(1).replace('.', ',') + 's';
+    }
+
+    // Draw a stored row's tools the way the live stream drew them: the tag, then the read-only
+    // line with the outcome it ended on. A call that was denied or left unticked stored no status
+    // and gets no line, exactly as it had none while the answer streamed.
+    function replayTools(msgEl, tools, cardTools) {
+        tools.forEach(function(t) {
+            if (!t.name) return;
+            addToolTag(msgEl, t.name);
+            // A write is drawn as its own result card, which is what it collapsed into live; a
+            // read line beside it would be a step the admin never saw.
+            if (cardTools && cardTools.indexOf(t) !== -1) return;
+            if (t.status !== 'done' && t.status !== 'failed') return;
+            updateToolStatus(msgEl, t.name, 'running', t.status_message);
+            updateToolStatus(msgEl, t.name, t.status, t.status_error);
+        });
+    }
+
+    // Stored tool calls come back as a JSON string from the database and as an array from the
+    // stream, and a half-written row can hold neither.
+    function parseToolCalls(m) {
+        if (!m || !m.tool_calls) return [];
+        try {
+            var tc = typeof m.tool_calls === 'string' ? JSON.parse(m.tool_calls) : m.tool_calls;
+            return Array.isArray(tc) ? tc : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
     function addToolTag(msgEl, toolName) {
         var tags = msgEl.querySelector('.mago-tool-tags');
         if (!tags) return;
@@ -981,14 +1076,14 @@ define([
                         writeToolDetected = true;
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         releaseInput();
-                        showConfirmButtons(msg, conversationId, d.tools || []);
+                        showConfirmButtons(msg, {conversationId: conversationId}, d.tools || []);
                     }
                     else if (evt==='done') {
                         gotDone = true;
                         if(d.conversation_id) conversationId=d.conversation_id;
                         saveState(); releaseInput();
                         if (d.pending_confirmation && msg && !writeToolDetected) {
-                            showConfirmButtons(msg, d.message_id || conversationId, []);
+                            showConfirmButtons(msg, {messageId: d.message_id, conversationId: conversationId}, []);
                         }
                         if (!d.pending_confirmation && writeToolDetected) {
                             writeToolDetected = false;
@@ -1034,7 +1129,10 @@ define([
         return !!tool && tool.name === 'page_form' && !!tool.input && tool.input.action === 'write_fields';
     }
 
-    function showConfirmButtons(msgEl, messageIdOrConvId, tools) {
+    // ids = {messageId, conversationId}: the confirm endpoints key on the message that asked,
+    // so a caller that already knows it says so and the rest is looked up from the conversation.
+    function showConfirmButtons(msgEl, ids, tools) {
+        ids = ids || {};
         // Prevent duplicate confirm cards
         if (msgEl.querySelector('.mago-confirm-actions')) return;
 
@@ -1122,16 +1220,22 @@ define([
         }
 
         function getMessageId(callback) {
-            // If we already have a message_id from the done event, use it
-            if (messageIdOrConvId > 10000) {
-                callback(messageIdOrConvId);
+            var messageId = parseInt(ids.messageId, 10);
+            if (messageId) {
+                callback(messageId);
                 return;
             }
-            // Otherwise fetch it from the status endpoint using conversation_id
+
+            var conversationId = parseInt(ids.conversationId, 10);
+            if (!conversationId) {
+                failLookup('The action could not be linked to this conversation.');
+                return;
+            }
+
             fetch(config.statusUrl, {
                 method: 'POST',
                 headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
-                body: JSON.stringify({conversation_id: messageIdOrConvId, form_key: formKey}),
+                body: JSON.stringify({conversation_id: conversationId, form_key: formKey}),
                 credentials: 'same-origin'
             }).then(function(r) { return r.json(); }).then(function(d) {
                 if (d.message_id) {
@@ -1143,6 +1247,17 @@ define([
             }).catch(function() {
                 setTimeout(function() { getMessageId(callback); }, 1000);
             });
+        }
+
+        // The spinner replaced the buttons, so a lookup that cannot resolve has to hand the card
+        // back rather than sit there: the write never ran and the admin can still ask again.
+        function failLookup(text) {
+            card.replaceWith(UI.skillFailed({
+                title: title + ' failed',
+                text: text,
+                code: first ? first.name : null
+            }));
+            setBusy(false);
         }
     }
 
@@ -1159,7 +1274,9 @@ define([
             if (!run || !run.card || !run.card.parentNode) return;
             var first = run.tools && run.tools[0];
             var action = run.tools && run.tools.length === 1 && first && first.input ? first.input.action : null;
-            var seconds = ((Date.now() - run.startedAt) / 1000).toFixed(1).replace('.', ',') + 's';
+            var seconds = run.durationMs
+                ? formatDuration(run.durationMs)
+                : ((Date.now() - run.startedAt) / 1000).toFixed(1).replace('.', ',') + 's';
             if (state === 'failed') {
                 run.card.replaceWith(UI.skillFailed({
                     title: run.title + ' failed',
@@ -1252,6 +1369,9 @@ define([
                                 activeStep = null;
                                 run.card.magoUpdate({progress: 90});
                             }
+                            // The server timed the write itself. Printing its number instead of
+                            // the round trip keeps the card the same after a reload.
+                            if (d.duration_ms) { run.durationMs = (run.durationMs || 0) + d.duration_ms; }
                         } else {
                             if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                             updateToolStatus(msg, d.name, d.status, d.message);
@@ -1268,7 +1388,7 @@ define([
                             applyResult = null;
                         }
                         if (d.pending_confirmation && msg) {
-                            showConfirmButtons(msg, d.message_id || conversationId, []);
+                            showConfirmButtons(msg, {messageId: d.message_id, conversationId: conversationId}, []);
                         }
                         keepNavigateStatusLast();
                     }
