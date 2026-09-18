@@ -32,6 +32,36 @@ class ConversationVaultTest extends TestCase
     }
 
     #[Test]
+    public function bindingAnotherConversationLeavesTheFirstOnesTokensBehind(): void
+    {
+        $storage = $this->inMemoryStorage();
+        $vault = new ConversationVault($storage);
+
+        $vault->beginConversation(1);
+        $first = $vault->tokenise('one@example.com', 'email');
+
+        $vault->beginConversation(2);
+
+        self::assertFalse($vault->has($first), 'a token from another conversation must not resolve');
+        self::assertSame('I mailed ' . $first, $vault->rehydrate('I mailed ' . $first));
+    }
+
+    #[Test]
+    public function eachConversationNumbersItsTokensFromItsOwnMap(): void
+    {
+        $storage = $this->inMemoryStorage();
+        $vault = new ConversationVault($storage);
+
+        $vault->beginConversation(1);
+        $vault->tokenise('one@example.com', 'email');
+
+        $vault->beginConversation(2);
+
+        self::assertSame('[email_1]', $vault->tokenise('two@example.com', 'email'));
+        self::assertSame('two@example.com', $vault->rehydrate('[email_1]'));
+    }
+
+    #[Test]
     public function withoutStorageItStaysRequestScopedInMemory(): void
     {
         $vault = new ConversationVault();

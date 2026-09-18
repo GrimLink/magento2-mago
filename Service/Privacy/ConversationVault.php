@@ -44,6 +44,12 @@ class ConversationVault
      */
     public function beginConversation(int $conversationId): void
     {
+        if ($this->conversationId !== null && $this->conversationId !== $conversationId) {
+            $this->tokenByValue = [];
+            $this->valueByToken = [];
+            $this->counters = [];
+        }
+
         $this->conversationId = $conversationId;
         if ($this->storage === null) {
             return;
