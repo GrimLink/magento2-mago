@@ -78,6 +78,7 @@
         <index referenceId="MAGO_USAGE_LOG_PROVIDER" indexType="btree">
             <column name="provider"/>
         </index>
+        <constraint xsi:type="foreign" referenceId="MAGO_USAGE_LOG_CONV_ID" table="mago_usage_log" column="conversation_id" referenceTable="mago_conversation" referenceColumn="entity_id" onDelete="SET NULL"/>
     </table>
 
     <table name="mago_doc" resource="default" engine="innodb" comment="Admin Assistant Documentation Corpus">
@@ -116,6 +117,7 @@
         <index referenceId="MAGO_PII_TOKEN_CONVERSATION_ID" indexType="btree">
             <column name="conversation_id"/>
         </index>
+        <constraint xsi:type="foreign" referenceId="MAGO_PII_TOKEN_CONV_ID" table="mago_pii_token" column="conversation_id" referenceTable="mago_conversation" referenceColumn="entity_id" onDelete="CASCADE"/>
     </table>
 
 </schema>
