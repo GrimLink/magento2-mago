@@ -149,6 +149,7 @@
         <arguments>
             <argument name="actions" xsi:type="array">
                 <item name="diagnose" xsi:type="object">MagoAssistant\Mago\Service\Skills\Debug\ProductDebug\DiagnoseAction</item>
+                <item name="media_gallery" xsi:type="object">MagoAssistant\Mago\Service\Skills\Debug\ProductDebug\MediaGalleryAction</item>
             </argument>
         </arguments>
     </type>
