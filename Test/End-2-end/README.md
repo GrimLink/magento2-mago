@@ -21,6 +21,7 @@ Everything is read from environment variables, no config file to edit:
 | `ADMIN_PATH` | `admin` | `backend/frontName` from `app/etc/env.php` |
 | `ADMIN_USERNAME` | `exampleuser` | Admin username |
 | `ADMIN_PASSWORD` | `examplepassword123` | Admin password |
+| `WIREMOCK_ADMIN_URL` | `http://localhost:8080` | WireMock admin API, for request-journal assertions |
 
 ```bash
 BASE_URL="https://your-store.test/" npx playwright test
