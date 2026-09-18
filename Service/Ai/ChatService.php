@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace MagoAssistant\Mago\Service\Ai;
 
 use MageOS\AiBase\Api\AiClientInterface;
+use MagoAssistant\Mago\Api\Tool\ValidatingToolInterface;
 use MagoAssistant\Mago\Api\ChatServiceInterface;
 use MagoAssistant\Mago\Api\Tool\IrreversibleToolInterface;
 use MagoAssistant\Mago\Api\Tool\ToolInterface;
@@ -14,6 +15,7 @@ use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
 use MagoAssistant\Mago\Logger\DebugLogger;
 use MagoAssistant\Mago\Logger\ErrorLogger;
 use Magento\Framework\AuthorizationInterface;
+use MagoAssistant\Mago\Service\Form\PageContextHolder;
 use MagoAssistant\Mago\Service\Store\StoreScopeContext;
 use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 use MagoAssistant\Mago\Service\Usage\UsageLogger;
@@ -25,6 +27,15 @@ class ChatService implements ChatServiceInterface
     /** Marker that opens the store scope section so it is never injected twice */
     private const STORE_SCOPE_MARKER = '[Store scope]';
 
+    /**
+     * A tool result carrying this key gets its value forwarded to the panel as a form_apply SSE
+     * event and stripped from what the provider and the conversation history see. ChatService does
+     * not know what the value means; task 006 defines the shape a tool may put there.
+     */
+    private const CLIENT_DIRECTIVE_KEY = 'client_directive';
+
+    private const FORM_APPLY_EVENT = 'form_apply';
+
     public function __construct(
         private readonly ConfigRepository $configRepository,
         private readonly Client $client,
@@ -34,7 +45,8 @@ class ChatService implements ChatServiceInterface
         private readonly UsageLogger $usageLogger,
         private readonly AuthorizationInterface $authorization,
         private readonly StoreScopeContext $storeScopeContext,
-        private readonly AnswerWidgets $answerWidgets
+        private readonly AnswerWidgets $answerWidgets,
+        private readonly PageContextHolder $pageContextHolder
     ) {
     }
 
@@ -147,9 +159,17 @@ class ChatService implements ChatServiceInterface
                 return $response;
             }
 
+            // A write the action already knows it would refuse (no form open, denied form, unknown
+            // field) is answered as a tool result right away rather than put to the administrator
+            // to confirm first; the confirmation prompt is only shown for writes that can happen.
+            $refusals = $this->findRefusals($response['tool_calls'], $adminUserId);
+
             // Check for permitted write actions needing confirmation (denied ones are
             // executed below and answered with the denial as a tool result)
             foreach ($response['tool_calls'] as $toolCall) {
+                if (isset($refusals[$toolCall['id']])) {
+                    continue;
+                }
                 if ($this->requiresConfirmation($toolCall, $adminUserId)) {
                     // Send confirm event with tool details so frontend can show what will happen
                     $confirmTools = [];
@@ -199,7 +219,8 @@ class ChatService implements ChatServiceInterface
                     ]);
                 }
 
-                $result = $this->executeTool($toolCall, $adminUserId);
+                $result = $refusals[$toolCall['id']] ?? $this->executeTool($toolCall, $adminUserId);
+                $this->emitClientDirective($result, $onChunk);
 
                 if ($reportStatus) {
                     $onChunk('tool_status', $this->statusAfter($toolCall['name'], $result));
@@ -208,7 +229,10 @@ class ChatService implements ChatServiceInterface
                 $messages[] = [
                     'role' => 'tool',
                     'tool_call_id' => $toolCall['id'],
-                    'content' => json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    'content' => json_encode(
+                        $this->withoutClientDirective($result),
+                        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+                    ),
                 ];
 
                 $this->injectToolInstructions($toolCall, $adminUserId, $messages, $instructedTools);
@@ -216,6 +240,27 @@ class ChatService implements ChatServiceInterface
         }
 
         return ['content' => 'Maximum tool iterations reached.', 'tool_calls' => []];
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $toolCalls
+     * @return array<string,array<string,mixed>> Refusal results keyed by tool call id
+     */
+    private function findRefusals(array $toolCalls, ?int $adminUserId): array
+    {
+        $refusals = [];
+        foreach ($toolCalls as $toolCall) {
+            $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
+            if (!$tool instanceof ValidatingToolInterface || $tool->isReadOnlyAction($toolCall['input'] ?? [])) {
+                continue;
+            }
+            $refusal = $tool->findRefusal($toolCall['input'] ?? []);
+            if ($refusal !== null) {
+                $refusals[$toolCall['id']] = $refusal;
+            }
+        }
+
+        return $refusals;
     }
 
     /**
@@ -246,24 +291,28 @@ class ChatService implements ChatServiceInterface
                 continue;
             }
 
-            $reportStatus = $onChunk && !$this->isToolCallDenied($toolCall, $adminUserId);
+            $reportStatus = $onChunk !== null && !$this->isToolCallDenied($toolCall, $adminUserId);
             if ($reportStatus) {
-                $statusMsg = $this->getToolStatusMessage(
-                    $toolCall['name'],
-                    $toolCall['input']['action'] ?? '',
-                    $toolCall['input'] ?? []
-                );
-                $onChunk('tool_status', [
+                $this->reportToolStatus($onChunk, [
                     'name' => $toolCall['name'],
                     'status' => 'running',
-                    'message' => $statusMsg,
+                    'message' => $this->getToolStatusMessage(
+                        $toolCall['name'],
+                        $toolCall['input']['action'] ?? '',
+                        $toolCall['input'] ?? []
+                    ),
                 ]);
             }
 
-            $results[$toolCall['id']] = $this->executeTool($toolCall, $adminUserId);
+            $result = $this->executeTool($toolCall, $adminUserId);
+            $this->emitClientDirective($result, $onChunk);
+            $results[$toolCall['id']] = $this->withoutClientDirective($result);
 
             if ($reportStatus) {
-                $onChunk('tool_status', $this->statusAfter($toolCall['name'], $results[$toolCall['id']]));
+                $this->reportToolStatus(
+                    $onChunk,
+                    $this->statusAfter($toolCall['name'], $results[$toolCall['id']])
+                );
             }
         }
         return $results;
@@ -344,6 +393,43 @@ class ChatService implements ChatServiceInterface
         }
     }
 
+    /**
+     * @param array<string, mixed> $status
+     */
+    private function reportToolStatus(?callable $onChunk, array $status): void
+    {
+        if ($onChunk === null) {
+            return;
+        }
+
+        $onChunk('tool_status', $status);
+    }
+
+    /**
+     * Forwards a tool result's client_directive, untouched, to the panel. Neither the presence of
+     * this key nor its shape is domain knowledge ChatService holds; only json_encode-ability of the
+     * value into the onChunk('type', array $data) contract is checked.
+     */
+    private function emitClientDirective(array $result, ?callable $onChunk): void
+    {
+        if ($onChunk === null || !is_array($result[self::CLIENT_DIRECTIVE_KEY] ?? null)) {
+            return;
+        }
+
+        $onChunk(self::FORM_APPLY_EVENT, $result[self::CLIENT_DIRECTIVE_KEY]);
+    }
+
+    /**
+     * A client_directive is transport to the browser, not something the provider should reason
+     * about or the conversation history should keep replaying on every later turn.
+     */
+    private function withoutClientDirective(array $result): array
+    {
+        unset($result[self::CLIENT_DIRECTIVE_KEY]);
+
+        return $result;
+    }
+
     private function executeTool(array $toolCall, ?int $adminUserId = null): array
     {
         $tool = $this->toolRegistry->getTool($toolCall['name'], $adminUserId);
@@ -390,10 +476,18 @@ class ChatService implements ChatServiceInterface
      */
     private function capToolResult(array $result, string $toolName): array
     {
+        // A client_directive is stripped again before the tool message is built, so it never
+        // spends context: it neither counts towards the cap nor may be truncated away with the
+        // rest, or a confirmed write would be staged nowhere with nothing said about it.
+        $directive = is_array($result[self::CLIENT_DIRECTIVE_KEY] ?? null)
+            ? $result[self::CLIENT_DIRECTIVE_KEY]
+            : null;
+        $result = $this->withoutClientDirective($result);
+
         $maxBytes = $this->configRepository->getMaxResponseTokens() * self::BYTES_PER_TOKEN_ESTIMATE;
         $json = json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         if ($json === false || strlen($json) <= $maxBytes) {
-            return $result;
+            return $this->withClientDirective($result, $directive);
         }
 
         if ($this->configRepository->isDebugEnabled()) {
@@ -406,7 +500,7 @@ class ChatService implements ChatServiceInterface
 
         $output = mb_strcut($json, 0, $maxBytes);
 
-        return [
+        return $this->withClientDirective([
             '_truncated' => true,
             'output' => $output,
             'total_bytes' => strlen($json),
@@ -414,7 +508,25 @@ class ChatService implements ChatServiceInterface
             'note' => 'Tool output exceeded the configured limit and was truncated. The output field holds the '
                 . 'beginning of the JSON result and may stop mid-value. Do not retry the same call; ask the user '
                 . 'to narrow the query (filters, pagination, fewer fields) or use a more specific action.',
-        ];
+        ], $directive);
+    }
+
+    /**
+     * Put back what only the browser reads, after the model's copy has been measured and capped
+     *
+     * @param array<string, mixed> $result
+     * @param array<string, mixed>|null $directive
+     * @return array<string, mixed>
+     */
+    private function withClientDirective(array $result, ?array $directive): array
+    {
+        if ($directive === null) {
+            return $result;
+        }
+
+        $result[self::CLIENT_DIRECTIVE_KEY] = $directive;
+
+        return $result;
     }
 
     /**
@@ -560,6 +672,9 @@ class ChatService implements ChatServiceInterface
             'order_manager.cancel' => 'Cancelling order...',
             'order_manager.hold' => 'Holding order...',
             'order_manager.unhold' => 'Removing hold from order...',
+            'page_form.describe_form' => 'Reading the form on screen...',
+            'page_form.read_fields' => 'Reading field values from the form on screen...',
+            'page_form.write_fields' => 'Staging field changes on the form on screen...',
         ];
 
         $key = $action ? "{$toolName}.{$action}" : $toolName;
@@ -602,6 +717,7 @@ class ChatService implements ChatServiceInterface
     private function prependSystemMessage(array $messages): array
     {
         $systemPrompt = $this->configRepository->getSystemPrompt();
+        $pageContextLine = $this->pageContextHolder->get()?->toPromptLine();
         $firstSystemIndex = null;
         $hasStoreScope = false;
         $hasWidgetGuide = false;
@@ -629,9 +745,21 @@ class ChatService implements ChatServiceInterface
         $extra = implode("\n\n", array_filter($sections, static fn (string $section): bool => $section !== ''));
 
         if ($firstSystemIndex === null) {
-            $content = $extra !== '' ? $systemPrompt . "\n\n" . $extra : $systemPrompt;
+            $content = $systemPrompt;
+            if ($pageContextLine !== null) {
+                $content .= "\n\n" . $pageContextLine;
+            }
+            if ($extra !== '') {
+                $content .= "\n\n" . $extra;
+            }
             array_unshift($messages, ['role' => 'system', 'content' => $content]);
+
             return $messages;
+        }
+
+        if ($pageContextLine !== null) {
+            $messages[$firstSystemIndex]['content'] = rtrim((string)$messages[$firstSystemIndex]['content'])
+                . "\n\n" . $pageContextLine;
         }
 
         if ($extra !== '') {

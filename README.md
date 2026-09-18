@@ -76,6 +76,10 @@ See [docs/skills-examples.md](docs/skills-examples.md) for more example prompts 
 - **ACL-based permissions** — read/write access controlled per admin role
 - **Write confirmation** — every write asks first; irreversible actions (cancel, refund, delete) show their impact and need an explicit acknowledgement, several writes in one turn become a tick list
 - **Answer widgets** — stat cards, charts, tables and record lists in the answer where the data allows it (see [docs/ui-components.md](docs/ui-components.md))
+- **Write confirmation** — destructive actions always require explicit user approval
+- **Form access** — reads and stages field changes on the admin form open in the browser
+  (including unsaved edits), but never saves: changes are only staged into the form's own fields,
+  same as typing them in, and the administrator's own Save click is what persists anything
 - **Multi-provider** — Anthropic, OpenAI, Azure, Google Gemini, DeepSeek, Hugging Face, OpenRouter, Ollama and LM Studio, through [MageOS_AiBase](https://github.com/mage-os-lab/module-ai-base)
 - **Documentation grounding** — answers admin how-to questions from Magento/Adobe Commerce docs, fetched into your database (optional)
 
@@ -127,6 +131,7 @@ These calls verify the TLS certificate by default. If the internal URL points at
 | Content Management | `cms_data`, `content_generator` | Read / Write |
 | Navigation | `admin_navigator` | Read |
 | Documentation | `docs_search` | Read |
+| Form Access | `page_form` | Read / Stage (never saves) |
 
 See [docs/skills-examples.md](docs/skills-examples.md) for example prompts per skill and [docs/skills-roadmap.md](docs/skills-roadmap.md) for the full roadmap of planned skills.
 
@@ -147,6 +152,11 @@ Typing `/` in the chat shows the available commands. These run without the AI pr
 Write commands need the `MagoAssistant_Mago::assistant_write` ACL resource plus a write grant on the underlying skill. See [docs/skills-architecture.md](docs/skills-architecture.md#slash-commands) for registering your own commands.
 
 The answer widgets and skill cards the chat panel renders are documented in [docs/ui-components.md](docs/ui-components.md); [docs/ui-components-examples.md](docs/ui-components-examples.md) shows every component with sample data and the call behind it.
+`page_form` reads the admin form currently open in the browser and can stage new field values for
+the administrator to confirm — it never writes to the database itself, only into the same fields
+the administrator would type into, so their own Save button is what persists anything. See
+[docs/form-access.md](docs/form-access.md) for what it can see, which forms are excluded, and the
+directive contract it uses to reach the browser.
 
 ## Documentation grounding
 
