@@ -35,8 +35,8 @@ const QUESTION = 'Please run the E2E privacy lookup check.';
  */
 test.describe('Privacy mode', () => {
   test.beforeEach(async ({request}) => {
-    await magentoApi.deleteCustomer(request, CANARY_EMAIL);
-    await magentoApi.createCustomer(request, {
+    await magentoApi.deleteCustomerByEmail(request, CANARY_EMAIL);
+    await magentoApi.createCustomerWithAddress(request, {
       email: CANARY_EMAIL,
       firstname: CANARY_FIRSTNAME,
       lastname: CANARY_LASTNAME,
@@ -46,7 +46,7 @@ test.describe('Privacy mode', () => {
   });
 
   test.afterEach(async ({request}) => {
-    await magentoApi.deleteCustomer(request, CANARY_EMAIL);
+    await magentoApi.deleteCustomerByEmail(request, CANARY_EMAIL);
   });
 
   test('Strips the canary PII from the provider request and the stored conversation', async ({page, request}) => {

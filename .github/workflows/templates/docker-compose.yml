@@ -13,6 +13,7 @@ services:
     command: ["--verbose", "--disable-banner"]
     # Published so the tests can read the request journal through the admin API
     # (privacy-mode.spec.ts asserts on what actually reached the provider).
+    # The specs read WireMock's request journal from the runner host, not only through Magento.
     ports:
       - 8080:8080
     volumes:

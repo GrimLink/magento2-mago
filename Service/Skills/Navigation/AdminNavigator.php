@@ -8,37 +8,15 @@ namespace MagoAssistant\Mago\Service\Skills\Navigation;
 
 use MagoAssistant\Mago\Api\Tool\ToolInterface;
 use MagoAssistant\Mago\Service\Privacy\PiiClass;
+use MagoAssistant\Mago\Service\Url\EntityRouteMap;
 use MagoAssistant\Mago\Service\Url\SecureAdminUrl;
 
 class AdminNavigator implements ToolInterface
 {
-    private const ENTITY_ROUTES = [
-        'order' => 'sales/order/view',
-        'invoice' => 'sales/invoice/view',
-        'shipment' => 'sales/shipment/view',
-        'creditmemo' => 'sales/creditmemo/view',
-        'customer' => 'customer/index/edit',
-        'product' => 'catalog/product/edit',
-        'cms_page' => 'cms/page/edit',
-        'cms_block' => 'cms/block/edit',
-        'category' => 'catalog/category/edit',
-    ];
-
-    private const ENTITY_PARAM_KEYS = [
-        'order' => 'order_id',
-        'invoice' => 'invoice_id',
-        'shipment' => 'shipment_id',
-        'creditmemo' => 'creditmemo_id',
-        'customer' => 'id',
-        'product' => 'id',
-        'cms_page' => 'page_id',
-        'cms_block' => 'block_id',
-        'category' => 'id',
-    ];
-
     public function __construct(
         private readonly PageRegistry $pageRegistry,
-        private readonly SecureAdminUrl $secureAdminUrl
+        private readonly SecureAdminUrl $secureAdminUrl,
+        private readonly EntityRouteMap $entityRouteMap
     ) {
     }
 
@@ -69,7 +47,7 @@ class AdminNavigator implements ToolInterface
                 ],
                 'entity_type' => [
                     'type' => 'string',
-                    'enum' => array_keys(self::ENTITY_ROUTES),
+                    'enum' => $this->entityRouteMap->getEntityTypes(),
                     'description' => 'Entity type for direct link (use with entity_id)',
                 ],
                 'entity_id' => [
@@ -137,8 +115,8 @@ class AdminNavigator implements ToolInterface
 
     private function resolveEntityLink(string $entityType, int $entityId): array
     {
-        $route = self::ENTITY_ROUTES[$entityType] ?? null;
-        $paramKey = self::ENTITY_PARAM_KEYS[$entityType] ?? null;
+        $route = $this->entityRouteMap->getRoute($entityType);
+        $paramKey = $this->entityRouteMap->getParamKey($entityType);
 
         if (!$route || !$paramKey) {
             return ['error' => 'Unknown entity type: ' . $entityType];

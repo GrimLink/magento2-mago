@@ -18,8 +18,12 @@ use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
 use MagoAssistant\Mago\Api\ConversationRepositoryInterface;
 use MagoAssistant\Mago\Logger\DebugLogger;
 use MagoAssistant\Mago\Logger\ErrorLogger;
+use MagoAssistant\Mago\Model\Conversation\PageLocationRecorder;
 use MagoAssistant\Mago\Service\Ai\Client;
 use MagoAssistant\Mago\Service\Command\CommandRunner;
+use MagoAssistant\Mago\Service\Conversation\NavigationNoteInjector;
+use MagoAssistant\Mago\Service\Form\PageContextHolder;
+use MagoAssistant\Mago\Service\Form\PageContextNormalizer;
 use MagoAssistant\Mago\Service\Privacy\PrivacyService;
 
 class Stream extends Action implements HttpPostActionInterface
@@ -39,6 +43,10 @@ class Stream extends Action implements HttpPostActionInterface
         private readonly DebugLogger $debugLogger,
         private readonly FormKey $formKey,
         private readonly CommandRunner $commandRunner,
+        private readonly PageContextNormalizer $pageContextNormalizer,
+        private readonly PageContextHolder $pageContextHolder,
+        private readonly NavigationNoteInjector $navigationNoteInjector,
+        private readonly PageLocationRecorder $pageLocationRecorder,
         private readonly PrivacyService $privacyService
     ) {
         parent::__construct($context);
@@ -62,14 +70,22 @@ class Stream extends Action implements HttpPostActionInterface
 
         try {
             $rawBody = $this->getRequest()->getContent();
+            $postData = (array)$this->json->unserialize($rawBody);
+
+            $rawPageContext = $postData['page_context'] ?? null;
+            $pageContext = $this->pageContextNormalizer->normalize($rawPageContext);
+            $this->pageContextHolder->set($pageContext, $this->pageContextNormalizer->isDenied($rawPageContext));
+
             // Debug-gated AND masked: the raw typed message is exactly what decision 1 keeps out of
             // persistence, and this log has no conversation to tokenise into, so values are masked
-            // irreversibly by class.
+            // irreversibly by class. The page context is still summarised so the entry stays readable.
             if ($this->configRepository->isDebugEnabled()) {
-                $this->debugLogger->addLog('Stream Request', ['raw_body' => $this->privacyService->maskText($rawBody)]);
+                $this->debugLogger->addLog('Stream Request', [
+                    'raw_body' => $this->privacyService->maskText(
+                        (string)$this->json->serialize($this->redactedPostData($postData))
+                    ),
+                ]);
             }
-
-            $postData = $this->json->unserialize($rawBody);
 
             $message = $postData['message'] ?? '';
             $conversationId = !empty($postData['conversation_id']) ? (int)$postData['conversation_id'] : null;
@@ -123,9 +139,12 @@ class Stream extends Action implements HttpPostActionInterface
             if ($isNewConversation) {
                 $this->conversationRepository->updateTitle($conversationId, $this->privacyService->safeTitle($message));
             }
-            $this->conversationRepository->addMessage($conversationId, 'user', $message);
+            $messageId = $this->conversationRepository->addMessage($conversationId, 'user', $message);
+            if ($pageContext !== null) {
+                $this->pageLocationRecorder->record($messageId, $pageContext->toLocation());
+            }
 
-            $messages = $this->conversationRepository->getMessages($conversationId);
+            $messages = $this->navigationNoteInjector->annotate($this->conversationRepository->getMessages($conversationId));
             $formattedMessages = [];
 
             // Collect all tool response IDs to validate tool_call chains
@@ -215,11 +234,16 @@ class Stream extends Action implements HttpPostActionInterface
             $content = $result['content'] ?? '';
             $pendingConfirmation = !empty($result['pending_confirmation']);
 
+            $toolCalls = $result['tool_calls'] ?? null;
+            if (empty($toolCalls) && !empty($result['executed_tool_calls'])) {
+                $toolCalls = $result['executed_tool_calls'];
+            }
+
             $messageId = $this->conversationRepository->addMessage(
                 $conversationId,
                 'assistant',
                 $content,
-                $result['tool_calls'] ?? null,
+                $toolCalls,
                 $pendingConfirmation
             );
 
@@ -299,6 +323,40 @@ class Stream extends Action implements HttpPostActionInterface
         $this->conversationRepository->getByIdForUser($conversationId, $adminUserId);
 
         return $conversationId;
+    }
+
+    /**
+     * A full form snapshot can be hundreds of kilobytes of field labels and values per message;
+     * logging it verbatim would put untrusted client data into the debug log untouched. Only the
+     * namespace, entity id and field count are worth keeping here.
+     *
+     * @param array<array-key, mixed> $postData
+     * @return array<array-key, mixed>
+     */
+    private function redactedPostData(array $postData): array
+    {
+        if (!isset($postData['page_context'])) {
+            return $postData;
+        }
+
+        $postData['page_context'] = $this->summarizePageContext($postData['page_context']);
+
+        return $postData;
+    }
+
+    private function summarizePageContext(mixed $pageContext): mixed
+    {
+        if (!is_array($pageContext) || array_is_list($pageContext)) {
+            return $pageContext;
+        }
+
+        return [
+            'namespace' => $pageContext['namespace'] ?? null,
+            'entityId' => $pageContext['entityId'] ?? null,
+            'fieldCount' => is_array($pageContext['fields'] ?? null)
+                ? count($pageContext['fields'])
+                : ($pageContext['fieldCount'] ?? null),
+        ];
     }
 
     private function sendSse(string $event, array $data, bool $pad = false): void
