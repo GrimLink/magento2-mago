@@ -54,6 +54,7 @@ class GetVersionAction implements ActionInterface
     public function getFieldClassification(): array
     {
         return [
+            'message' => [PiiClass::PUBLIC],
             'ambiguous' => [PiiClass::PUBLIC],
             'module_name' => [PiiClass::PUBLIC],
             'package_name' => [PiiClass::PUBLIC],

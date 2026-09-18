@@ -55,6 +55,7 @@ class ScheduleJobAction implements ActionInterface
     public function getFieldClassification(): array
     {
         return [
+            'message' => [PiiClass::PUBLIC],
             'success' => [PiiClass::PUBLIC],
             'schedule_id' => [PiiClass::PUBLIC],
             'job_code' => [PiiClass::PUBLIC],

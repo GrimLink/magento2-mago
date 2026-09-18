@@ -96,6 +96,7 @@ class CreateRuleAction implements ActionInterface
     public function getFieldClassification(): array
     {
         return [
+            'message' => [PiiClass::PUBLIC],
             'success' => [PiiClass::PUBLIC],
             'rule_id' => [PiiClass::PUBLIC],
             'name' => [PiiClass::PUBLIC],

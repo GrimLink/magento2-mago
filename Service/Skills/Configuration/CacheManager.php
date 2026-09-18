@@ -106,6 +106,7 @@ class CacheManager implements ActionScopedToolInterface
     public function getFieldClassification(string $action = ''): array
     {
         return [
+            'message' => [PiiClass::PUBLIC],
             'id' => [PiiClass::PUBLIC],
             'label' => [PiiClass::PUBLIC],
             'status' => [PiiClass::PUBLIC],

@@ -66,6 +66,9 @@ class LookupCustomerAction implements ActionInterface
             'country' => [PiiClass::PUBLIC],
             'city' => [PiiClass::PUBLIC],
             'registered' => [PiiClass::PUBLIC],
+            // The miss message quotes what the admin searched for, which is a name or an address.
+            // An empty results list already says "nothing found".
+            'message' => [PiiClass::STRIP],
         ];
     }
 

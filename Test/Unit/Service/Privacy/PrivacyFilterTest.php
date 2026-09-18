@@ -313,7 +313,10 @@ class PrivacyFilterTest extends TestCase
         $filter = $this->filter($vault);
         $vault->tokenise('000000549', 'order');
 
-        $result = $filter->filter(['success' => [PiiClass::PUBLIC]], [
+        $result = $filter->filter([
+            'success' => [PiiClass::PUBLIC],
+            'message' => [PiiClass::PUBLIC],
+        ], [
             'success' => true,
             'message' => 'Invoice created for order #000000549',
         ]);

@@ -72,6 +72,7 @@ class CreateAction implements ActionInterface
     public function getFieldClassification(): array
     {
         return [
+            'message' => [PiiClass::PUBLIC],
             'success' => [PiiClass::PUBLIC],
             'url_rewrite_id' => [PiiClass::PUBLIC],
             'request_path' => [PiiClass::PUBLIC],

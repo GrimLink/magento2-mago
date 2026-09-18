@@ -115,6 +115,7 @@ class IndexerManager implements ActionScopedToolInterface
     public function getFieldClassification(string $action = ''): array
     {
         return [
+            'message' => [PiiClass::PUBLIC],
             'id' => [PiiClass::PUBLIC],
             'title' => [PiiClass::PUBLIC],
             'status' => [PiiClass::PUBLIC],

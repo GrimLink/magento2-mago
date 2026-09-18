@@ -27,10 +27,12 @@ class PrivacyFilter
 
     /**
      * Kept whatever the classification so a tool's failure or ACL denial can still be explained,
-     * otherwise a classified action returning only an error would reach the model as {}. The value is
-     * still run through the heuristic, since a missed lookup echoes the rehydrated search term back.
+     * otherwise a failing action would reach the model as {}. The value is still run through the
+     * heuristic and the vault conceal pass. "message" is deliberately not here: it carries a tool's
+     * ordinary answer, not its failure, and a sentence is exactly where an identifier travels
+     * unrecognised. A tool that answers in prose declares that prose like any other field.
      */
-    private const ALWAYS_ALLOW = ['error', 'message'];
+    private const ALWAYS_ALLOW = ['error'];
 
     public function __construct(
         private readonly ConversationVault $vault,

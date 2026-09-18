@@ -128,6 +128,7 @@ class ConfigWriter implements ToolInterface
         // Config values are dynamic paths; wildcard-public preserves today's denylist behavior,
         // the config egress surface itself is tracked as issue #106 (denylist to allowlist).
         return [
+            'message' => [PiiClass::PUBLIC],
             PiiClass::ANY => [PiiClass::PUBLIC],
         ];
     }

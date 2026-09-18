@@ -52,6 +52,7 @@ class DeactivateRuleAction implements ActionInterface
     public function getFieldClassification(): array
     {
         return [
+            'message' => [PiiClass::PUBLIC],
             'success' => [PiiClass::PUBLIC],
         ];
     }
