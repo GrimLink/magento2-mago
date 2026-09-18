@@ -478,7 +478,7 @@
                     replayTools(confirmEl, pendingTools, tools);
                     pendingTools = [];
                     if (parseInt(m.pending_confirmation, 10) === 1) {
-                        showConfirmButtons(confirmEl, m.entity_id, tools);
+                        showConfirmButtons(confirmEl, {messageId: m.entity_id}, tools);
                     } else {
                         restoreWriteResult(confirmEl, tools);
                     }
@@ -840,14 +840,14 @@
                         writeToolDetected = true;
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         setBusy(false);
-                        showConfirmButtons(msg, conversationId, d.tools || []);
+                        showConfirmButtons(msg, {conversationId: conversationId}, d.tools || []);
                     }
                     else if (evt==='done') {
                         gotDone = true;
                         if(d.conversation_id) conversationId=d.conversation_id;
                         saveState(); setBusy(false);
                         if (d.pending_confirmation && msg && !writeToolDetected) {
-                            showConfirmButtons(msg, d.message_id || conversationId, []);
+                            showConfirmButtons(msg, {messageId: d.message_id, conversationId: conversationId}, []);
                         }
                         if (!d.pending_confirmation && writeToolDetected) {
                             writeToolDetected = false;
@@ -882,7 +882,10 @@
     // parameters it will run with and offers Allow / Not now. Once allowed it
     // turns into the S02 progress card, and when the run finishes into the S03
     // collapsed line; "Not now" leaves a muted line and no call is made.
-    function showConfirmButtons(msgEl, messageIdOrConvId, tools) {
+    // ids = {messageId, conversationId}: the confirm endpoints key on the message that asked,
+    // so a caller that already knows it says so and the rest is looked up from the conversation.
+    function showConfirmButtons(msgEl, ids, tools) {
+        ids = ids || {};
         // Prevent duplicate confirm cards
         if (msgEl.querySelector('.mago-confirm-actions')) return;
 
@@ -961,16 +964,22 @@
         }
 
         function getMessageId(callback) {
-            // If we already have a message_id from the done event, use it
-            if (messageIdOrConvId > 10000) {
-                callback(messageIdOrConvId);
+            var messageId = parseInt(ids.messageId, 10);
+            if (messageId) {
+                callback(messageId);
                 return;
             }
-            // Otherwise fetch it from the status endpoint using conversation_id
+
+            var conversationId = parseInt(ids.conversationId, 10);
+            if (!conversationId) {
+                failLookup('The action could not be linked to this conversation.');
+                return;
+            }
+
             fetch(config.statusUrl, {
                 method: 'POST',
                 headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
-                body: JSON.stringify({conversation_id: messageIdOrConvId, form_key: formKey}),
+                body: JSON.stringify({conversation_id: conversationId, form_key: formKey}),
                 credentials: 'same-origin'
             }).then(function(r) { return r.json(); }).then(function(d) {
                 if (d.message_id) {
@@ -982,6 +991,17 @@
             }).catch(function() {
                 setTimeout(function() { getMessageId(callback); }, 1000);
             });
+        }
+
+        // The spinner replaced the buttons, so a lookup that cannot resolve has to hand the card
+        // back rather than sit there: the write never ran and the admin can still ask again.
+        function failLookup(text) {
+            card.replaceWith(UI.skillFailed({
+                title: title + ' failed',
+                text: text,
+                code: first ? first.name : null
+            }));
+            setBusy(false);
         }
     }
 
@@ -1089,7 +1109,7 @@
                         saveState(); setBusy(false);
                         finishRun(failed ? 'failed' : 'done');
                         if (d.pending_confirmation && msg) {
-                            showConfirmButtons(msg, d.message_id || conversationId, []);
+                            showConfirmButtons(msg, {messageId: d.message_id, conversationId: conversationId}, []);
                         }
                     }
                     else if (evt==='error') {
