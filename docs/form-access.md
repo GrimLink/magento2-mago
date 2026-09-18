@@ -209,10 +209,10 @@ alone catches everything `EntityRouteMap` can reach today:
   `order` directly, both already matching a route pattern.
 - The entity type's own form namespace, built as `"{$entityType}_form"` - the same convention
   `form-bridge.js`'s `applyStoredNavigateIntent()` already relies on to replay a stored navigate
-  intent - catches a namespace-only denial that the route never would. Concretely: this module's own
-  `di.xml` denies `cms_block_form` as the extension-point demonstration below, but `cms_block`'s
-  route (`cms/block/edit`) matches no route pattern at all, so checking the route alone would let
-  navigate-then-act bypass that very demonstration.
+  intent - catches a namespace-only denial that the route never would. Concretely: if an integrator
+  denies a namespace like `cms_block_form` through the extension point below, `cms_block`'s route
+  (`cms/block/edit`) matches no route pattern at all, so checking the route alone would let
+  navigate-then-act bypass that denial.
 
 Because this reuses `FormPolicy::isDenied()` rather than re-implementing the match, a pattern added
 through either `di.xml` argument is enforced on the navigate-then-act path the same instant it is
@@ -228,14 +228,16 @@ argument already uses elsewhere in this module:
 <type name="MagoAssistant\Mago\Service\Form\FormPolicy">
     <arguments>
         <argument name="additionalDeniedNamespacePatterns" xsi:type="array">
-            <item name="cms_block_form" xsi:type="string">cms_block_form</item>
+            <item name="vendor_secret_form" xsi:type="string">vendor_secret_form</item>
         </argument>
     </arguments>
 </type>
 ```
 
-This module's own `etc/di.xml` denies `cms_block_form` this way, as a working demonstration of the
-extension point — not because a CMS block carries personal data.
+This module's own `etc/di.xml` carries exactly this block, commented out, as the example an
+integrator copies. Nothing extra is denied by default: `FormPolicy`'s built-in patterns already
+cover every form that carries personal data, so the module ships no active `additionalDenied...`
+entry of its own.
 
 ### `EntityRouteMap`: the one place per-entity routing knowledge lives
 

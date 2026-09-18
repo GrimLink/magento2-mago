@@ -280,11 +280,11 @@ class WriteFieldsAction extends AbstractPageFormAction implements ValidatingActi
      *   directly: both already match a DENIED_ROUTE_PATTERNS substring today.
      * - The entity type's own form namespace, by the "<entity_type>_form" convention every navigable
      *   form already registers under (see form-bridge.js's applyStoredNavigateIntent(), which builds
-     *   the same string to replay a stored navigate intent), catches a namespace-only denial - most
-     *   concretely this module's own di.xml, which denies "cms_block_form" as a demonstration of the
-     *   extension point. "cms_block" is a navigable entity type whose route never matches any denied
-     *   route pattern, so checking the route alone would silently let navigate-then-act bypass that
-     *   very demonstration.
+     *   the same string to replay a stored navigate intent), catches a namespace-only denial that no
+     *   route pattern would. "cms_block" is a navigable entity type whose route ("cms/block/edit")
+     *   matches no denied route pattern, so if an integrator denies "cms_block_form" through di.xml's
+     *   additionalDeniedNamespacePatterns (the commented example there shows the shape), checking the
+     *   route alone would silently let navigate-then-act bypass that denial.
      *
      * Checking both, through FormPolicy::isDenied() itself, is what keeps this correct without
      * editing whenever a pattern is added via di.xml's additionalDeniedNamespacePatterns or
