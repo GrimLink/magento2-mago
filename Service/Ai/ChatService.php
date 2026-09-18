@@ -267,7 +267,8 @@ class ChatService implements ChatServiceInterface
      * Execute the confirmed write actions
      *
      * With a bulk confirmation the user can leave calls unticked; those are answered with a
-     * "skipped" tool result so the model knows they did not run, and nothing is executed for them.     *
+     * "skipped" tool result so the model knows they did not run, and nothing is executed for them.
+     *
      * @param array $toolCalls
      * @param int|null $adminUserId
      * @param callable|null $onChunk
@@ -290,7 +291,8 @@ class ChatService implements ChatServiceInterface
                 continue;
             }
 
-            $reportStatus = $onChunk !== null && !$this->isToolCallDenied($toolCall, $adminUserId);            if ($reportStatus) {
+            $reportStatus = $onChunk !== null && !$this->isToolCallDenied($toolCall, $adminUserId);
+            if ($reportStatus) {
                 $this->reportToolStatus($onChunk, [
                     'name' => $toolCall['name'],
                     'status' => 'running',
