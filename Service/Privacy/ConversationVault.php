@@ -28,6 +28,9 @@ class ConversationVault
     /** @var array<string,int> type => highest issued number */
     private array $counters = [];
 
+    /** @var array<string,string>|null Conceal map (value => token), rebuilt lazily after a mint */
+    private ?array $concealMap = null;
+
     private ?int $conversationId = null;
 
     public function __construct(
@@ -88,6 +91,27 @@ class ConversationVault
     }
 
     /**
+     * Replace any vaulted value occurring in the text with its token. Closes the echo path the
+     * heuristic cannot: a tool embedding a rehydrated argument in kept free text (a write ack
+     * "Invoice created for order #000000549") has no PII signature to match, but the vault knows the
+     * value. Values shorter than six characters are left alone, a bare "42" would false-positive on
+     * unrelated numbers in public data.
+     */
+    public function concealKnownValues(string $text): string
+    {
+        if ($this->concealMap === null) {
+            $this->concealMap = [];
+            foreach ($this->valueByToken as $token => $value) {
+                if (strlen($value) >= 6) {
+                    $this->concealMap[$value] = $token;
+                }
+            }
+        }
+
+        return $this->concealMap === [] ? $text : strtr($text, $this->concealMap);
+    }
+
+    /**
      * Register a token and its value, and keep the per-type counter ahead of any number already
      * issued, whether it was just minted or loaded from storage.
      */
@@ -95,6 +119,7 @@ class ConversationVault
     {
         $this->tokenByValue[$type . "\0" . $value] = $token;
         $this->valueByToken[$token] = $value;
+        $this->concealMap = null;
 
         if (preg_match('/_(\d+)\]$/', $token, $m) === 1) {
             $this->counters[$type] = max($this->counters[$type] ?? 0, (int)$m[1]);

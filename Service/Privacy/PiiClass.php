@@ -15,4 +15,11 @@ final class PiiClass
     public const PUBLIC = 'public';
     public const TOKENISE = 'tokenise';
     public const STRIP = 'strip';
+
+    /**
+     * Wildcard field name in a classification map: the rule for every key the map does not name.
+     * For tools whose output keys are dynamic (config paths, attribute codes) and cannot be
+     * enumerated; declaring it is an explicit assertion about all of them.
+     */
+    public const ANY = '*';
 }

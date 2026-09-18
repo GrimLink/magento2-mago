@@ -20,19 +20,27 @@
     <preference for="MagoAssistant\Mago\Api\Privacy\VaultStorageInterface" type="MagoAssistant\Mago\Model\Privacy\DbVaultStorage"/>
 
     <!--
-        Privacy mode (#97): a third-party tool that returns personal data must classify it, or a name
-        or bare id it returns will reach the LLM. Implement Api\Skill\FieldClassifierInterface and add
-        the instance here:
-
-        <type name="MagoAssistant\Mago\Service\Privacy\PiiClassificationRegistry">
-            <arguments>
-                <argument name="classifiers" xsi:type="array">
-                    <item name="vendor_lookup" xsi:type="object">Vendor\Module\Privacy\VendorLookupClassification</item>
-                </argument>
-            </arguments>
-        </type>
+        Privacy mode (#97): every tool declares how its output fields cross to the LLM via
+        getFieldClassification() on the @api tool/action interfaces. Undeclared is never public: a
+        field a tool does not classify is stripped, so a tool that declares nothing leaks nothing.
+        See docs/privacy-mode/README.md for the classification cookbook.
     -->
-
+    <!--
+        Egress tripwire (#97 decision 6): developer mode logs a hit, production skips the scan.
+        A test environment flips throwOnHit via a di override so a filter regression fails the run.
+        The Client argument must be wired explicitly: Magento DI does not autowire an optional
+        constructor parameter, it would silently stay null.
+    -->
+    <type name="MagoAssistant\Mago\Service\Privacy\EgressTripwire">
+        <arguments>
+            <argument name="throwOnHit" xsi:type="boolean">false</argument>
+        </arguments>
+    </type>
+    <type name="MagoAssistant\Mago\Service\Ai\Client">
+        <arguments>
+            <argument name="tripwire" xsi:type="object">MagoAssistant\Mago\Service\Privacy\EgressTripwire</argument>
+        </arguments>
+    </type>
 
     <type name="MagoAssistant\Mago\Service\Privacy\ConversationVault">
         <arguments>

@@ -8,12 +8,13 @@ namespace MagoAssistant\Mago\Service\Privacy;
 
 /**
  * The single choke point (issue #97): a tool result is filtered here before it becomes the tool
- * message sent to the LLM (ChatService::executeTool()'s return). For a classified action, public
- * fields pass, tokenise fields become stable vault tokens, and every other scalar (strip-classified,
- * or undeclared) is dropped; the legal preference is not-sending over masking (#97 section 8). An
- * unclassified action passes through when $stripUnclassified is false (V1: the unclassified tools are
- * the PII-free ones), or is stripped scalar-by-scalar when true (the future fail-closed default).
- * Nested arrays are always walked, so wrappers and records keep their shape.
+ * message sent to the LLM (ChatService::executeTool()'s return). The classification comes from the
+ * tool itself (getFieldClassification on the @api interfaces): public fields pass, tokenise fields
+ * become stable vault tokens, and every other scalar (strip-classified, or undeclared) is dropped;
+ * the legal preference is not-sending over masking (#97 section 8). Undeclared is never public: a
+ * tool that declares nothing leaks nothing. PiiClass::ANY in the map classifies undeclared keys for
+ * output whose keys cannot be enumerated. Nested arrays are always walked, so wrappers and records
+ * keep their shape; a scalar list inherits the rule of the key it sits under.
  */
 class PrivacyFilter
 {
@@ -32,31 +33,28 @@ class PrivacyFilter
     private const ALWAYS_ALLOW = ['error', 'message'];
 
     public function __construct(
-        private readonly PiiClassificationRegistry $registry,
         private readonly ConversationVault $vault,
-        private readonly PiiHeuristic $heuristic,
-        private readonly bool $stripUnclassified = false
+        private readonly PiiHeuristic $heuristic
     ) {
     }
 
     /**
+     * @param array<string,array{0:string,1?:string}> $classes
      * @param array<string,mixed> $result
      * @return array<string,mixed>
      */
-    public function filter(string $action, array $result): array
+    public function filter(array $classes, array $result): array
     {
-        $classes = $this->registry->classesFor($action);
-        $lenient = $classes === null && !$this->stripUnclassified;
-
-        return $this->apply($result, $classes, $lenient);
+        return $this->apply($result, $classes, null);
     }
 
     /**
      * @param array<array-key,mixed> $node
-     * @param array<string,array{0:string,1?:string}>|null $classes
+     * @param array<string,array{0:string,1?:string}> $classes
+     * @param array{0:string,1?:string}|null $inherited Rule for numeric keys, from the enclosing key
      * @return array<array-key,mixed>
      */
-    private function apply(array $node, ?array $classes, bool $lenient): array
+    private function apply(array $node, array $classes, ?array $inherited): array
     {
         $out = [];
         foreach ($node as $key => $value) {
@@ -66,7 +64,11 @@ class PrivacyFilter
                 continue;
             }
 
-            $rule = $keyStr !== null && $classes !== null ? ($classes[$keyStr] ?? null) : null;
+            // A list element carries no key of its own, so it answers to the rule of the key the
+            // list sits under; a named key always re-matches against the map.
+            $rule = $keyStr !== null
+                ? ($classes[$keyStr] ?? $classes[PiiClass::ANY] ?? null)
+                : $inherited;
 
             // An explicit STRIP rule wins over the structure: a field declared STRIP is dropped
             // whether it arrives as a scalar or as a nested array (so a customer object under a
@@ -76,15 +78,11 @@ class PrivacyFilter
             }
 
             if (is_array($value)) {
-                $out[$key] = $this->apply($value, $classes, $lenient);
+                $out[$key] = $this->apply($value, $classes, $keyStr !== null ? $rule : $inherited);
                 continue;
             }
 
             if ($keyStr !== null && in_array($keyStr, self::ALWAYS_ALLOW, true)) {
-                $out[$key] = $this->keep($value);
-                continue;
-            }
-            if ($lenient) {
                 $out[$key] = $this->keep($value);
                 continue;
             }
@@ -103,10 +101,10 @@ class PrivacyFilter
     }
 
     /**
-     * A kept value (public, envelope or lenient pass-through) still goes through the PII heuristic:
-     * a rehydrated argument the tool echoes back (a lookup miss repeating the search email in its
-     * message, or search_orders echoing the query) would otherwise cross to the LLM raw. The vault
-     * returns the same token, so the model's continuity is unaffected; a non-string is left as is.
+     * A kept value (public or envelope) still goes through the PII heuristic: a rehydrated argument
+     * the tool echoes back (a lookup miss repeating the search email in its message, or
+     * search_orders echoing the query) would otherwise cross to the LLM raw. The vault returns the
+     * same token, so the model's continuity is unaffected; a non-string is left as is.
      */
     private function keep(mixed $value): mixed
     {
@@ -115,9 +113,13 @@ class PrivacyFilter
         }
 
         // Defang any token-lookalike arriving in tool output BEFORE minting real tokens, so a forged
-        // "[email_1]" planted in an unclassified tool's data (a poisoned product name, CMS text)
+        // "[email_1]" planted in a wildcard-public tool's data (a poisoned product name, CMS text)
         // cannot reach the model and be echoed into an argument that then rehydrates to a real value.
         $value = (string)preg_replace('/\[([a-z]+_\d+)\]/', '($1)', $value);
+
+        // A value the vault already tokenised (an order number, an id) has no signature the
+        // heuristic can match when a tool echoes it back in free text; the vault itself does.
+        $value = $this->vault->concealKnownValues($value);
 
         return $this->heuristic->tokeniseFreeText($value, $this->vault);
     }

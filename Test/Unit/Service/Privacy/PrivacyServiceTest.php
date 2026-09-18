@@ -7,7 +7,6 @@ declare(strict_types=1);
 namespace MagoAssistant\Mago\Test\Unit\Service\Privacy;
 
 use MagoAssistant\Mago\Service\Privacy\ConversationVault;
-use MagoAssistant\Mago\Service\Privacy\PiiClassificationRegistry;
 use MagoAssistant\Mago\Service\Privacy\PiiHeuristic;
 use MagoAssistant\Mago\Service\Privacy\PrivacyFilter;
 use MagoAssistant\Mago\Service\Privacy\PrivacyService;
@@ -18,7 +17,7 @@ class PrivacyServiceTest extends TestCase
 {
     private function service(ConversationVault $vault): PrivacyService
     {
-        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault, new PiiHeuristic()), $vault, new PiiHeuristic());
+        return new PrivacyService(new PrivacyFilter($vault, new PiiHeuristic()), $vault, new PiiHeuristic());
     }
 
     #[Test]
@@ -43,6 +42,59 @@ class PrivacyServiceTest extends TestCase
 
         self::assertSame('mail [email_1]', $first[0]['content']);
         self::assertSame('again [email_1]', $second[0]['content']);
+    }
+
+    #[Test]
+    public function displayShowsTheRealValueForAResolvableTokenAndANeutralLabelOtherwise(): void
+    {
+        $vault = new ConversationVault();
+        $service = $this->service($vault);
+        $service->scrubText('mail jan@example.com');
+
+        $display = $service->displayText('Sent to [email_1], earlier case was [customer_9].');
+
+        self::assertSame('Sent to jan@example.com, earlier case was [earlier record].', $display);
+    }
+
+    #[Test]
+    public function sensitiveTokensAreFlaggedForWritesButIdTokensAreNot(): void
+    {
+        $service = $this->service(new ConversationVault());
+
+        self::assertTrue($service->containsSensitiveToken(['content' => 'Mail [email_1] now']));
+        self::assertTrue($service->containsSensitiveToken(['nested' => ['link' => 'See [url_2]']]));
+        self::assertFalse($service->containsSensitiveToken(['comment' => 'About [order_1] and [customer_3]']));
+    }
+
+    #[Test]
+    public function itMasksValuesIrreversiblyForVaultlessSinks(): void
+    {
+        $service = $this->service(new ConversationVault());
+
+        self::assertSame(
+            'Bel [phone] over [email]',
+            $service->maskText('Bel 06 12345678 over jan@example.com')
+        );
+    }
+
+    #[Test]
+    public function aTitleNeverEndsInHalfAToken(): void
+    {
+        $service = $this->service(new ConversationVault());
+
+        self::assertSame('Stuur een mail naar ', $service->safeTitle('Stuur een mail naar [ema', 24));
+        self::assertSame('Order [order_1]', $service->safeTitle('Order [order_1]', 50));
+    }
+
+    #[Test]
+    public function itScrubsASingleTextForStorage(): void
+    {
+        $service = $this->service(new ConversationVault());
+
+        $stored = $service->scrubText('Bel 06 12345678 over jan@example.com');
+
+        self::assertSame('Bel [phone_1] over [email_1]', $stored);
+        self::assertSame($stored, $service->scrubText($stored));
     }
 
     #[Test]

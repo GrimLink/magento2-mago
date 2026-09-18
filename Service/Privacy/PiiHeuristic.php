@@ -26,25 +26,72 @@ class PiiHeuristic
 
     public function tokeniseFreeText(string $text, ConversationVault $vault): string
     {
-        $text = $this->replace(self::EMAIL, $text, static fn (): bool => true, 'email', $vault);
-        $text = $this->replace(self::IBAN, $text, fn (string $m): bool => $this->isValidIban($m), 'iban', $vault);
-        $text = $this->replace(self::VAT_NL, $text, static fn (): bool => true, 'vat', $vault);
-        $text = $this->replace(self::BSN, $text, fn (string $m): bool => $this->isValidBsn($m), 'bsn', $vault);
-        $text = $this->replace(self::PHONE_NL, $text, static fn (): bool => true, 'phone', $vault);
+        foreach ($this->classes() as $type => [$pattern, $accept]) {
+            $text = (string)preg_replace_callback(
+                $pattern,
+                fn (array $m): string => $accept($m[0]) ? $vault->tokenise($m[0], $type) : $m[0],
+                $text
+            );
+        }
 
         return $text;
     }
 
     /**
-     * @param callable(string):bool $accept
+     * Replace every detected value with its class label, without a vault. For sinks that must never
+     * hold personal data but have no conversation to tokenise into (debug logs): irreversible by
+     * design, unlike a vault token.
      */
-    private function replace(string $pattern, string $text, callable $accept, string $type, ConversationVault $vault): string
+    public function mask(string $text): string
     {
-        return (string)preg_replace_callback(
-            $pattern,
-            fn (array $m): string => $accept($m[0]) ? $vault->tokenise($m[0], $type) : $m[0],
-            $text
-        );
+        foreach ($this->classes() as $type => [$pattern, $accept]) {
+            $text = (string)preg_replace_callback(
+                $pattern,
+                static fn (array $m): string => $accept($m[0]) ? '[' . $type . ']' : $m[0],
+                $text
+            );
+        }
+
+        return $text;
+    }
+
+    /**
+     * The PII classes present in the text, without tokenising anything. The egress tripwire uses
+     * this to verify, independently of the scrub and filter paths, that nothing recognisable is
+     * about to cross to the provider.
+     *
+     * @return string[]
+     */
+    public function detect(string $text): array
+    {
+        $found = [];
+        foreach ($this->classes() as $type => [$pattern, $accept]) {
+            if (preg_match_all($pattern, $text, $matches) === 0) {
+                continue;
+            }
+            foreach ($matches[0] as $hit) {
+                if ($accept($hit)) {
+                    $found[] = $type;
+                    break;
+                }
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * @return array<string,array{0:string,1:callable(string):bool}>
+     */
+    private function classes(): array
+    {
+        return [
+            'email' => [self::EMAIL, static fn (): bool => true],
+            'iban' => [self::IBAN, fn (string $m): bool => $this->isValidIban($m)],
+            'vat' => [self::VAT_NL, static fn (): bool => true],
+            'bsn' => [self::BSN, fn (string $m): bool => $this->isValidBsn($m)],
+            'phone' => [self::PHONE_NL, static fn (): bool => true],
+        ];
     }
 
     private function isValidIban(string $iban): bool

@@ -29,15 +29,16 @@ class PrivacyService
     }
 
     /**
-     * Filter a tool result before it reaches the LLM. $action is the skill action (or the tool name
-     * when there is no action), matching how the classification is keyed.
+     * Filter a tool result before it reaches the LLM. $classes is the executed tool's own
+     * declaration (ToolInterface::getFieldClassification() for the invoked action).
      *
+     * @param array<string,array{0:string,1?:string}> $classes
      * @param array<string,mixed> $result
      * @return array<string,mixed>
      */
-    public function filterToolResult(string $action, array $result): array
+    public function filterToolResult(array $classes, array $result): array
     {
-        return $this->filter->filter($action, $result);
+        return $this->filter->filter($classes, $result);
     }
 
     /**
@@ -60,6 +61,25 @@ class PrivacyService
     }
 
     /**
+     * Scrub one piece of free text into the bound vault. Used where a single string is persisted or
+     * egresses outside the message array (the typed message before storage, a conversation title), so
+     * the stored copy is tokenised per #97 decision 1. Idempotent like scrubMessages.
+     */
+    public function scrubText(string $text): string
+    {
+        return $this->heuristic->tokeniseFreeText($text, $this->vault);
+    }
+
+    /**
+     * A conversation title from already-scrubbed text: truncated without cutting a vault token in
+     * half (a partial token can neither rehydrate nor be neutralised on display).
+     */
+    public function safeTitle(string $scrubbedText, int $length = 50): string
+    {
+        return (string)preg_replace('/\[[a-z]*(?:_\d*)?$/', '', mb_substr($scrubbedText, 0, $length));
+    }
+
+    /**
      * Rehydrate tokens in tool-call arguments before the tool runs. The model only ever saw tokens
      * for scrubbed values, so it passes e.g. search="[email_1]"; the tool must receive the real
      * address or its lookup finds nothing. Applied on every execution path (read, stream, confirm).
@@ -78,6 +98,43 @@ class PrivacyService
         }
 
         return $input;
+    }
+
+    /**
+     * Token types that never rehydrate into a write, resolvable or not: the heuristic-minted
+     * personal values, and admin URLs (they embed the admin secret key). A prompt injection could
+     * otherwise steer the model into writing "[email_1]" into e.g. CMS content, have the admin
+     * confirm an opaque-looking card, and read the rehydrated value back from the storefront.
+     */
+    private const WRITE_REFUSED_TYPES = '/\[(?:email|iban|vat|bsn|phone|url)_\d+\]/';
+
+    /**
+     * True when any argument carries a token of a sensitive class (see WRITE_REFUSED_TYPES). Checked
+     * on the raw arguments BEFORE rehydration, so a resolvable sensitive token still refuses.
+     *
+     * @param array<array-key,mixed> $input
+     */
+    public function containsSensitiveToken(array $input): bool
+    {
+        foreach ($input as $value) {
+            if (is_array($value) && $this->containsSensitiveToken($value)) {
+                return true;
+            }
+            if (is_string($value) && preg_match(self::WRITE_REFUSED_TYPES, $value) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Mask detected personal values with their class label, without touching the vault. For sinks
+     * that must never hold personal data but have no conversation to tokenise into (debug logs).
+     */
+    public function maskText(string $text): string
+    {
+        return $this->heuristic->mask($text);
     }
 
     /**
@@ -111,6 +168,16 @@ class PrivacyService
     }
 
     /**
+     * Rehydrate for a display sink. A token the vault cannot resolve (deleted vault rows, another
+     * conversation's token, a forgery) becomes a neutral label instead of raw token grammar the
+     * admin never typed (#97 decision 5); write sinks refuse unresolved tokens instead.
+     */
+    public function displayText(string $text): string
+    {
+        return (string)preg_replace('/\[[a-z]+_\d+\]/', '[earlier record]', $this->vault->rehydrate($text));
+    }
+
+    /**
      * Rehydrate a streamed text delta for the admin. A token can split across SSE chunks, so a
      * trailing partial token is held back as the returned carry and prepended to the next delta; the
      * rest is rehydrated now. The stored message stays tokenised; only the displayed copy is restored.
@@ -127,6 +194,6 @@ class PrivacyService
             $text = substr($text, 0, $offset);
         }
 
-        return [$this->vault->rehydrate($text), $newCarry];
+        return [$this->displayText($text), $newCarry];
     }
 }

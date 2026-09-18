@@ -17,7 +17,7 @@ use MagoAssistant\Mago\Service\Ai\AnswerWidgets;
 use MagoAssistant\Mago\Service\Ai\ChatService;
 use MagoAssistant\Mago\Service\Ai\Client;
 use MagoAssistant\Mago\Service\Privacy\ConversationVault;
-use MagoAssistant\Mago\Service\Privacy\PiiClassificationRegistry;
+use MagoAssistant\Mago\Service\Privacy\PiiClass;
 use MagoAssistant\Mago\Service\Privacy\PiiHeuristic;
 use MagoAssistant\Mago\Service\Privacy\PrivacyFilter;
 use MagoAssistant\Mago\Service\Privacy\PrivacyService;
@@ -68,7 +68,7 @@ final class ChatServiceTest extends TestCase
      *
      * @param FakeSkill[] $extraSkills
      */
-    private function buildChatService(array $extraSkills = []): ChatService
+    private function buildChatService(array $extraSkills = [], ?PrivacyService $privacy = null): ChatService
     {
         $authorization = $this->createMock(AuthorizationInterface::class);
         $authorization->method('isAllowed')->willReturn(true);
@@ -110,15 +110,15 @@ final class ChatServiceTest extends TestCase
             $authorization,
             new StoreScopeContext($this->singleStoreManager()),
             new AnswerWidgets(),
-            $this->privacyService()
+            $privacy ?? $this->privacyService()
         );
     }
 
-    private function privacyService(): PrivacyService
+    private function privacyService(?ConversationVault $vault = null): PrivacyService
     {
-        $vault = new ConversationVault();
+        $vault ??= new ConversationVault();
 
-        return new PrivacyService(new PrivacyFilter(new PiiClassificationRegistry(), $vault, new PiiHeuristic()), $vault, new PiiHeuristic());
+        return new PrivacyService(new PrivacyFilter($vault, new PiiHeuristic()), $vault, new PiiHeuristic());
     }
 
     /**
@@ -211,7 +211,6 @@ final class ChatServiceTest extends TestCase
             ['call_2']
         );
 
-        fwrite(STDERR, var_export($results, true));
         self::assertTrue($results['call_1']['skipped']);
         self::assertSame('update_page', $results['call_2']['executed']);
         self::assertSame(['tool_status:running', 'tool_status:done'], $events);
@@ -490,6 +489,12 @@ final class ChatServiceTest extends TestCase
                     'telephone' => '0612345678',
                     'admin_url' => 'https://shop.test/admin/customer/index/edit/id/42/key/abc123secret/',
                 ]],
+            ], [
+                'entity_id' => [PiiClass::TOKENISE, 'customer'],
+                'name' => [PiiClass::STRIP],
+                'email' => [PiiClass::STRIP],
+                'telephone' => [PiiClass::STRIP],
+                'city' => [PiiClass::PUBLIC],
             ]),
         ]);
         $service = $this->buildChatService([$customerData]);
@@ -511,6 +516,168 @@ final class ChatServiceTest extends TestCase
         self::assertStringNotContainsString('abc123secret', $toolMessage);
         self::assertStringContainsString('[customer_1]', $toolMessage);
         self::assertStringContainsString('Amsterdam', $toolMessage);
+    }
+
+    #[Test]
+    public function itRefusesAConfirmedWriteCarryingASensitiveTokenEvenWhenResolvable(): void
+    {
+        $this->grants['cms_data'] = 'write';
+        $echo = new class implements \MagoAssistant\Mago\Api\Skill\ActionInterface {
+            /** @var array<string, mixed>|null The params the write actually ran with */
+            public ?array $received = null;
+            public function getName(): string
+            {
+                return 'update_page';
+            }
+            public function getDescription(): string
+            {
+                return 'update';
+            }
+            public function getParameterSchema(): array
+            {
+                return [];
+            }
+            public function getAclResource(): ?string
+            {
+                return null;
+            }
+            public function isReadOnly(): bool
+            {
+                return false;
+            }
+            public function execute(array $params, int $adminUserId): array
+            {
+                $this->received = $params;
+                return ['updated' => true];
+            }
+            public function getInstructions(): string
+            {
+                return '';
+            }
+            public function getFieldClassification(): array
+            {
+                return ['updated' => [PiiClass::PUBLIC]];
+            }
+        };
+        $authorization = $this->createMock(AuthorizationInterface::class);
+        $authorization->method('isAllowed')->willReturn(true);
+        $service = $this->buildChatService([new FakeSkill('page_writer', $authorization, ['update_page' => $echo])]);
+        $this->grants['page_writer'] = 'write';
+
+        // Turn 1 mints [email_1] into the service's vault via the input scrubber.
+        $this->responses = [['content' => 'noted', 'tool_calls' => []]];
+        $service->processMessage(
+            [['role' => 'user', 'content' => 'Use jan@example.com on the contact page']],
+            null,
+            self::ADMIN_ID
+        );
+
+        $results = $service->executeConfirmedTools([[
+            'id' => 'call_1',
+            'name' => 'page_writer',
+            'input' => ['action' => 'update_page', 'content' => 'Contact: [email_1]'],
+        ]], self::ADMIN_ID);
+
+        // Resolvable or not, a sensitive-class token never rehydrates into a write: this is the
+        // rehydration-oracle defense (prompt injection cannot exfiltrate vaulted PII via writes).
+        self::assertArrayHasKey('error', $results['call_1']);
+        self::assertStringContainsString('masked personal value', (string)$results['call_1']['error']);
+        self::assertNull($echo->received);
+    }
+
+    #[Test]
+    public function itRehydratesAnIdTokenIntoAConfirmedWriteOnAColdRequest(): void
+    {
+        // Shared storage, two separate PrivacyService instances: turn N mints the token, the
+        // confirm arrives as a fresh request whose vault must be re-bound via $conversationId.
+        $storage = new class implements \MagoAssistant\Mago\Api\Privacy\VaultStorageInterface {
+            /** @var array<int,array<int,array{token:string,value:string,type:string}>> */
+            public array $rows = [];
+            public function loadForConversation(int $conversationId): array
+            {
+                return $this->rows[$conversationId] ?? [];
+            }
+            public function persist(int $conversationId, string $token, string $value, string $type): void
+            {
+                $this->rows[$conversationId][] = ['token' => $token, 'value' => $value, 'type' => $type];
+            }
+        };
+
+        $warmVault = new ConversationVault($storage);
+        $warmVault->beginConversation(7);
+        self::assertSame('[order_1]', $warmVault->tokenise('000000549', 'order'));
+
+        $this->grants['cms_data'] = 'write';
+        $echo = new class implements \MagoAssistant\Mago\Api\Skill\ActionInterface {
+            /** @var array<string, mixed>|null */
+            public ?array $received = null;
+            public function getName(): string
+            {
+                return 'update_page';
+            }
+            public function getDescription(): string
+            {
+                return 'update';
+            }
+            public function getParameterSchema(): array
+            {
+                return [];
+            }
+            public function getAclResource(): ?string
+            {
+                return null;
+            }
+            public function isReadOnly(): bool
+            {
+                return false;
+            }
+            public function execute(array $params, int $adminUserId): array
+            {
+                $this->received = $params;
+                return ['updated' => true];
+            }
+            public function getInstructions(): string
+            {
+                return '';
+            }
+            public function getFieldClassification(): array
+            {
+                return ['updated' => [PiiClass::PUBLIC]];
+            }
+        };
+        $authorization = $this->createMock(AuthorizationInterface::class);
+        $authorization->method('isAllowed')->willReturn(true);
+        $coldService = $this->buildChatService(
+            [new FakeSkill('page_writer', $authorization, ['update_page' => $echo])],
+            $this->privacyService(new ConversationVault($storage))
+        );
+        $this->grants['page_writer'] = 'write';
+
+        $results = $coldService->executeConfirmedTools([[
+            'id' => 'call_1',
+            'name' => 'page_writer',
+            'input' => ['action' => 'update_page', 'comment' => 'Note for [order_1]'],
+        ]], self::ADMIN_ID, null, null, 7);
+
+        self::assertSame(['updated' => true], $results['call_1']);
+        self::assertIsArray($echo->received);
+        self::assertSame('Note for 000000549', $echo->received['comment']);
+    }
+
+    #[Test]
+    public function itRefusesAConfirmedWriteCarryingAnUnresolvableToken(): void
+    {
+        $this->grants['cms_data'] = 'write';
+        $service = $this->buildChatService();
+
+        $results = $service->executeConfirmedTools([[
+            'id' => 'call_1',
+            'name' => 'cms_data',
+            'input' => ['action' => 'update_page', 'content' => 'Ship to [customer_99]'],
+        ]], self::ADMIN_ID);
+
+        self::assertArrayHasKey('error', $results['call_1']);
+        self::assertStringContainsString('masked for privacy', (string)$results['call_1']['error']);
     }
 
     private function toolCallResponse(string $action, array $input = []): array
