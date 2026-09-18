@@ -86,14 +86,16 @@ test.describe('Privacy mode', () => {
 
     /* L3: the stored copy of the conversation, read through the web API endpoint that returns
        messages as persisted (no rehydration), unlike the panel's own mago/chat/load. The panel
-       keeps the conversation id in sessionStorage under mago_conv. */
+       keeps the conversation id in sessionStorage under mago_conv. The read path does not persist
+       tool results as messages (only user and assistant turns are stored), so the check here is
+       that no canary PII was written to the conversation; the tokenised tool result reaching the
+       provider is proven by the journal assertions above. */
     const conversationId = await page.evaluate(() => sessionStorage.getItem('mago_conv'));
 
     expect(conversationId, 'the panel never stored a conversation id').not.toBeNull();
 
     const stored = await magentoApi.getStoredConversation(request, parseInt(conversationId as string, 10));
 
-    expect(stored, 'the stored tool message lost its tokenised customer reference').toContain('[customer_');
     expect(stored, 'the canary email is stored in the conversation').not.toContain(CANARY_EMAIL);
     expect(stored, 'the canary first name is stored in the conversation').not.toContain(CANARY_FIRSTNAME);
     expect(stored, 'the canary last name is stored in the conversation').not.toContain(CANARY_LASTNAME);
