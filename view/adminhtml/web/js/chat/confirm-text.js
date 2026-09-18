@@ -34,10 +34,11 @@ define([], function () {
     // through form-bridge, shows what is on the form right now rather than replaying a value the
     // model may have seen several turns ago. A path form-bridge cannot find is shown as-is, which
     // is itself informative: it means the target has moved since the model proposed the write.
-    function findLiveField(path) {
-        if (!getFormBridge()) return null;
-        var snapshot = getFormBridge().snapshot();
-        if (!snapshot.hasForm) return null;
+    // live: a snapshot the caller already took, so a multi-line card looks up once instead of
+    // per line. Omitted, it takes its own.
+    function findLiveField(path, live) {
+        var snapshot = live || liveForm();
+        if (!snapshot) return null;
         var match = null;
         (snapshot.fields || []).forEach(function(field) {
             if (field.path === path) match = field;
@@ -63,8 +64,8 @@ define([], function () {
         return text;
     }
 
-    function formatFieldChangeLine(change) {
-        var field = findLiveField(change.path);
+    function formatFieldChangeLine(change, live) {
+        var field = findLiveField(change.path, live);
         if (!field) return escapeForMarkdown(change.path) + ': ' + codeSpan(previewValue(change.value));
         var previous = field.redacted ? t('(hidden)') : codeSpan(previewValue(field.value));
         return escapeForMarkdown(field.label) + ': ' + previous + ' → ' + codeSpan(previewValue(change.value));
@@ -73,8 +74,8 @@ define([], function () {
     // The heading says where the values go: the form on screen, another entity, or a New form,
     // in which case the administrator is also told the browser will leave this page, and that
     // unsaved edits here will be lost when the open form has any.
-    function formatWriteFieldsHeading(input, changes) {
-        var live = liveForm();
+    function formatWriteFieldsHeading(input, changes, live) {
+        if (typeof live === 'undefined') live = liveForm();
         var count = fieldCountText(changes.length);
         var notes;
 
@@ -95,15 +96,18 @@ define([], function () {
     function formatWriteFieldsConfirmMessage(tool) {
         var input = tool.input || {};
         var changes = input.changes || [];
+        // One snapshot for the whole card; the heading and every line share it.
+        var live = liveForm();
         var visibleChanges = changes.slice(0, MAX_CONFIRM_FIELD_LINES);
         var remaining = changes.length - visibleChanges.length;
-        var lines = visibleChanges.map(formatFieldChangeLine).map(function(l) { return '- ' + l; });
+        var lines = visibleChanges.map(function(change) { return formatFieldChangeLine(change, live); })
+            .map(function(l) { return '- ' + l; });
 
         if (remaining > 0) {
             lines.push('- ' + (remaining === 1 ? t('...and %1 more field.', remaining) : t('...and %1 more fields.', remaining)));
         }
 
-        return formatWriteFieldsHeading(input, changes) + '\n' + lines.join('\n')
+        return formatWriteFieldsHeading(input, changes, live) + '\n' + lines.join('\n')
             + '\n\n' + t('Nothing is saved until you click Save on the page.');
     }
 
