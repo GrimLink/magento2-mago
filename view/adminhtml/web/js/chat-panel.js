@@ -87,11 +87,19 @@ define([
     // snapshot still carries no field, namespace or entity data, but the denied flag itself is
     // still sent, which is what lets the backend explain the refusal instead of claiming no form
     // is open at all.
-    function buildPageContext() {
+    function buildPageContext(settled) {
         if (!formBridge) return null;
         var snapshot = formBridge.snapshot();
         if (!snapshot.hasForm && !snapshot.denied) return null;
         snapshot.route = window.location.pathname;
+        // whenFieldsSettled reports settled === false when the field count never stopped moving
+        // within the timeout: the form was still registering fields, so this list may be short a
+        // few that had not appeared yet. Mark it truncated so the backend warns the model it cannot
+        // see the whole form, exactly as it does for a count-capped snapshot. Any other caller
+        // passes nothing (settled === undefined) and the snapshot stands as taken.
+        if (settled === false && snapshot.hasForm && snapshot.truncated) {
+            snapshot.truncated.fields = true;
+        }
         return snapshot;
     }
 
@@ -910,11 +918,11 @@ define([
 
         formBridge.whenFieldsSettled(FORM_SETTLE_TIMEOUT_MS, postMessage);
 
-        function postMessage() {
+        function postMessage(settled) {
         fetch(config.streamUrl, {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
-            body: JSON.stringify({message:text, conversation_id:conversationId, form_key:formKey, page_context:buildPageContext()}),
+            body: JSON.stringify({message:text, conversation_id:conversationId, form_key:formKey, page_context:buildPageContext(settled)}),
             credentials: 'same-origin'
         }).then(function(r) {
             if (!r.ok) {
