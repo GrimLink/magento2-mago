@@ -52,13 +52,13 @@ class Load extends Action implements HttpPostActionInterface
             $this->privacyService->beginConversation($conversationId);
             foreach ($messages as $index => $message) {
                 if (isset($message['content']) && is_string($message['content'])) {
-                    $messages[$index]['content'] = $this->privacyService->rehydrate($message['content']);
+                    $messages[$index]['content'] = $this->privacyService->displayText($message['content']);
                 }
             }
 
             return $result->setData([
                 'entity_id' => $conversation['entity_id'],
-                'title' => $conversation['title'],
+                'title' => $this->privacyService->displayText((string)$conversation['title']),
                 'messages' => $messages,
             ]);
         } catch (\Throwable $e) {

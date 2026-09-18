@@ -85,17 +85,18 @@ class Confirm extends Action implements HttpPostActionInterface
                 ? array_values(array_map('strval', $postData['tool_call_ids']))
                 : null;
 
+            $conversationId = (int)$message['conversation_id'];
             $results = $this->chatService->executeConfirmedTools(
                 $toolCalls,
                 $adminUserId,
                 function (string $type, array $data) {
                     $this->sendSse($type, $data);
                 },
-                $selectedIds
+                $selectedIds,
+                $conversationId
             );
             $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId);
 
-            $conversationId = (int)$message['conversation_id'];
             foreach ($results as $toolCallId => $result) {
                 $this->conversationRepository->addMessage(
                     $conversationId,
