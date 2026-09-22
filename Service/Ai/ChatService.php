@@ -228,7 +228,9 @@ class ChatService implements ChatServiceInterface
                             // Display copy only (#97 decision 5): the admin must see the real values
                             // they are approving, not opaque tokens; the persisted tool_calls stay
                             // tokenised and are re-checked on the confirm round-trip.
-                            'input' => $this->privacyService->rehydrateArguments($tc['input'] ?? []),
+                            'input' => $this->privacyService->rehydrateArguments(
+                                $this->inputForAction($t, $tc['input'] ?? [])
+                            ),
                         ] + $this->describeRisk($t, $tc['input'] ?? [], $adminUserId);
                         $confirmTools[] = $details;
                         $describedCalls[] = $tc + $details;
@@ -909,5 +911,34 @@ class ChatService implements ChatServiceInterface
             $this->errorLogger->addLog('StoreScopeContext', $e->getMessage());
             return '';
         }
+    }
+
+    /**
+     * The parameters the chosen action actually takes. A skill offers one flat schema for all its
+     * actions, and the model fills in every key it is shown, so a status change arrives carrying
+     * capture, carrier_code and the credit memo adjustments. On the confirmation card that is worse
+     * than noise: the admin is asked to approve a status change while reading "capture: true".
+     *
+     * @param array<array-key,mixed> $input
+     * @return array<array-key,mixed>
+     */
+    private function inputForAction(object $tool, array $input): array
+    {
+        $action = (string)($input['action'] ?? '');
+        if ($action === '' || !method_exists($tool, 'getParameterSchemaForActions')) {
+            return $input;
+        }
+
+        $schema = $tool->getParameterSchemaForActions([$action]);
+        $known = array_keys($schema['properties'] ?? []);
+        if ($known === []) {
+            return $input;
+        }
+
+        return array_filter(
+            $input,
+            static fn (mixed $value, string|int $key): bool => in_array((string)$key, $known, true),
+            ARRAY_FILTER_USE_BOTH
+        );
     }
 }
