@@ -75,7 +75,7 @@ final class OrderIdentifierTokenTest extends TestCase
 
         self::assertNull($out['customer_id'], 'a guest has no customer to stand for');
         self::assertSame('', $out['customer']);
-        self::assertFalse($vault->has('[customer_1]'));
+        self::assertFalse($vault->has('mago://customer_1'));
     }
 
     #[Test]
@@ -89,7 +89,7 @@ final class OrderIdentifierTokenTest extends TestCase
             ]);
             $row = $out['rows'][0];
 
-            self::assertMatchesRegularExpression('/^\[name_\d+\]$/', $row['customer'], $action);
+            self::assertMatchesRegularExpression('#^mago://name_\d+$#', $row['customer'], $action);
             self::assertSame('Jan Jansen', $vault->rehydrate($row['customer']), $action);
         }
     }

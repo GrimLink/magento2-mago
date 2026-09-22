@@ -106,7 +106,7 @@ class PrivacyService
      * otherwise steer the model into writing "[email_1]" into e.g. CMS content, have the admin
      * confirm an opaque-looking card, and read the rehydrated value back from the storefront.
      */
-    private const WRITE_REFUSED_TYPES = '/\[(?:name|email|iban|vat|bsn|phone|url)_\d+\]/';
+    private const WRITE_REFUSED_TYPES = '/(?:\[|mago:\/\/)(?:name|email|iban|vat|bsn|phone|url)_\d+\]?/';
 
     /**
      * True when any argument carries a token of a sensitive class (see WRITE_REFUSED_TYPES). Checked
@@ -150,7 +150,7 @@ class PrivacyService
             if (is_array($value) && $this->containsToken($value)) {
                 return true;
             }
-            if (is_string($value) && preg_match('/\[[a-z]+_\d+\]/', $value) === 1) {
+            if (is_string($value) && preg_match('/(?:\[[a-z]+_\d+\]|mago:\/\/[a-z]+_\d+)/', $value) === 1) {
                 return true;
             }
         }
@@ -174,13 +174,19 @@ class PrivacyService
      */
     public function displayText(string $text): string
     {
-        return (string)preg_replace('/\[[a-z]+_\d+\]/', '[earlier record]', $this->vault->rehydrate($text));
+        return (string)preg_replace(
+            '/(?:\[[a-z]+_\d+\]|mago:\/\/[a-z]+_\d+)/',
+            '[earlier record]',
+            $this->vault->rehydrate($text)
+        );
     }
 
     /**
      * Rehydrate a streamed text delta for the admin. A token can split across SSE chunks, so a
      * trailing partial token is held back as the returned carry and prepended to the next delta; the
-     * rest is rehydrated now. The stored message stays tokenised; only the displayed copy is restored.
+     * rest is rehydrated now. Both shapes have to be recognised half-written: the bracket form and
+     * the "mago://" form a url token wears so markdown link syntax leaves it alone. The stored
+     * message stays tokenised; only the displayed copy is restored.
      *
      * @return array{0:string,1:string} [text to emit now, carry for the next delta]
      */
@@ -188,7 +194,9 @@ class PrivacyService
     {
         $text = $carry . $delta;
         $newCarry = '';
-        if (preg_match('/\[[a-z]*(?:_\d*)?$/', $text, $m, PREG_OFFSET_CAPTURE) === 1) {
+        if (preg_match('/(?:\[[a-z]*(?:_\d*)?|m(?:a(?:g(?:o(?::(?:\/(?:\/[a-z]*(?:_\d*)?)?)?)?)?)?)?)$/', $text, $m, PREG_OFFSET_CAPTURE) === 1
+            && $m[0][0] !== ''
+        ) {
             $offset = (int)$m[0][1];
             $newCarry = substr($text, $offset);
             $text = substr($text, 0, $offset);

@@ -77,7 +77,7 @@ final class CustomerIdentifierTokenTest extends TestCase
         $out = $filter->filter($this->classesOf(LookupCustomerAction::class), ['results' => [self::ROW]]);
         $row = $out['results'][0];
 
-        self::assertMatchesRegularExpression('/^\[name_\d+\]$/', $row['name']);
+        self::assertMatchesRegularExpression('#^mago://name_\d+$#', $row['name']);
         self::assertSame('Jan Jansen', $vault->rehydrate($row['name']));
     }
 
@@ -87,6 +87,6 @@ final class CustomerIdentifierTokenTest extends TestCase
         $vault = new ConversationVault();
         $service = new PrivacyService(new PrivacyFilter($vault, new PiiHeuristic()), $vault, new PiiHeuristic());
 
-        self::assertTrue($service->containsSensitiveToken(['firstname' => '[name_1]']));
+        self::assertTrue($service->containsSensitiveToken(['firstname' => 'mago://name_1']));
     }
 }

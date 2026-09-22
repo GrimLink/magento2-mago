@@ -584,7 +584,7 @@ final class ChatServiceTest extends TestCase
         self::assertStringNotContainsString('jan@example.com', $toolMessage);
         self::assertStringNotContainsString('0612345678', $toolMessage);
         self::assertStringNotContainsString('abc123secret', $toolMessage);
-        self::assertStringContainsString('[customer_1]', $toolMessage);
+        self::assertStringContainsString('mago://customer_1', $toolMessage);
         self::assertStringContainsString('Amsterdam', $toolMessage);
     }
 
@@ -634,7 +634,7 @@ final class ChatServiceTest extends TestCase
         $service = $this->buildChatService([new FakeSkill('page_writer', $authorization, ['update_page' => $echo])]);
         $this->grants['page_writer'] = 'write';
 
-        // Turn 1 mints [email_1] into the service's vault via the input scrubber.
+        // Turn 1 mints mago://email_1 into the service's vault via the input scrubber.
         $this->responses = [['content' => 'noted', 'tool_calls' => []]];
         $service->processMessage(
             [['role' => 'user', 'content' => 'Use jan@example.com on the contact page']],
@@ -645,7 +645,7 @@ final class ChatServiceTest extends TestCase
         $results = $service->executeConfirmedTools([[
             'id' => 'call_1',
             'name' => 'page_writer',
-            'input' => ['action' => 'update_page', 'content' => 'Contact: [email_1]'],
+            'input' => ['action' => 'update_page', 'content' => 'Contact: mago://email_1'],
         ]], self::ADMIN_ID);
 
         // Resolvable or not, a sensitive-class token never rehydrates into a write: this is the
@@ -675,7 +675,7 @@ final class ChatServiceTest extends TestCase
 
         $warmVault = new ConversationVault($storage);
         $warmVault->beginConversation(7);
-        self::assertSame('[order_1]', $warmVault->tokenise('000000549', 'order'));
+        self::assertSame('mago://order_1', $warmVault->tokenise('000000549', 'order'));
 
         $this->grants['cms_data'] = 'write';
         $echo = new class implements \MagoAssistant\Mago\Api\Skill\ActionInterface {
@@ -726,7 +726,7 @@ final class ChatServiceTest extends TestCase
         $results = $coldService->executeConfirmedTools([[
             'id' => 'call_1',
             'name' => 'page_writer',
-            'input' => ['action' => 'update_page', 'comment' => 'Note for [order_1]'],
+            'input' => ['action' => 'update_page', 'comment' => 'Note for mago://order_1'],
         ]], self::ADMIN_ID, null, null, 7);
 
         self::assertSame(['updated' => true], $results['call_1']);
@@ -743,7 +743,7 @@ final class ChatServiceTest extends TestCase
         $results = $service->executeConfirmedTools([[
             'id' => 'call_1',
             'name' => 'cms_data',
-            'input' => ['action' => 'update_page', 'content' => 'Ship to [customer_99]'],
+            'input' => ['action' => 'update_page', 'content' => 'Ship to mago://customer_99'],
         ]], self::ADMIN_ID);
 
         self::assertArrayHasKey('error', $results['call_1']);
