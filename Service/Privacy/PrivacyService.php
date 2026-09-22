@@ -194,9 +194,9 @@ class PrivacyService
     {
         $text = $carry . $delta;
         $newCarry = '';
-        if (preg_match('/(?:\[[a-z]*(?:_\d*)?|m(?:a(?:g(?:o(?::(?:\/(?:\/[a-z]*(?:_\d*)?)?)?)?)?)?)?)$/', $text, $m, PREG_OFFSET_CAPTURE) === 1
-            && $m[0][0] !== ''
-        ) {
+        // Every branch has to consume at least one character, or the pattern matches the empty
+        // string at the end of any delta and nothing is ever emitted.
+        if (preg_match('/(?:\[[a-z]*(?:_\d*)?|m(?:a(?:g(?:o(?::(?:\/(?:\/[a-z]*(?:_\d*)?)?)?)?)?)?))$/', $text, $m, PREG_OFFSET_CAPTURE) === 1) {
             $offset = (int)$m[0][1];
             $newCarry = substr($text, $offset);
             $text = substr($text, 0, $offset);
