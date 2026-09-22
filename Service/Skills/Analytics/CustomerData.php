@@ -22,6 +22,6 @@ class CustomerData extends AbstractSkill
 
     protected function getBaseInstructions(): string
     {
-        return 'Results carry no admin link: privacy mode strips admin_url before it reaches you, because it embeds the admin secret key. Never write an admin url yourself, not even one that looks right — without that key it opens nothing. Call admin_navigator when the admin asks for a link, and otherwise name the page in words.';
+        return 'A result about one record carries an admin_url, masked as a token like mago://url_1. Link it only when the answer is about that one record, writing the token exactly as it came back. A count, a total or a list gets no link: there is no single record to open, and a link to nothing in particular is noise under every answer. Never write an admin url yourself, one you assembled is missing the secret key and opens nothing.';
     }
 }

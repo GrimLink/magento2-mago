@@ -36,7 +36,7 @@ class LookupCustomerAction implements ActionInterface
         return [
             'search' => [
                 'type' => 'string',
-                'description' => 'Customer name or email to search for. Required by lookup_customer '
+                'description' => 'Customer name, email address or customer id to search for. Required by lookup_customer '
                     . 'and used by no other action, so do not pick lookup_customer when the question '
                     . 'names nobody to search for.',
             ],
@@ -63,6 +63,7 @@ class LookupCustomerAction implements ActionInterface
         // shows the admin the real value. City and country stay public so "which customers are in
         // X" keeps working.
         return [
+            'admin_url' => [PiiClass::TOKENISE, 'url'],
             'entity_id' => [PiiClass::TOKENISE, 'customer'],
             'name' => [PiiClass::TOKENISE, 'name'],
             'email' => [PiiClass::TOKENISE, 'email'],
@@ -94,7 +95,17 @@ class LookupCustomerAction implements ActionInterface
 
         $limit = max(1, min((int)($params['limit'] ?? 10), 10));
 
-        if (str_contains($search, '@')) {
+        if (ctype_digit(trim($search))) {
+            // The assistant refers to a customer by the id it was given, so the admin asks about
+            // "customer 32". Searching that as a name finds nobody, which reads as "this customer
+            // does not exist" for a customer we just showed them.
+            $searchParams = $this->apiClient->buildSearchCriteria(
+                [['field' => 'entity_id', 'value' => trim($search), 'condition_type' => 'eq']],
+                $limit,
+                1,
+                [['field' => 'created_at', 'direction' => 'DESC']]
+            );
+        } elseif (str_contains($search, '@')) {
             $searchParams = $this->apiClient->buildSearchCriteria(
                 [['field' => 'email', 'value' => '%' . trim($search) . '%', 'condition_type' => 'like']],
                 $limit,

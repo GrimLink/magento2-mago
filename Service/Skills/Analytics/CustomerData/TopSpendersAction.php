@@ -62,8 +62,11 @@ class TopSpendersAction implements ActionInterface
     {
         // The bare customer id is tokenised so the assistant can still refer to the row.
         return [
+            'admin_url' => [PiiClass::TOKENISE, 'url'],
             'period' => [PiiClass::PUBLIC],
             'customer_id' => [PiiClass::TOKENISE, 'customer'],
+            'name' => [PiiClass::TOKENISE, 'name'],
+            'email' => [PiiClass::TOKENISE, 'email'],
             'total_spent' => [PiiClass::PUBLIC],
             'order_count' => [PiiClass::PUBLIC],
         ];
@@ -85,13 +88,17 @@ class TopSpendersAction implements ActionInterface
         $select = $connection->select()
             ->from($orderTable, [
                 'customer_id',
+                // Without a name the answer is "customer 1, customer 2, customer 3", which is a
+                // ranking of nobody. The name is masked on its way out like any other.
+                'name' => new Expression("TRIM(CONCAT(COALESCE(customer_firstname, ''), ' ', COALESCE(customer_lastname, '')))"),
+                'email' => new Expression('MAX(customer_email)'),
                 'total_spent' => new Expression('SUM(grand_total)'),
                 'order_count' => new Expression('COUNT(*)'),
             ])
             ->where('customer_id IS NOT NULL')
             ->where('created_at >= ?', $from)
             ->where('state NOT IN (?)', ['canceled', 'closed'])
-            ->group('customer_id')
+            ->group(['customer_id', 'name'])
             ->order('total_spent DESC')
             ->limit($limit);
 
@@ -100,6 +107,8 @@ class TopSpendersAction implements ActionInterface
         foreach ($rows as $row) {
             $spenders[] = [
                 'customer_id' => (int)$row['customer_id'],
+                'name' => $row['name'] ?? '',
+                'email' => $row['email'] ?? '',
                 'total_spent' => round((float)$row['total_spent'], 2),
                 'order_count' => (int)$row['order_count'],
                 'admin_url' => $this->secureAdminUrl->getUrl('customer/index/edit', ['id' => (int)$row['customer_id']]),

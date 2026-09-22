@@ -53,6 +53,7 @@ class RecentOrdersAction implements ActionInterface
     {
         // The order ids are tokenised so follow-up actions can still target the order.
         return [
+            'admin_url' => [PiiClass::TOKENISE, 'url'],
             'entity_id' => [PiiClass::TOKENISE, 'order'],
             'order_number' => [PiiClass::TOKENISE, 'order'],
             'total' => [PiiClass::PUBLIC],

@@ -70,6 +70,7 @@ class CustomerOrdersAction implements ActionInterface
     {
         // The bare customer and order ids are tokenised so the assistant can still refer to them.
         return [
+            'admin_url' => [PiiClass::TOKENISE, 'url'],
             'customer_id' => [PiiClass::TOKENISE, 'customer'],
             'customer' => [PiiClass::TOKENISE, 'name'],
             'searched_for' => [PiiClass::TOKENISE, 'name'],

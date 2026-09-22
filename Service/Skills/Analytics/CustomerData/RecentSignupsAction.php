@@ -66,6 +66,7 @@ class RecentSignupsAction implements ActionInterface
         // [name_1], while the panel swaps the real value back in for the admin, so "who is my
         // newest customer" has an answer without a name leaving the store.
         return [
+            'admin_url' => [PiiClass::TOKENISE, 'url'],
             'period' => [PiiClass::PUBLIC],
             'total_new' => [PiiClass::PUBLIC],
             'customer_id' => [PiiClass::TOKENISE, 'customer'],

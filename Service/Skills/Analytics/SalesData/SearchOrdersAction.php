@@ -64,6 +64,7 @@ class SearchOrdersAction implements ActionInterface
     {
         // The customer name is a direct identifier and never sent; the order ids are tokenised.
         return [
+            'admin_url' => [PiiClass::TOKENISE, 'url'],
             'query' => [PiiClass::PUBLIC],
             'period' => [PiiClass::PUBLIC],
             'results_count' => [PiiClass::PUBLIC],
