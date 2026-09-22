@@ -43,7 +43,7 @@ class RevenueAction implements ActionInterface
         return [
             'period' => [
                 'type' => 'string',
-                'description' => 'Time period: "today", "yesterday", "7days", "30days", "this_month", "last_month", "this_year", "all" for no lower bound, "YYYY-MM" for a specific month, or "YYYY-MM-DD:YYYY-MM-DD" for a custom range',
+                'description' => 'Time period: "today", "yesterday", "7days", "30days", "this_month", "last_month", "this_year", "all" for no lower bound, "YYYY-MM" for a specific month, or "YYYY-MM-DD:YYYY-MM-DD" for a custom range. Use "all" whenever the question names no time frame, and do not carry a window over from an earlier question',
             ],
         ];
     }

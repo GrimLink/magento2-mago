@@ -94,7 +94,11 @@ class PrivacyFilter
             if ($class === PiiClass::PUBLIC) {
                 $out[$key] = $this->keep($value);
             } elseif ($class === PiiClass::TOKENISE) {
-                $out[$key] = $this->vault->tokenise((string)$value, $rule[1] ?? 'value');
+                // An absent value identifies nobody, so it crosses as the nothing it is rather than
+                // as a token standing for a row that does not exist.
+                $out[$key] = $value === null || $value === ''
+                    ? $value
+                    : $this->vault->tokenise((string)$value, $rule[1] ?? 'value');
             }
             // STRIP (declared, or the fail-closed default for an undeclared field): drop it.
         }

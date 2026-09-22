@@ -71,7 +71,7 @@ class SearchOrdersAction implements ActionInterface
             'order_number' => [PiiClass::TOKENISE, 'order'],
             'order_total' => [PiiClass::PUBLIC],
             'status' => [PiiClass::PUBLIC],
-            'customer' => [PiiClass::STRIP],
+            'customer' => [PiiClass::TOKENISE, 'name'],
             'date' => [PiiClass::PUBLIC],
             'product_sku' => [PiiClass::PUBLIC],
             'product_name' => [PiiClass::PUBLIC],
