@@ -221,17 +221,21 @@ class ChatService implements ChatServiceInterface
                             $describedCalls[] = $tc;
                             continue;
                         }
+                        // Display copy only (#97 decision 5): the admin must see the real values
+                        // they are approving, not opaque tokens; the persisted tool_calls stay
+                        // tokenised and are re-checked on the confirm round-trip. describeRisk()
+                        // reads the same copy, because looking an impact up by mago://order_1 finds
+                        // nothing and the card then loses its list for precisely the irreversible
+                        // actions it exists to spell out.
+                        $shownInput = $this->privacyService->rehydrateArguments(
+                            $this->inputForAction($t, $tc['input'] ?? [])
+                        );
                         $details = [
                             'id' => (string)($tc['id'] ?? ''),
                             'name' => $tc['name'],
                             'description' => $t->getDescription(),
-                            // Display copy only (#97 decision 5): the admin must see the real values
-                            // they are approving, not opaque tokens; the persisted tool_calls stay
-                            // tokenised and are re-checked on the confirm round-trip.
-                            'input' => $this->privacyService->rehydrateArguments(
-                                $this->inputForAction($t, $tc['input'] ?? [])
-                            ),
-                        ] + $this->describeRisk($t, $tc['input'] ?? [], $adminUserId);
+                            'input' => $shownInput,
+                        ] + $this->describeRisk($t, $shownInput, $adminUserId);
                         $confirmTools[] = $details;
                         $describedCalls[] = $tc + $details;
                     }
