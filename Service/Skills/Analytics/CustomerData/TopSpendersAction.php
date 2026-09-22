@@ -37,7 +37,9 @@ class TopSpendersAction implements ActionInterface
         return [
             'period' => [
                 'type' => 'string',
-                'description' => 'Time period: "7days", "30days", "this_month", "this_year"',
+                'description' => 'Time period: "today", "yesterday", "7days", "30days", "this_month", '
+                    . '"last_month", "this_year", "all" for every order ever, "YYYY-MM" for one month, '
+                    . 'or "YYYY-MM-DD:YYYY-MM-DD" for a range. Defaults to "30days".',
             ],
             'limit' => [
                 'type' => 'integer',

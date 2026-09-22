@@ -9,6 +9,12 @@ namespace MagoAssistant\Mago\Service\Skills;
 class PeriodParser
 {
     /**
+     * The lower bound of "all": far enough back to predate any store's first row, and a real date
+     * so a query can keep using a plain >= comparison.
+     */
+    private const BEGINNING_OF_TIME = '1970-01-01 00:00:00';
+
+    /**
      * Parse period string into [from, to] date strings
      *
      * @return string[] [from, to]
@@ -31,24 +37,19 @@ class PeriodParser
                 $now->modify('last day of last month')->format('Y-m-d 23:59:59'),
             ],
             'this_year' => [$now->format('Y-01-01 00:00:00'), $now->format('Y-m-d 23:59:59')],
+            'all' => [self::BEGINNING_OF_TIME, $now->format('Y-m-d 23:59:59')],
             default => $this->parseDateRange($period),
         };
     }
 
     /**
-     * Get "from" date string for a period (no "to" date)
+     * The "from" of a period, for a query that only needs a lower bound. It reads the same
+     * vocabulary as parse(), and refuses the same strings: a period nobody recognises used to
+     * become the last thirty days here, so "everything since 2020" quietly answered about a month.
      */
     public function getFromDate(string $period): string
     {
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-
-        return match ($period) {
-            '7days' => $now->modify('-7 days')->format('Y-m-d 00:00:00'),
-            '30days' => $now->modify('-30 days')->format('Y-m-d 00:00:00'),
-            'this_month' => $now->format('Y-m-01 00:00:00'),
-            'this_year' => $now->format('Y-01-01 00:00:00'),
-            default => $now->modify('-30 days')->format('Y-m-d 00:00:00'),
-        };
+        return $this->parse($period)[0];
     }
 
     private function parseDateRange(string $period): array
@@ -69,7 +70,8 @@ class PeriodParser
 
         throw new \InvalidArgumentException(sprintf(
             'Unrecognized period "%s". Use "today", "yesterday", "7days", "30days", "this_month", "last_month", '
-            . '"this_year", "YYYY-MM" for a specific month, or "YYYY-MM-DD:YYYY-MM-DD" for a custom range.',
+            . '"this_year", "all" for no lower bound, "YYYY-MM" for a specific month, or '
+            . '"YYYY-MM-DD:YYYY-MM-DD" for a custom range.',
             $period
         ));
     }

@@ -36,7 +36,9 @@ class RecentSignupsAction implements ActionInterface
         return [
             'period' => [
                 'type' => 'string',
-                'description' => 'Time period: "7days", "30days", "this_month", "this_year"',
+                'description' => 'Time period: "today", "yesterday", "7days", "30days", "this_month", '
+                    . '"last_month", "this_year", "all" for every customer ever, "YYYY-MM" for one month, '
+                    . 'or "YYYY-MM-DD:YYYY-MM-DD" for a range. Defaults to "30days".',
             ],
             'limit' => [
                 'type' => 'integer',
@@ -71,7 +73,10 @@ class RecentSignupsAction implements ActionInterface
 
     public function getInstructions(): string
     {
-        return '';
+        return 'Rows come back newest first, so "all" with limit 1 answers who the newest customer is. '
+            . 'A question about the latest or newest customer carries no period: use "all", because a '
+            . 'window that happens to be empty is not an answer to it. When the user does ask about a '
+            . 'period but does not say which, answer for the default and name the window you used.';
     }
 
     public function execute(array $params, int $adminUserId): array
