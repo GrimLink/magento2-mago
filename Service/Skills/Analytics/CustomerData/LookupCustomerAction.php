@@ -34,7 +34,9 @@ class LookupCustomerAction implements ActionInterface
         return [
             'search' => [
                 'type' => 'string',
-                'description' => 'Customer name or email to search for',
+                'description' => 'Customer name or email to search for. Required by lookup_customer '
+                    . 'and used by no other action, so do not pick lookup_customer when the question '
+                    . 'names nobody to search for.',
             ],
             'limit' => [
                 'type' => 'integer',
@@ -55,14 +57,14 @@ class LookupCustomerAction implements ActionInterface
 
     public function getFieldClassification(): array
     {
-        // Direct identifiers are never sent; the bare id is tokenised so the assistant can still
-        // refer to the row; city/country stay public so "which customers are in X" keeps working
-        // (#97: the identifiers beside them are stripped, so they are not linkable).
+        // Direct identifiers are tokenised, not dropped: the provider sees [name_1] and the panel
+        // shows the admin the real value. City and country stay public so "which customers are in
+        // X" keeps working.
         return [
             'entity_id' => [PiiClass::TOKENISE, 'customer'],
-            'name' => [PiiClass::STRIP],
-            'email' => [PiiClass::STRIP],
-            'telephone' => [PiiClass::STRIP],
+            'name' => [PiiClass::TOKENISE, 'name'],
+            'email' => [PiiClass::TOKENISE, 'email'],
+            'telephone' => [PiiClass::TOKENISE, 'phone'],
             'country' => [PiiClass::PUBLIC],
             'city' => [PiiClass::PUBLIC],
             'registered' => [PiiClass::PUBLIC],

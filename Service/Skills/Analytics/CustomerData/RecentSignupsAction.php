@@ -37,12 +37,15 @@ class RecentSignupsAction implements ActionInterface
             'period' => [
                 'type' => 'string',
                 'description' => 'Time period: "today", "yesterday", "7days", "30days", "this_month", '
-                    . '"last_month", "this_year", "all" for every customer ever, "YYYY-MM" for one month, '
-                    . 'or "YYYY-MM-DD:YYYY-MM-DD" for a range. Defaults to "30days".',
+                    . '"last_month", "this_year", "all", "YYYY-MM" for one month, or '
+                    . '"YYYY-MM-DD:YYYY-MM-DD" for a range. Use "all" whenever the question names no '
+                    . 'time frame, such as "who is my newest customer" — rows come back newest first, '
+                    . 'so "all" answers it. Do not carry a window over from an earlier question.',
             ],
             'limit' => [
                 'type' => 'integer',
-                'description' => 'Number of results (default: 10)',
+                'description' => 'Number of results (default: 10). Use 1 for a question about a '
+                    . 'single customer, such as the newest one.',
             ],
         ];
     }
@@ -59,12 +62,18 @@ class RecentSignupsAction implements ActionInterface
 
     public function getFieldClassification(): array
     {
-        // The signup rows carry no direct identifiers; the bare id is tokenised so the assistant
-        // can still refer to the customer.
+        // Direct identifiers are tokenised rather than dropped: the provider only ever sees
+        // [name_1], while the panel swaps the real value back in for the admin, so "who is my
+        // newest customer" has an answer without a name leaving the store.
         return [
             'period' => [PiiClass::PUBLIC],
             'total_new' => [PiiClass::PUBLIC],
             'customer_id' => [PiiClass::TOKENISE, 'customer'],
+            'name' => [PiiClass::TOKENISE, 'name'],
+            'email' => [PiiClass::TOKENISE, 'email'],
+            'telephone' => [PiiClass::TOKENISE, 'phone'],
+            'country' => [PiiClass::PUBLIC],
+            'city' => [PiiClass::PUBLIC],
             'group_id' => [PiiClass::PUBLIC],
             'registered' => [PiiClass::PUBLIC],
             'store_id' => [PiiClass::PUBLIC],
@@ -111,8 +120,14 @@ class RecentSignupsAction implements ActionInterface
         $signups = [];
         foreach ($result['items'] ?? [] as $customer) {
             $customerId = (int)($customer['id'] ?? 0);
+            $address = $customer['addresses'][0] ?? [];
             $signups[] = [
                 'customer_id' => $customerId,
+                'name' => trim(($customer['firstname'] ?? '') . ' ' . ($customer['lastname'] ?? '')),
+                'email' => $customer['email'] ?? '',
+                'telephone' => $address['telephone'] ?? null,
+                'country' => $address['country_id'] ?? null,
+                'city' => $address['city'] ?? null,
                 'group_id' => (int)($customer['group_id'] ?? 0),
                 'registered' => $customer['created_at'] ?? '',
                 'store_id' => (int)($customer['store_id'] ?? 0),

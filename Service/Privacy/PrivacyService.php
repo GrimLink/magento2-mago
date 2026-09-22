@@ -106,7 +106,7 @@ class PrivacyService
      * otherwise steer the model into writing "[email_1]" into e.g. CMS content, have the admin
      * confirm an opaque-looking card, and read the rehydrated value back from the storefront.
      */
-    private const WRITE_REFUSED_TYPES = '/\[(?:email|iban|vat|bsn|phone|url)_\d+\]/';
+    private const WRITE_REFUSED_TYPES = '/\[(?:name|email|iban|vat|bsn|phone|url)_\d+\]/';
 
     /**
      * True when any argument carries a token of a sensitive class (see WRITE_REFUSED_TYPES). Checked
