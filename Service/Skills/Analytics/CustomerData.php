@@ -22,7 +22,6 @@ class CustomerData extends AbstractSkill
 
     protected function getBaseInstructions(): string
     {
-        return 'All customer results include admin_url – always include these as markdown links in your response. '
-            . 'Do NOT call admin_navigator separately for customers, the URLs are already in the data.';
+        return 'Results carry no admin link: privacy mode strips admin_url before it reaches you, because it embeds the admin secret key. Never write an admin url yourself, not even one that looks right — without that key it opens nothing. Call admin_navigator when the admin asks for a link, and otherwise name the page in words.';
     }
 }
