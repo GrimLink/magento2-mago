@@ -20,6 +20,18 @@ class PeriodParserTest extends TestCase
     }
 
     #[Test]
+    public function itUnderstandsThePeriodsAModelWritesOutInWords(): void
+    {
+        foreach (['last week', 'past week', 'last 7 days'] as $period) {
+            self::assertSame(
+                $this->periodParser->getFromDate('7days'),
+                $this->periodParser->getFromDate($period),
+                $period
+            );
+        }
+    }
+
+    #[Test]
     public function allReachesBackFurtherThanAnyStoreHasData(): void
     {
         [$from, $to] = $this->periodParser->parse('all');
@@ -53,6 +65,15 @@ class PeriodParserTest extends TestCase
 
         self::assertSame('2026-01-01 00:00:00', $from);
         self::assertSame('2026-01-31 23:59:59', $to);
+    }
+
+    #[Test]
+    public function itParsesAWholeYearWrittenAsFourDigits(): void
+    {
+        [$from, $to] = $this->periodParser->parse('2026');
+
+        self::assertSame('2026-01-01 00:00:00', $from);
+        self::assertSame('2026-12-31 23:59:59', $to);
     }
 
     #[Test]
