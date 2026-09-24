@@ -749,6 +749,11 @@ class ChatService implements ChatServiceInterface
         }
 
         $instructions = $tool->getInstructions();
+        if ($instructions && $this->configRepository->isAnswerWidgetsEnabled()) {
+            // A tool's instructions describe its results in words; without this line the model
+            // tends to follow that wording and answer with a markdown list instead of a widget.
+            $instructions .= "\n" . $this->answerWidgets->toToolReminder();
+        }
         if ($instructions) {
             $messages[] = [
                 'role' => 'system',
