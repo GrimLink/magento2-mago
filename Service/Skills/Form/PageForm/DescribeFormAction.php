@@ -93,10 +93,12 @@ class DescribeFormAction extends AbstractPageFormReadAction
     }
     public function getFieldClassification(): array
     {
-        return [
+        return self::NO_FORM_CLASSIFICATION + [
             'namespace' => [PiiClass::PUBLIC],
             'entity_type' => [PiiClass::PUBLIC],
-            'entity_id' => [PiiClass::TOKENISE, 'entity'],
+            // Public: the system prompt already names the open record ("product #12"), and the
+            // forms that hold personal data (customer, order, admin user) are denied before this runs.
+            'entity_id' => [PiiClass::PUBLIC],
             'is_new_entity' => [PiiClass::PUBLIC],
             'store_id' => [PiiClass::PUBLIC],
             'total_fields' => [PiiClass::PUBLIC],
