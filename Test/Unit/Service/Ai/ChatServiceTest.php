@@ -522,6 +522,97 @@ final class ChatServiceTest extends TestCase
         self::assertSame(['staged' => true], $results['call_1']);
     }
 
+    #[Test]
+    public function itSendsTheBrowserTheDirectiveUnfilteredByThePrivacyClassification(): void
+    {
+        $directive = [
+            'type' => 'form_navigate',
+            'target' => ['namespace' => 'product_form', 'entity_id' => '3754', 'store_id' => '', 'is_new' => false],
+            'url' => 'https://shop.test/admin/catalog/product/edit/id/3754/key/abc123/',
+            'changes' => [['path' => 'data.product.description', 'value' => 'Mail jan@example.com for sizes']],
+        ];
+        $service = $this->serviceWithTool($this->pageFormTool([
+            'staged' => true,
+            'entity_id' => '3754',
+            'client_directive' => $directive,
+        ]));
+
+        $events = [];
+        $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'page_form', 'input' => ['action' => 'write_fields']]],
+            null,
+            function (string $event, array $data) use (&$events): void {
+                $events[] = [$event, $data];
+            }
+        );
+
+        self::assertContains(['form_apply', $directive], $events);
+    }
+
+    #[Test]
+    public function itStillTokenisesTheEntityIdInTheResultTheModelSees(): void
+    {
+        $service = $this->serviceWithTool($this->pageFormTool([
+            'staged' => true,
+            'entity_id' => '3754',
+            'client_directive' => ['type' => 'form_write', 'target' => ['entity_id' => '3754']],
+        ]));
+
+        $results = $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'page_form', 'input' => ['action' => 'write_fields']]],
+            null,
+            function (string $event, array $data): void {
+            }
+        );
+
+        self::assertSame(['staged' => true, 'entity_id' => 'mago://entity_1'], $results['call_1']);
+    }
+
+    #[Test]
+    public function itKeepsTheDirectiveOutOfTheToolMessageWhenNotStreaming(): void
+    {
+        $this->grants['page_form'] = 'read';
+        $auth = $this->createMock(AuthorizationInterface::class);
+        $auth->method('isAllowed')->willReturn(true);
+        $pageForm = new FakeSkill('page_form', $auth, [
+            'describe_form' => new FakeAction('describe_form', true, [], '', [
+                'staged' => true,
+                'client_directive' => ['type' => 'form_write', 'target' => ['entity_id' => '3754']],
+            ]),
+        ]);
+        $this->responses = [[
+            'content' => '',
+            'tool_calls' => [['id' => 'call_1', 'name' => 'page_form', 'input' => ['action' => 'describe_form']]],
+        ]];
+
+        $this->buildChatService([$pageForm])->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        self::assertSame('{"staged":true}', $this->lastMessageOfRole($this->requests[1], 'tool')['content']);
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     */
+    private function pageFormTool(array $result): FakeTool
+    {
+        return (new FakeTool('page_form', ['write_fields'], []))
+            ->withResult($result)
+            ->withFieldClassification([
+                'client_directive' => [PiiClass::PUBLIC],
+                'staged' => [PiiClass::PUBLIC],
+                'target' => [PiiClass::PUBLIC],
+                'namespace' => [PiiClass::PUBLIC],
+                'store_id' => [PiiClass::PUBLIC],
+                'is_new' => [PiiClass::PUBLIC],
+                'type' => [PiiClass::PUBLIC],
+                'changes' => [PiiClass::PUBLIC],
+                'path' => [PiiClass::PUBLIC],
+                'value' => [PiiClass::PUBLIC],
+                'entity_id' => [PiiClass::TOKENISE, 'entity'],
+                'url' => [PiiClass::TOKENISE, 'url'],
+            ]);
+    }
+
     private function serviceWithTool(FakeTool $tool): ChatService
     {
         return new ChatService(
