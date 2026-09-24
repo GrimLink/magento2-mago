@@ -95,6 +95,7 @@ Order operations beyond read-only.
 - `create_invoice` — create invoice
 - `create_creditmemo` — create credit memo / refund
 - `cancel` — cancel an order
+- `resend_confirmation` — send the order confirmation e-mail again (also needs `Magento_Sales::emails`)
 - **Magento ACL:** `Magento_Sales::sales_order`
 - **Use cases:** "Ship order #100042 with tracking number XYZ", "Refund order #100043", "Add internal note to order #100044"
 

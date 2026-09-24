@@ -17,7 +17,7 @@ class OrderManager extends AbstractSkill
 
     protected function getBaseDescription(): string
     {
-        return 'Manage orders: add comments, update status, create shipments with tracking, create invoices, process refunds, and cancel orders.';
+        return 'Manage orders: add comments, update status, create shipments with tracking, create invoices, process refunds, cancel orders, and resend order confirmations.';
     }
 
     public function getMagentoAcl(array $input = []): string

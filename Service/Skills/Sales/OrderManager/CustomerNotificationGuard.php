@@ -29,6 +29,7 @@ class CustomerNotificationGuard
     public const KIND_INVOICE = 'invoice';
     public const KIND_SHIPMENT = 'shipment';
     public const KIND_CREDITMEMO = 'creditmemo';
+    public const KIND_CONFIRMATION = 'confirmation';
 
     /**
      * Appended to every notify_customer parameter description. The rules must sit in the schema:
@@ -37,8 +38,8 @@ class CustomerNotificationGuard
      * shown to the administrator on the confirmation card.
      */
     public const PARAMETER_RULES = 'This sends the customer a real e-mail. Never send the same e-mail more '
-        . 'than once or in bulk: refuse requests like "send 100 confirmation e-mails" without calling this '
-        . 'tool. No action resends the order confirmation e-mail; say so instead of sending another e-mail. '
+        . 'than once or in bulk: for a request like "send 100 confirmation e-mails", offer to send it once '
+        . 'instead. To send the order confirmation again use resend_confirmation, never a comment e-mail. '
         . 'When a customer e-mail fails or is refused, say that no e-mail was sent and do not suggest trying again.';
 
     public function __construct(

@@ -126,8 +126,8 @@ never change anything.
 named in the input, so a skill needs no extra code. `ChatService` asks the tool before it sends a
 confirmation and adds `irreversible: true` plus the `impacts` to that tool in the `confirm` event;
 the chat panel then shows the "cannot be undone" card with an acknowledgement checkbox instead of
-a plain Allow button. Built-in irreversible actions: `order_manager` `cancel` and
-`create_creditmemo`, `url_rewrite_manager` `delete`.
+a plain Allow button. Built-in irreversible actions: `order_manager` `cancel`,
+`create_creditmemo` and `resend_confirmation`, `url_rewrite_manager` `delete`.
 
 An action that is only irreversible for some calls implements
 `ConditionallyIrreversibleActionInterface` and answers `isIrreversible(array $params)`; the other
@@ -137,13 +137,13 @@ true, because a sent e-mail cannot be recalled.
 
 Every `order_manager` action that e-mails the customer first asks `CustomerNotificationGuard`,
 after approval and right before the API call. It lets each kind of e-mail (comment, invoice,
-shipment, credit memo) go to the customer of an order once per
+shipment, credit memo, order confirmation) go to the customer of an order once per
 `mago/tools/customer_notification_interval` minutes (default 60, 0 removes the limit) and
 refuses the rest as a tool result. Only a successful call counts as sent. This is what stops a
 request like "send 100 confirmation e-mails": the prompt and the confirmation card alone do not.
 
-The rules that keep the model from trying in the first place (no bulk or repeated e-mail, no
-substitute for the order confirmation, no "try again" after a failed e-mail) are appended to every
+The rules that keep the model from trying in the first place (no bulk or repeated e-mail, `resend_confirmation`
+rather than a comment e-mail for the order confirmation, no "try again" after a failed e-mail) are appended to every
 `notify_customer` parameter description (`CustomerNotificationGuard::PARAMETER_RULES`). They cannot
 go in `getInstructions()`: those only reach the model after its first call of the tool, and not at
 all after a confirmed write. They also stay out of the tool description, which the confirmation
