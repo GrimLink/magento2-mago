@@ -62,6 +62,20 @@ class ChatService implements ChatServiceInterface
             . 'make it now. Otherwise summarise the result for the user.',
     ];
 
+    /**
+     * A finished answer that printed raw JSON or XML as text is unreadable to the end user. One
+     * follow-up turn asks the model to re-present it — a widget where one fits, otherwise prose —
+     * instead of the dump. Applied once per answer so a stubborn model does not loop.
+     */
+    private const RE_PRESENT_NUDGE = [
+        'role' => 'user',
+        'content' => 'Your previous reply printed raw structured data (JSON or XML) as text, which the '
+            . 'end user cannot read. Send the answer again: put the data in a ```mago widget block '
+            . '(record, table, stat, entityList, …) when one fits its shape, otherwise summarise it in '
+            . 'short readable prose. Never paste raw JSON or XML into the reply, even alongside other '
+            . 'text. Use only data a tool already returned.',
+    ];
+
     public function processMessage(array $messages, ?int $conversationId = null, ?int $adminUserId = null): array
     {
         try {
@@ -80,6 +94,7 @@ class ChatService implements ChatServiceInterface
         $messages = $this->privacyService->scrubMessages($this->prependSystemMessage($messages));
         $instructedTools = [];
         $nudged = false;
+        $rePresented = false;
 
         for ($i = 0; $i < $maxIterations; $i++) {
             try {
@@ -95,6 +110,12 @@ class ChatService implements ChatServiceInterface
                 if ($this->needsNudge($response, $messages, $nudged)) {
                     $messages[] = self::EMPTY_TURN_NUDGE;
                     $nudged = true;
+                    continue;
+                }
+                if (!$rePresented && $this->looksLikeRawDataDump((string)($response['content'] ?? ''))) {
+                    $messages[] = ['role' => 'assistant', 'content' => $response['content']];
+                    $messages[] = self::RE_PRESENT_NUDGE;
+                    $rePresented = true;
                     continue;
                 }
                 return $response;
@@ -150,6 +171,7 @@ class ChatService implements ChatServiceInterface
         $messages = $this->privacyService->scrubMessages($this->prependSystemMessage($messages));
         $instructedTools = [];
         $nudged = false;
+        $rePresented = false;
         $allToolCalls = [];
 
         // Rehydrate the text the admin sees, holding a token that splits across chunks. Everything
@@ -190,6 +212,16 @@ class ChatService implements ChatServiceInterface
                 if ($this->needsNudge($response, $messages, $nudged)) {
                     $messages[] = self::EMPTY_TURN_NUDGE;
                     $nudged = true;
+                    continue;
+                }
+                if (!$rePresented && $this->looksLikeRawDataDump((string)($response['content'] ?? ''))) {
+                    // The raw answer already streamed to the panel; tell it to drop what it showed,
+                    // then let the model re-present the data on the next turn, which streams into the
+                    // cleared message. The clean re-presentation is what is returned and stored.
+                    $onChunk('replace', []);
+                    $messages[] = ['role' => 'assistant', 'content' => $response['content']];
+                    $messages[] = self::RE_PRESENT_NUDGE;
+                    $rePresented = true;
                     continue;
                 }
                 if (!empty($allToolCalls)) {
@@ -921,6 +953,42 @@ class ChatService implements ChatServiceInterface
         $last = end($messages);
 
         return is_array($last) && ($last['role'] ?? '') === 'tool';
+    }
+
+    /**
+     * Whether a finished answer printed raw JSON or XML data as text — an object/array, or an XML
+     * fragment, that the model should have put in a ```mago widget (or summarised in prose) instead
+     * of pasting in. Prose around the blob is fine; a blob the model deliberately fenced or inlined
+     * as code is not a leak, so fenced and inline code are removed before the check.
+     */
+    private function looksLikeRawDataDump(string $content): bool
+    {
+        $content = trim($content);
+        if ($content === '') {
+            return false;
+        }
+        $stripped = (string)preg_replace('/```.*?```/s', '', $content);
+        $stripped = (string)preg_replace('/`[^`]*`/', '', $stripped);
+
+        // Raw XML: an "<?xml" declaration, or a matching open/close tag pair.
+        if (preg_match('/<\?xml\b/i', $stripped) === 1
+            || preg_match('#<([a-zA-Z][\w:.\-]*)\b[^>]*>[\s\S]*?</\1\s*>#', $stripped) === 1) {
+            return true;
+        }
+
+        // Raw JSON: a balanced object or array anywhere in the text that decodes to a structure with
+        // more than one member. A single-key object or a lone value (e.g. "{"total":"€39"}") is not a
+        // dump; a record, a table or a list of orders is. A malformed candidate simply does not decode.
+        if (preg_match_all('/\{(?:[^{}]|(?R))*\}|\[(?:[^\[\]]|(?R))*\]/', $stripped, $matches) > 0) {
+            foreach ($matches[0] as $candidate) {
+                $decoded = json_decode($candidate, true);
+                if (is_array($decoded) && count($decoded) >= 2) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -865,6 +865,117 @@ final class ChatServiceTest extends TestCase
         self::assertStringContainsString('masked for privacy', (string)$results['call_1']['error']);
     }
 
+    #[Test]
+    public function streamingRePresentsAnAnswerThatDumpedRawJson(): void
+    {
+        $this->responses = [
+            ['content' => 'Here is the last order: {"type":"record","title":"Order #2",'
+                . '"rows":[{"label":"Total","value":"€39.64"}]}', 'tool_calls' => []],
+            ['content' => 'The last order is #2 for €39.64.', 'tool_calls' => []],
+        ];
+        $events = [];
+        $onChunk = static function (string $type, array $data) use (&$events): void {
+            $events[] = $type;
+        };
+
+        $result = $this->chatService->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertContains('replace', $events, 'the panel is told to drop the raw JSON it streamed');
+        self::assertSame('The last order is #2 for €39.64.', $result['content'], 'the clean re-presentation is returned');
+        self::assertCount(2, $this->requests, 'the model was re-prompted once');
+        self::assertStringContainsString('raw structured data', $this->lastMessageOfRole($this->requests[1], 'user')['content']);
+    }
+
+    #[Test]
+    public function streamingRePresentsAnAnswerThatDumpedHeaderlessXml(): void
+    {
+        $this->responses = [
+            ['content' => 'The config is <config><item>a</item><item>b</item></config>', 'tool_calls' => []],
+            ['content' => 'The config holds two items: a and b.', 'tool_calls' => []],
+        ];
+        $events = [];
+        $onChunk = static function (string $type, array $data) use (&$events): void {
+            $events[] = $type;
+        };
+
+        $result = $this->chatService->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertContains('replace', $events, 'xml-shaped output with no <?xml header is still caught');
+        self::assertSame('The config holds two items: a and b.', $result['content']);
+        self::assertCount(2, $this->requests);
+    }
+
+    #[Test]
+    public function aCleanProseAnswerIsNotRePresented(): void
+    {
+        $this->responses = [['content' => 'The last order is #2 for €39.64.', 'tool_calls' => []]];
+        $events = [];
+        $onChunk = static function (string $type, array $data) use (&$events): void {
+            $events[] = $type;
+        };
+
+        $result = $this->chatService->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertNotContains('replace', $events);
+        self::assertCount(1, $this->requests);
+        self::assertSame('The last order is #2 for €39.64.', $result['content']);
+    }
+
+    #[Test]
+    public function aProperlyFencedWidgetIsNotRePresented(): void
+    {
+        $this->responses = [['content' => "Here is the order:\n```mago\n"
+            . '{"type":"record","title":"Order #2","rows":[{"label":"Total","value":"€39.64"}]}'
+            . "\n```", 'tool_calls' => []]];
+        $events = [];
+        $onChunk = static function (string $type, array $data) use (&$events): void {
+            $events[] = $type;
+        };
+
+        $this->chatService->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertNotContains('replace', $events, 'a correctly fenced widget is intentional, not a leak');
+        self::assertCount(1, $this->requests);
+    }
+
+    #[Test]
+    public function nonStreamingRePresentsAnAnswerThatDumpedRawJson(): void
+    {
+        $this->responses = [
+            ['content' => 'Order: {"type":"record","title":"Order #2",'
+                . '"rows":[{"label":"Total","value":"€39.64"}]}', 'tool_calls' => []],
+            ['content' => 'The last order is #2 for €39.64.', 'tool_calls' => []],
+        ];
+
+        $result = $this->chatService->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        self::assertSame('The last order is #2 for €39.64.', $result['content']);
+        self::assertCount(2, $this->requests);
+        self::assertStringContainsString('raw structured data', $this->lastMessageOfRole($this->requests[1], 'user')['content']);
+    }
+
+    #[Test]
+    public function itRePromptsAtMostOnceEvenWhenTheModelKeepsDumpingRawData(): void
+    {
+        $raw = 'Order: {"type":"record","title":"Order #2","rows":[{"label":"Total","value":"€39.64"}]}';
+        $this->responses = [
+            ['content' => $raw, 'tool_calls' => []],
+            ['content' => $raw, 'tool_calls' => []],
+        ];
+        $replaces = 0;
+        $onChunk = static function (string $type, array $data) use (&$replaces): void {
+            if ($type === 'replace') {
+                $replaces++;
+            }
+        };
+
+        $result = $this->chatService->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertSame(1, $replaces, 're-presented once, then the second answer is accepted rather than looping');
+        self::assertCount(2, $this->requests);
+        self::assertSame($raw, $result['content']);
+    }
+
     private function toolCallResponse(string $action, array $input = []): array
     {
         return [
