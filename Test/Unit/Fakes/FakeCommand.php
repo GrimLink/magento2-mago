@@ -9,7 +9,8 @@ namespace MagoAssistant\Mago\Test\Unit\Fakes;
 use MagoAssistant\Mago\Api\Command\CommandInterface;
 
 /**
- * Command with one read and one write subcommand that echoes what it was called with
+ * Command with one read and one write subcommand that echoes what it was called with. The write
+ * maps to a tool call only when it names a target, like a real "/cache clean" without a type.
  */
 final class FakeCommand implements CommandInterface
 {
@@ -62,7 +63,7 @@ final class FakeCommand implements CommandInterface
 
     public function getConfirmableToolCalls(string $subcommand, array $args): array
     {
-        if ($subcommand !== 'apply') {
+        if ($subcommand !== 'apply' || $args === []) {
             return [];
         }
 

@@ -8,7 +8,6 @@ namespace MagoAssistant\Mago\Model\Privacy;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\DuplicateException;
-use Magento\Framework\Encryption\EncryptorInterface;
 use MagoAssistant\Mago\Api\Privacy\VaultStorageInterface;
 use MagoAssistant\Mago\Logger\DebugLogger;
 use MagoAssistant\Mago\Logger\ErrorLogger;
@@ -26,7 +25,7 @@ class DbVaultStorage implements VaultStorageInterface
         private readonly ResourceConnection $resourceConnection,
         private readonly ErrorLogger $errorLogger,
         private readonly DebugLogger $debugLogger,
-        private readonly EncryptorInterface $encryptor
+        private readonly VaultValueCipher $cipher
     ) {
     }
 
@@ -41,7 +40,7 @@ class DbVaultStorage implements VaultStorageInterface
 
             $rows = [];
             foreach ($connection->fetchAll($select) as $row) {
-                $rows[] = ['token' => $row['token'], 'value' => $this->decrypt((string)$row['value']), 'type' => $row['token_type']];
+                $rows[] = ['token' => $row['token'], 'value' => $this->cipher->decrypt((string)$row['value']), 'type' => $row['token_type']];
             }
 
             return $rows;
@@ -59,7 +58,7 @@ class DbVaultStorage implements VaultStorageInterface
             $connection->insert($this->resourceConnection->getTableName(self::TABLE), [
                 'conversation_id' => $conversationId,
                 'token' => $token,
-                'value' => $this->encryptor->encrypt($value),
+                'value' => $this->cipher->encrypt($value),
                 'token_type' => $type,
             ]);
         } catch (DuplicateException $e) {
@@ -74,24 +73,6 @@ class DbVaultStorage implements VaultStorageInterface
             ]);
         } catch (\Throwable $e) {
             $this->errorLogger->addLog('PII vault persist', $e->getMessage());
-        }
-    }
-
-    /**
-     * Encrypted values carry Magento's "<keyVersion>:<cipherVersion>:" prefix. Anything without it
-     * is a plaintext row written before this vault was encrypted, returned unchanged so an in-flight
-     * conversation still resolves.
-     */
-    private function decrypt(string $stored): string
-    {
-        if (preg_match('/^\d+:\d+:/', $stored) !== 1) {
-            return $stored;
-        }
-
-        try {
-            return $this->encryptor->decrypt($stored);
-        } catch (\Throwable) {
-            return $stored;
         }
     }
 }

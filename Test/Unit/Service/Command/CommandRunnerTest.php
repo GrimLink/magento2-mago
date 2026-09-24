@@ -174,6 +174,25 @@ final class CommandRunnerTest extends TestCase
         );
     }
 
+    #[Test]
+    public function confirmableToolCallsIsEmptyWhenTheSkillGrantForbidsTheWrite(): void
+    {
+        $readOnlyCache = new FakeCommand('cache', true, false);
+        $runner = new CommandRunner(new CommandRegistry([$readOnlyCache]), $this->authorization(true));
+
+        $calls = $runner->confirmableToolCalls('/cache apply config', self::ADMIN_ID);
+
+        self::assertSame([], $calls, 'a write the skill grant forbids stays on run(), which renders the denial');
+    }
+
+    #[Test]
+    public function confirmableToolCallsIsEmptyForAPermittedWriteThatMapsToNoCall(): void
+    {
+        $calls = $this->runner()->confirmableToolCalls('/cache apply', self::ADMIN_ID);
+
+        self::assertSame([], $calls, 'a write without a target stays on run(), which renders the usage prompt');
+    }
+
     private function runner(bool $canWrite = true): CommandRunner
     {
         return new CommandRunner(

@@ -99,10 +99,18 @@ final class ChatServiceTest extends TestCase
             $this->requests[] = $messages;
             return array_shift($this->responses) ?? ['content' => 'done', 'tool_calls' => []];
         });
-        $client->method('stream')->willReturnCallback(function (AiClientInterface $c, array $messages): array {
-            $this->requests[] = $messages;
-            return array_shift($this->responses) ?? ['content' => 'done', 'tool_calls' => []];
-        });
+        $client->method('stream')->willReturnCallback(
+            function (AiClientInterface $c, array $messages, array $tools, callable $onChunk): array {
+                $this->requests[] = $messages;
+                $response = array_shift($this->responses) ?? ['content' => 'done', 'tool_calls' => []];
+                foreach ($response['streamed'] ?? [] as $text) {
+                    $onChunk('text', ['text' => $text]);
+                }
+                unset($response['streamed']);
+
+                return $response;
+            }
+        );
 
         $json = new Json();
         return new ChatService(
@@ -974,6 +982,103 @@ final class ChatServiceTest extends TestCase
         self::assertSame(1, $replaces, 're-presented once, then the second answer is accepted rather than looping');
         self::assertCount(2, $this->requests);
         self::assertSame($raw, $result['content']);
+    }
+
+    #[Test]
+    public function itTellsThePanelToReplaceBetweenTheRawAnswerAndTheRePresentedOne(): void
+    {
+        $raw = 'Order: {"title":"Order #2","total":"€39.64"}';
+        $clean = 'The last order is #2 for €39.64.';
+        $this->responses = [
+            ['content' => $raw, 'tool_calls' => [], 'streamed' => [$raw]],
+            ['content' => $clean, 'tool_calls' => [], 'streamed' => [$clean]],
+        ];
+        $events = [];
+        $onChunk = static function (string $type, array $data) use (&$events): void {
+            $events[] = $type . ':' . ($data['text'] ?? '');
+        };
+
+        $this->chatService->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertSame(['text:' . $raw, 'replace:', 'text:' . $clean], $events);
+    }
+
+    #[Test]
+    public function itKeepsTheExecutedToolCallsWhenTheAnswerAfterThemIsRePresented(): void
+    {
+        $this->responses = [
+            $this->toolCallResponse('list_pages'),
+            ['content' => 'Pages: [{"id":1,"title":"Home"},{"id":2,"title":"About"}]', 'tool_calls' => []],
+            ['content' => 'There are two pages: Home and About.', 'tool_calls' => []],
+        ];
+
+        $result = $this->chatService->processMessageStreaming([$this->userMessage()], static function (): void {
+        }, null, self::ADMIN_ID);
+
+        self::assertSame('There are two pages: Home and About.', $result['content']);
+        self::assertSame(['call_1'], array_column($result['executed_tool_calls'], 'id'));
+        self::assertCount(3, $this->requests);
+    }
+
+    #[Test]
+    public function itDoesNotRePresentJsonTheModelPutInInlineCode(): void
+    {
+        $this->responses = [['content' => 'Send `{"sku":"24-MB01","qty":2}` as the request body.', 'tool_calls' => []]];
+
+        $result = $this->chatService->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        self::assertCount(1, $this->requests);
+        self::assertSame('Send `{"sku":"24-MB01","qty":2}` as the request body.', $result['content']);
+    }
+
+    #[Test]
+    public function itDoesNotRePresentASingleMemberObject(): void
+    {
+        $this->responses = [['content' => 'The total is {"total":"€39"}.', 'tool_calls' => []]];
+
+        $this->chatService->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        self::assertCount(1, $this->requests);
+    }
+
+    #[Test]
+    public function itRePresentsAnObjectWithTwoMembers(): void
+    {
+        $this->responses = [
+            ['content' => 'The totals are {"total":"€39","tax":"€7"}.', 'tool_calls' => []],
+            ['content' => 'The total is €39, of which €7 is tax.', 'tool_calls' => []],
+        ];
+
+        $result = $this->chatService->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        self::assertCount(2, $this->requests);
+        self::assertSame('The total is €39, of which €7 is tax.', $result['content']);
+    }
+
+    #[Test]
+    public function itDoesNotRePresentBracesThatAreNotValidJson(): void
+    {
+        $this->responses = [
+            ['content' => 'Fill in {name: your name, email: your email} and [first, second].', 'tool_calls' => []],
+        ];
+
+        $this->chatService->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        self::assertCount(1, $this->requests);
+    }
+
+    #[Test]
+    public function itRePresentsAnAnswerThatStartsWithAnXmlDeclaration(): void
+    {
+        $this->responses = [
+            ['content' => '<?xml version="1.0"?><config/>', 'tool_calls' => []],
+            ['content' => 'The config file is empty.', 'tool_calls' => []],
+        ];
+
+        $result = $this->chatService->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        self::assertCount(2, $this->requests);
+        self::assertSame('The config file is empty.', $result['content']);
     }
 
     private function toolCallResponse(string $action, array $input = []): array
