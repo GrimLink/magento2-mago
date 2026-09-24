@@ -50,6 +50,8 @@ define([
     var busy = false;
     var showingHistory = false;
     var slashActive = false;
+    var slashMenuNode = null;
+    var announcedSlashCount = null;
     var slashIndex = 0;
     var filteredItems = [];
     var SS_KEY_OPEN = 'mago_open';
@@ -298,8 +300,40 @@ define([
         if (el) el.textContent = text || '';
     }
 
+    /**
+     * Reads a short message out to screen readers through the panel's hidden status region.
+     *
+     * @param {string} message
+     * @returns {void}
+     */
+    function announce(message) {
+        var region = qs('#mago-announcer');
+        if (!region) return;
+        // Cleared first so the same message twice in a row is still announced.
+        region.textContent = '';
+        setTimeout(function() { region.textContent = message; }, 50);
+    }
+
+    /**
+     * Reads a finished reply out to screen readers. Streaming rewrites the message on every
+     * chunk, so the message list itself is not a live region; the reply is announced once, whole.
+     *
+     * @param {HTMLElement|null} msgEl
+     * @returns {void}
+     */
+    function announceReply(msgEl) {
+        if (!msgEl) return;
+        var content = msgEl.querySelector('.mago-message-content');
+        var answer = content ? content.textContent.replace(/\s+/g, ' ').trim() : '';
+        var parts = [];
+        if (answer) parts.push(t('%1 replied: %2', config.assistantName, answer));
+        if (msgEl.querySelector('.mago-confirm-actions')) parts.push(t('Waiting for your confirmation.'));
+        if (parts.length) announce(parts.join(' '));
+    }
+
     // Busy drives the "Working" pill in the header and the send button state.
     function setBusy(state) {
+        if (state && !busy) announce(t('%1 is working…', config.assistantName));
         busy = state;
         chat.classList.toggle('is-busy', state);
         loading.style.display = state ? '' : 'none';
@@ -318,7 +352,41 @@ define([
         toggle.classList.toggle('is-active', open);
     }
 
+    // Full size covers the whole admin, so everything outside the panel is made inert
+    // while it is up: keyboard focus cannot land on a control nobody can see.
+    var inertedByFullsize = [];
+
+    /**
+     * Switches the panel between side panel and full size.
+     *
+     * @param {boolean} isFullsize
+     * @returns {void}
+     */
+    function setFullsize(isFullsize) {
+        chat.classList.toggle('is-fullsize', isFullsize);
+        document.body.classList.toggle('mago-fullsize', isFullsize);
+        var expandBtn = qs('#mago-expand');
+        expandBtn.title = isFullsize ? 'Side panel' : 'Full size';
+        expandBtn.innerHTML = isFullsize
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+
+        inertedByFullsize.forEach(function(el) { el.inert = false; });
+        inertedByFullsize = [];
+        if (!isFullsize) return;
+        for (var node = chat; node && node !== document.body; node = node.parentElement) {
+            var siblings = node.parentElement ? node.parentElement.children : [];
+            for (var i = 0; i < siblings.length; i++) {
+                var sibling = siblings[i];
+                if (sibling === node || sibling.inert || sibling.matches('script, style, .modals-wrapper')) continue;
+                sibling.inert = true;
+                inertedByFullsize.push(sibling);
+            }
+        }
+    }
+
     function openPanel() {
+        chat.inert = false;
         chat.classList.add('is-open');
         document.body.classList.add('mago-active');
         syncToggleLabel();
@@ -330,16 +398,18 @@ define([
     }
 
     function closePanel() {
-        chat.classList.remove('is-open', 'is-fullsize');
-        document.body.classList.remove('mago-active', 'mago-fullsize');
-        var expandBtn = qs('#mago-expand');
-        expandBtn.title = 'Full size';
-        expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        var hadFocus = chat.contains(document.activeElement);
+        setFullsize(false);
+        chat.classList.remove('is-open');
+        document.body.classList.remove('mago-active');
         syncToggleLabel();
         if (showingHistory) hideHistory();
         if (showingLog) hideLog();
         hideSlashMenu();
         saveState();
+        // Off screen but still in the DOM, the closed panel would otherwise stay in the tab order.
+        chat.inert = true;
+        if (hadFocus) toggle.focus();
     }
 
     toggle.onclick = function() {
@@ -351,18 +421,16 @@ define([
     };
     qs('#mago-close').onclick = closePanel;
     qs('#mago-expand').onclick = function() {
-        var isFullsize = chat.classList.toggle('is-fullsize');
-        document.body.classList.toggle('mago-fullsize', isFullsize);
-        var expandBtn = qs('#mago-expand');
-        if (isFullsize) {
-            expandBtn.title = 'Side panel';
-            expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
-        } else {
-            expandBtn.title = 'Full size';
-            expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
-        }
+        setFullsize(!chat.classList.contains('is-fullsize'));
         saveState();
     };
+    chat.addEventListener('keydown', function(e) {
+        // The input handles Escape itself while the slash menu is open.
+        if (e.key === 'Escape' && !e.defaultPrevented) {
+            e.preventDefault();
+            closePanel();
+        }
+    });
     qs('#mago-new').onclick = function() {
         if (showingHistory) hideHistory();
         if (showingLog) hideLog();
@@ -428,7 +496,7 @@ define([
         // get a group heading inside the one menu when both kinds survive the filter.
         var hasCommands = filteredItems.some(function(i) { return i.type === 'command'; });
         var hasSkills = filteredItems.some(function(i) { return i.type === 'skill'; });
-        slashMenu.appendChild(UI.skillMenu({
+        slashMenuNode = UI.skillMenu({
             itemClass: 'mago-slash-item',
             title: hasCommands ? (hasSkills ? 'Commands and skills' : 'Commands') : 'Skills',
             skills: filteredItems.map(function(item) {
@@ -441,8 +509,17 @@ define([
                 };
             }),
             onSelect: function(entry, i) { selectSlashItem(filteredItems[i]); }
-        }));
+        });
+        slashMenu.appendChild(slashMenuNode);
         slashMenu.classList.add('is-visible');
+        input.setAttribute('aria-controls', slashMenuNode.magoListId);
+        input.setAttribute('aria-activedescendant', slashMenuNode.magoItems[0].id);
+        if (filteredItems.length !== announcedSlashCount) {
+            announcedSlashCount = filteredItems.length;
+            announce(filteredItems.length === 1
+                ? t('1 suggestion. Press Enter to insert.')
+                : t('%1 suggestions. Use up and down to choose, Enter to insert.', filteredItems.length));
+        }
     }
 
 
@@ -468,7 +545,7 @@ define([
         loading.style.display = 'none';
         inputArea.style.display = 'none';
         logView.style.display = '';
-        if (logBtn) logBtn.classList.add('is-active');
+        if (logBtn) logBtn.setAttribute('aria-pressed', 'true');
     }
 
     function hideLog() {
@@ -477,7 +554,7 @@ define([
         logView.style.display = 'none';
         msgs.style.display = '';
         inputArea.style.display = '';
-        if (logBtn) logBtn.classList.remove('is-active');
+        if (logBtn) logBtn.setAttribute('aria-pressed', 'false');
     }
 
     if (logBtn) {
@@ -487,8 +564,12 @@ define([
 
     function hideSlashMenu() {
         slashActive = false;
+        slashMenuNode = null;
+        announcedSlashCount = null;
         slashMenu.classList.remove('is-visible');
         slashMenu.innerHTML = '';
+        input.removeAttribute('aria-controls');
+        input.removeAttribute('aria-activedescendant');
     }
 
     function selectSlashItem(item) {
@@ -509,11 +590,9 @@ define([
     }
 
     function updateSlashHighlight() {
-        var items = slashMenu.querySelectorAll('.mago-slash-item');
-        items.forEach(function(el, i) {
-            el.classList.toggle('is-active', i === slashIndex);
-        });
-        if (items[slashIndex]) items[slashIndex].scrollIntoView({block:'nearest'});
+        if (!slashMenuNode) return;
+        slashMenuNode.magoSetActive(slashIndex);
+        input.setAttribute('aria-activedescendant', slashMenuNode.magoItems[slashIndex].id);
     }
 
     function autoGrow() {
@@ -539,6 +618,7 @@ define([
     function updatePrivacyHint(v) {
         if (!privacyHint) return;
         var hit = v.length > 5 && privacyHintPatterns.some(function(p) { return p.test(v); });
+        if (hit && privacyHint.hidden) announce(privacyHint.textContent.trim());
         privacyHint.hidden = !hit;
     }
 
@@ -595,11 +675,12 @@ define([
     function loadHistory() {
         if (showingLog) hideLog();
         showingHistory = true;
+        qs('#mago-history').setAttribute('aria-pressed', 'true');
         msgs.style.display = 'none';
         loading.style.display = 'none';
         inputArea.style.display = 'none';
         histList.style.display = '';
-        histList.innerHTML = '<div style="padding:16px;color:#999;font-size:13px;">Loading...</div>';
+        histList.innerHTML = '<div style="padding:16px;color:var(--mago-ink-muted, #736B65);font-size:13px;">Loading...</div>';
 
         fetch(config.historyUrl, {
             headers: {'X-Requested-With':'XMLHttpRequest'},
@@ -609,21 +690,24 @@ define([
         .then(function(data) {
             histList.innerHTML = '';
             if (!data.conversations || !data.conversations.length) {
-                histList.innerHTML = '<div style="padding:16px;color:#999;font-size:13px;">No previous chats</div>';
+                histList.innerHTML = '<div style="padding:16px;color:var(--mago-ink-muted, #736B65);font-size:13px;">No previous chats</div>';
                 return;
             }
             data.conversations.forEach(function(conv) {
                 var item = document.createElement('div');
                 item.className = 'mago-history-item';
-                item.innerHTML = '<span class="mago-history-item-title">' + esc(conv.title || 'Untitled') + '</span>'
+                var title = conv.title || 'Untitled';
+                item.innerHTML = '<button type="button" class="mago-history-item-title">' + esc(title) + '</button>'
                     + '<span class="mago-history-item-date">' + formatDate(conv.updated_at) + '</span>'
-                    + '<button type="button" class="mago-history-item-delete" title="Delete">'
-                    + '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+                    + '<button type="button" class="mago-history-item-delete">'
+                    + '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
                     + '</button>';
 
                 item.querySelector('.mago-history-item-title').onclick = function() {
                     loadConversation(conv.entity_id, conv.title);
+                    input.focus();
                 };
+                item.querySelector('.mago-history-item-delete').title = t('Delete conversation: %1', title);
                 item.querySelector('.mago-history-item-delete').onclick = function(e) {
                     e.stopPropagation();
                     deleteConversation(conv.entity_id, item);
@@ -632,12 +716,13 @@ define([
             });
         })
         .catch(function() {
-            histList.innerHTML = '<div style="padding:16px;color:#e22626;font-size:13px;">Failed to load history</div>';
+            histList.innerHTML = '<div style="padding:16px;color:var(--mago-danger, #B8402A);font-size:13px;">Failed to load history</div>';
         });
     }
 
     function hideHistory() {
         showingHistory = false;
+        qs('#mago-history').setAttribute('aria-pressed', 'false');
         histList.style.display = 'none';
         msgs.style.display = '';
         inputArea.style.display = '';
@@ -724,7 +809,11 @@ define([
             body: fd,
             credentials: 'same-origin'
         }).then(function(r) { return r.json(); }).then(function() {
+            // The deleted row held focus; hand it to the next row, or back to the History button.
+            var next = el.nextElementSibling || el.previousElementSibling;
+            var hadFocus = el.contains(document.activeElement);
             el.remove();
+            if (hadFocus) (next ? next.querySelector('.mago-history-item-title') : qs('#mago-history')).focus();
             if (conversationId === id) {
                 conversationId = null;
                 clearMsgs();
@@ -752,9 +841,10 @@ define([
             return '<a href="' + href + '" target="' + target + '" rel="noopener"' + titleAttr + '>' + text + '</a>';
         };
         markedRenderer.table = function(token) {
-            // Render using the default logic but wrap in a scrollable div
+            // Render using the default logic but wrap in a scrollable div, focusable so the
+            // keyboard can scroll a wide table too
             var html = marked.Renderer.prototype.table.call(this, token);
-            return '<div class="mago-table-wrap">' + html + '</div>';
+            return '<div class="mago-table-wrap" tabindex="0" role="region" aria-label="' + esc(t('Table')) + '">' + html + '</div>';
         };
         // A ```mago fenced block holds a widget spec ({"type": "stat", ...} or a
         // list of them) and renders as the matching widget. While the block is
@@ -1113,6 +1203,7 @@ define([
                         if (d.pending_confirmation && msg && !writeToolDetected) {
                             showConfirmButtons(msg, {messageId: d.message_id, conversationId: conversationId}, []);
                         }
+                        announceReply(msg);
                         if (!d.pending_confirmation && writeToolDetected) {
                             writeToolDetected = false;
                         }
@@ -1418,6 +1509,7 @@ define([
                         if (d.pending_confirmation && msg) {
                             showConfirmButtons(msg, {messageId: d.message_id, conversationId: conversationId}, []);
                         }
+                        announceReply(msg);
                         keepNavigateStatusLast();
                     }
                     else if (evt==='error') {
@@ -1479,11 +1571,7 @@ define([
                 }
             }
             if (wasFullsize) {
-                chat.classList.add('is-fullsize');
-                document.body.classList.add('mago-fullsize');
-                var expandBtn = qs('#mago-expand');
-                expandBtn.title = 'Side panel';
-                expandBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+                setFullsize(true);
             }
             openPanel();
         }

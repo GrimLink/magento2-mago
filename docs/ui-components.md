@@ -116,7 +116,7 @@ changes in place, it does not move.
 | S10 | `paramPrompt` | `text`, `prefix`, `value`, `placeholder`, `type`, `onSubmit(value)`, `chips: [{label, value}]` |
 | S11 | `undoCallout` | `text`, `onUndo`, `undoLabel`, `expiresText` |
 | S12 | `sessionLog` | `title`, `entries: [{text, time, tone}]`, `onExport` |
-| S14 | `skillMenu` | `skills: [{name, title, description, risk: read\|write\|irreversible, group}]`, `title`, `activeIndex`, `onSelect(skill, index)`, `itemClass`. A `group` opens a heading row above the entry, so one menu can hold several kinds of entry; `activeIndex` and the `onSelect` index stay flat over all of them. Exposes `magoSetActive(index)`. |
+| S14 | `skillMenu` | `skills: [{name, title, description, risk: read\|write\|irreversible, group}]`, `title`, `activeIndex`, `onSelect(skill, index)`, `itemClass`. A `group` opens a heading row above the entry, so one menu can hold several kinds of entry; `activeIndex` and the `onSelect` index stay flat over all of them. Exposes `magoSetActive(index)`. With `onSelect` the rows are listbox options that take no focus: drive them from a text field through `aria-controls` (`magoListId`) and `aria-activedescendant` (`magoItems[i].id`). Without it the menu is a static list. |
 
 ## Where the panel uses them
 
