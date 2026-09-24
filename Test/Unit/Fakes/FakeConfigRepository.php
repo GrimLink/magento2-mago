@@ -14,11 +14,19 @@ class FakeConfigRepository implements RepositoryInterface
     private bool $isInternalSslVerifyEnabled = true;
     private string $internalUrl = '';
     private int $maxToolIterations = 0;
+    private int $customerNotificationInterval = 0;
     private bool $answerWidgets = false;    private int $maxResponseTokens = 0;
 
     public function withMaxToolIterations(int $maxToolIterations): self
     {
         $this->maxToolIterations = $maxToolIterations;
+
+        return $this;
+    }
+
+    public function withCustomerNotificationInterval(int $minutes): self
+    {
+        $this->customerNotificationInterval = $minutes;
 
         return $this;
     }
@@ -138,6 +146,11 @@ class FakeConfigRepository implements RepositoryInterface
     public function getMaxToolIterations(): int
     {
         return $this->maxToolIterations;
+    }
+
+    public function getCustomerNotificationInterval(): int
+    {
+        return $this->customerNotificationInterval;
     }
 
     public function getAccentColor(): string

@@ -16,7 +16,8 @@ class CreateCreditmemoAction implements IrreversibleActionInterface
     public function __construct(
         private readonly InternalApiClient $apiClient,
         private readonly SecureAdminUrl $secureAdminUrl,
-        private readonly OrderResolver $orderResolver
+        private readonly OrderResolver $orderResolver,
+        private readonly CustomerNotificationGuard $notificationGuard
     ) {
     }
 
@@ -123,10 +124,21 @@ class CreateCreditmemoAction implements IrreversibleActionInterface
         }
 
         $entityId = $order['entity_id'];
-        $notify = $params['notify_customer'] ?? false;
+        $notify = !empty($params['notify_customer']);
+
+        if ($notify) {
+            $refusal = $this->notificationGuard->findRefusal(
+                (int)$entityId,
+                (string)$order['increment_id'],
+                CustomerNotificationGuard::KIND_CREDITMEMO
+            );
+            if ($refusal !== null) {
+                return $refusal;
+            }
+        }
 
         $body = [
-            'notify' => (bool)$notify,
+            'notify' => $notify,
         ];
 
         $adjustmentPositive = $params['adjustment_positive'] ?? null;
@@ -150,6 +162,10 @@ class CreateCreditmemoAction implements IrreversibleActionInterface
 
         if (isset($result['error'])) {
             return $result;
+        }
+
+        if ($notify) {
+            $this->notificationGuard->recordSent((int)$entityId, CustomerNotificationGuard::KIND_CREDITMEMO);
         }
 
         $creditmemoId = $result['result'] ?? $result['id'] ?? null;

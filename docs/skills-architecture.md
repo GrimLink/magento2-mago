@@ -129,6 +129,19 @@ the chat panel then shows the "cannot be undone" card with an acknowledgement ch
 a plain Allow button. Built-in irreversible actions: `order_manager` `cancel` and
 `create_creditmemo`, `url_rewrite_manager` `delete`.
 
+An action that is only irreversible for some calls implements
+`ConditionallyIrreversibleActionInterface` and answers `isIrreversible(array $params)`; the other
+calls get the plain Allow button. The `order_manager` actions `add_comment`, `update_status`,
+`create_invoice` and `create_shipment` do this: they are irreversible when `notify_customer` is
+true, because a sent e-mail cannot be recalled.
+
+Every `order_manager` action that e-mails the customer first asks `CustomerNotificationGuard`,
+after approval and right before the API call. It lets each kind of e-mail (comment, invoice,
+shipment, credit memo) go to the customer of an order once per
+`mago/tools/customer_notification_interval` minutes (default 60, 0 removes the limit) and
+refuses the rest as a tool result. Only a successful call counts as sent. This is what stops a
+request like "send 100 confirmation e-mails": the prompt and the confirmation card alone do not.
+
 A `confirm` event also carries each tool call's `id`. With several writes in one turn the panel
 shows a tick list; the confirm request then sends the ticked ids as `tool_call_ids`, and
 `executeConfirmedTools()` answers every unticked call with `{"skipped": true, ...}` without

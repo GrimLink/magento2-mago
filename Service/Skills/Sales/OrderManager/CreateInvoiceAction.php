@@ -16,7 +16,8 @@ class CreateInvoiceAction implements IrreversibleActionInterface
     public function __construct(
         private readonly InternalApiClient $apiClient,
         private readonly SecureAdminUrl $secureAdminUrl,
-        private readonly OrderResolver $orderResolver
+        private readonly OrderResolver $orderResolver,
+        private readonly CustomerNotificationGuard $notificationGuard
     ) {
     }
 
@@ -90,6 +91,9 @@ class CreateInvoiceAction implements IrreversibleActionInterface
         if ((bool)($params['capture'] ?? true)) {
             $impacts[] = 'Captures payment online where the payment method supports it — the customer is charged now.';
         }
+        if (!empty($params['notify_customer'])) {
+            $impacts[] = $this->notificationGuard->describeEmail($orderNumber, 'the invoice');
+        }
 
         return $impacts;
     }
@@ -113,11 +117,22 @@ class CreateInvoiceAction implements IrreversibleActionInterface
 
         $entityId = $order['entity_id'];
         $capture = $params['capture'] ?? true;
-        $notify = $params['notify_customer'] ?? false;
+        $notify = !empty($params['notify_customer']);
+
+        if ($notify) {
+            $refusal = $this->notificationGuard->findRefusal(
+                (int)$entityId,
+                (string)$order['increment_id'],
+                CustomerNotificationGuard::KIND_INVOICE
+            );
+            if ($refusal !== null) {
+                return $refusal;
+            }
+        }
 
         $body = [
             'capture' => (bool)$capture,
-            'notify' => (bool)$notify,
+            'notify' => $notify,
         ];
 
         $comment = $params['comment'] ?? '';
@@ -131,6 +146,10 @@ class CreateInvoiceAction implements IrreversibleActionInterface
 
         if (isset($result['error'])) {
             return $result;
+        }
+
+        if ($notify) {
+            $this->notificationGuard->recordSent((int)$entityId, CustomerNotificationGuard::KIND_INVOICE);
         }
 
         $invoiceId = $result['result'] ?? $result['id'] ?? null;

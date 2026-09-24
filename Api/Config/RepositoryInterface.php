@@ -24,6 +24,7 @@ interface RepositoryInterface
     public const XML_PATH_SYSTEM_PROMPT = 'mago/chat/system_prompt';
     public const XML_PATH_MAX_TOOL_ITERATIONS = 'mago/chat/max_tool_iterations';
     public const XML_PATH_MAX_RESPONSE_TOKENS = 'mago/tools/max_response_tokens';
+    public const XML_PATH_CUSTOMER_NOTIFICATION_INTERVAL = 'mago/tools/customer_notification_interval';
     public const XML_PATH_ACCENT_COLOR = 'mago/chat/accent_color';
     public const XML_PATH_TEXT_COLOR = 'mago/chat/text_color';
     public const XML_PATH_ASSISTANT_NAME = 'mago/chat/assistant_name';
@@ -112,6 +113,13 @@ interface RepositoryInterface
      * @return int
      */
     public function getMaxResponseTokens(): int;
+
+    /**
+     * Minutes Mago waits before it e-mails the customer of the same order again, 0 when unlimited
+     *
+     * @return int
+     */
+    public function getCustomerNotificationInterval(): int;
 
     /**
      * @return string
