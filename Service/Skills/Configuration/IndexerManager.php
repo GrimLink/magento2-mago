@@ -10,10 +10,14 @@ use Magento\Framework\Indexer\IndexerRegistry;
 use Magento\Indexer\Model\Indexer\CollectionFactory;
 use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
 use MagoAssistant\Mago\Api\Tool\UpfrontGuidanceToolInterface;
+use MagoAssistant\Mago\Api\Tool\ValidatingToolInterface;
 use MagoAssistant\Mago\Service\Privacy\PiiClass;
 
-class IndexerManager implements ActionScopedToolInterface, UpfrontGuidanceToolInterface
+class IndexerManager implements ActionScopedToolInterface, UpfrontGuidanceToolInterface, ValidatingToolInterface
 {
+    /** An indexer id echoed into an error is capped here so a runaway argument is not stored or re-sent */
+    private const MAX_ID_ECHO = 100;
+
     private const ACTION_DESCRIPTIONS = [
         'status' => 'list all indexers with status',
         'reindex' => 'reindex a specific indexer by ID, e.g. "catalog_product_price", "catalogsearch_fulltext"',
@@ -87,10 +91,18 @@ class IndexerManager implements ActionScopedToolInterface, UpfrontGuidanceToolIn
             ],
         ];
         if (array_intersect(['reindex', 'set_mode'], $actionNames) !== []) {
+            // The real indexers are known here, so they are offered as an enum rather than a free
+            // string: the model cannot invent an id that then fails only after the admin confirms it.
+            $indexers = $this->indexerTitles();
             $properties['indexer_id'] = [
                 'type' => 'string',
-                'description' => 'Indexer ID for reindex/set_mode actions (e.g. "catalog_product_price", "catalogsearch_fulltext", "catalog_category_product")',
+                'description' => 'Indexer to target for reindex/set_mode. Use one of these exact IDs'
+                    . ($indexers === [] ? '.' : ': ' . $this->formatIdList($indexers) . '.')
+                    . ' Do not invent an ID; run the "status" action if unsure.',
             ];
+            if ($indexers !== []) {
+                $properties['indexer_id']['enum'] = array_keys($indexers);
+            }
         }
         if (in_array('set_mode', $actionNames, true)) {
             $properties['mode'] = [
@@ -131,6 +143,36 @@ class IndexerManager implements ActionScopedToolInterface, UpfrontGuidanceToolIn
         return ($input['action'] ?? '') === 'status';
     }
 
+    /**
+     * Refuse a reindex/set_mode whose indexer_id is not a real indexer before the confirmation card,
+     * answering with the valid list so the model can correct itself rather than have the admin allow
+     * a card that only fails on execution (and then guess again, or escalate to reindex_all).
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|null
+     */
+    public function findRefusal(array $input): ?array
+    {
+        $action = (string)($input['action'] ?? '');
+        if ($action !== 'reindex' && $action !== 'set_mode') {
+            return null;
+        }
+        $id = (string)($input['indexer_id'] ?? '');
+        // An empty id is the "parameter is required" case, answered by execute(), not an invented one.
+        if ($id === '') {
+            return null;
+        }
+        $indexers = $this->indexerTitles();
+        if (isset($indexers[$id])) {
+            return null;
+        }
+
+        return [
+            'error' => sprintf('Unknown indexer "%s". It is not one of this store\'s indexers.', $this->truncateId($id)),
+            'valid_indexers' => $this->idTitlePairs($indexers),
+        ];
+    }
+
     public function getInstructions(): string
     {
         return '';
@@ -153,6 +195,7 @@ class IndexerManager implements ActionScopedToolInterface, UpfrontGuidanceToolIn
             'success' => [PiiClass::PUBLIC],
             'reindexed' => [PiiClass::PUBLIC],
             'errors' => [PiiClass::PUBLIC],
+            'valid_indexers' => [PiiClass::PUBLIC],
         ];
     }
 
@@ -194,7 +237,8 @@ class IndexerManager implements ActionScopedToolInterface, UpfrontGuidanceToolIn
         try {
             $indexer = $this->indexerRegistry->get($indexerId);
         } catch (\Exception $e) {
-            return ['error' => 'Unknown indexer: ' . $indexerId . '. Use "status" action to list available indexers.'];
+            return ['error' => 'Unknown indexer: ' . $this->truncateId($indexerId)
+                . '. Use "status" action to list available indexers.'];
         }
 
         $indexer->reindexAll();
@@ -243,7 +287,7 @@ class IndexerManager implements ActionScopedToolInterface, UpfrontGuidanceToolIn
         try {
             $indexer = $this->indexerRegistry->get($indexerId);
         } catch (\Exception $e) {
-            return ['error' => 'Unknown indexer: ' . $indexerId];
+            return ['error' => 'Unknown indexer: ' . $this->truncateId($indexerId)];
         }
 
         $indexer->setScheduled($mode === 'schedule');
@@ -252,5 +296,60 @@ class IndexerManager implements ActionScopedToolInterface, UpfrontGuidanceToolIn
             'success' => true,
             'message' => sprintf('Indexer "%s" mode set to "%s"', $indexer->getTitle(), $mode),
         ];
+    }
+
+    /**
+     * Live indexers as id => title, or an empty list if the collection cannot be read. A failure
+     * here must not break the tool schema (which is built on every chat request), so the id then
+     * falls back to a free string rather than taking the assistant down.
+     *
+     * @return array<string, string>
+     */
+    private function indexerTitles(): array
+    {
+        try {
+            $titles = [];
+            foreach ($this->indexerCollectionFactory->create()->getItems() as $indexer) {
+                $titles[(string)$indexer->getId()] = (string)$indexer->getTitle();
+            }
+
+            return $titles;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * @param array<string, string> $indexers id => title
+     * @return array<int, array{id: string, title: string}>
+     */
+    private function idTitlePairs(array $indexers): array
+    {
+        $pairs = [];
+        foreach ($indexers as $id => $title) {
+            $pairs[] = ['id' => $id, 'title' => $title];
+        }
+
+        return $pairs;
+    }
+
+    /**
+     * "id (Title)" for each indexer, for the parameter description
+     *
+     * @param array<string, string> $indexers id => title
+     */
+    private function formatIdList(array $indexers): string
+    {
+        $parts = [];
+        foreach ($indexers as $id => $title) {
+            $parts[] = $title === '' ? $id : sprintf('%s (%s)', $id, $title);
+        }
+
+        return implode(', ', $parts);
+    }
+
+    private function truncateId(string $id): string
+    {
+        return mb_strlen($id) > self::MAX_ID_ECHO ? mb_substr($id, 0, self::MAX_ID_ECHO) . '…' : $id;
     }
 }
