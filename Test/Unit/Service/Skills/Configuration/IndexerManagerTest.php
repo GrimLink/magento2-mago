@@ -78,6 +78,52 @@ final class IndexerManagerTest extends TestCase
         self::assertStringNotContainsString(str_repeat('x', 101), $result['error']);
     }
 
+    #[Test]
+    public function itRefusesAnUnknownIndexerForSetMode(): void
+    {
+        $manager = $this->manager();
+
+        $refusal = $manager->findRefusal(
+            ['action' => 'set_mode', 'indexer_id' => 'cataloginventory_stock_stock', 'mode' => 'schedule']
+        );
+
+        self::assertIsArray($refusal);
+        self::assertStringContainsString('Unknown indexer "cataloginventory_stock_stock"', $refusal['error']);
+        self::assertCount(2, $refusal['valid_indexers']);
+    }
+
+    #[Test]
+    public function itOffersTheIndexerIdForSetModeAsAnEnumNextToTheMode(): void
+    {
+        $manager = $this->manager();
+
+        $schema = $manager->getParameterSchemaForActions(['set_mode']);
+
+        self::assertSame(['catalog_product_price', 'cataloginventory_stock'], $schema['properties']['indexer_id']['enum']);
+        self::assertSame(['realtime', 'schedule'], $schema['properties']['mode']['enum']);
+    }
+
+    #[Test]
+    public function itFallsBackToAFreeStringIndexerIdWhenTheIndexersCannotBeRead(): void
+    {
+        $manager = $this->managerWithUnreadableIndexers();
+
+        $schema = $manager->getParameterSchemaForActions(['reindex']);
+
+        $indexerId = $schema['properties']['indexer_id'];
+        self::assertSame('string', $indexerId['type']);
+        self::assertArrayNotHasKey('enum', $indexerId);
+        self::assertStringContainsString('Use one of these exact IDs. Do not invent an ID', $indexerId['description']);
+    }
+
+    private function managerWithUnreadableIndexers(): IndexerManager
+    {
+        $factory = $this->createStub(CollectionFactory::class);
+        $factory->method('create')->willThrowException(new \RuntimeException('indexer_state unreadable'));
+
+        return new IndexerManager($factory, $this->createStub(IndexerRegistry::class));
+    }
+
     private function manager(): IndexerManager
     {
         $items = [];

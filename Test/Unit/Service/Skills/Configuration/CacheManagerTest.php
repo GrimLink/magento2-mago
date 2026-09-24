@@ -69,6 +69,21 @@ final class CacheManagerTest extends TestCase
         self::assertStringNotContainsString(str_repeat('x', 101), $result['error']);
     }
 
+    #[Test]
+    public function itFallsBackToAFreeStringCacheTypeWhenTheTypesCannotBeRead(): void
+    {
+        $typeList = $this->createStub(TypeListInterface::class);
+        $typeList->method('getTypes')->willThrowException(new \RuntimeException('cache config unreadable'));
+        $manager = new CacheManager($typeList, $this->createStub(CacheFrontendPool::class));
+
+        $schema = $manager->getParameterSchemaForActions(['flush_type']);
+
+        $cacheType = $schema['properties']['cache_type'];
+        self::assertSame('string', $cacheType['type']);
+        self::assertArrayNotHasKey('enum', $cacheType);
+        self::assertStringContainsString('Use one of these exact IDs. Do not invent an ID', $cacheType['description']);
+    }
+
     /**
      * @param array<string, string> $types id => label
      */
