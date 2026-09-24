@@ -286,8 +286,14 @@ class Stream extends Action implements HttpPostActionInterface
         // administrator on the same confirmation card as a write the model proposes, instead of
         // running at once. The Confirm controller runs the calls once approved. Everything else —
         // reads, /help, usage prompts and denials — keeps running directly through run() below.
+        // A call its tool already refuses (an indexer or cache type this store does not have) gets
+        // no card at all: nothing runs and the administrator reads why, exactly as the model would.
         $confirmableToolCalls = $this->commandRunner->confirmableToolCalls($message, $adminUserId);
         if ($confirmableToolCalls !== []) {
+            $refusal = $this->commandRunner->findRefusal($confirmableToolCalls, $adminUserId);
+            if ($refusal !== null) {
+                $this->answerCommand($refusal, $conversationId);
+            }
             $this->confirmCommand($confirmableToolCalls, $conversationId);
         }
 
@@ -305,6 +311,14 @@ class Stream extends Action implements HttpPostActionInterface
             ]);
         }
 
+        $this->answerCommand($content, $conversationId);
+    }
+
+    /**
+     * Stream a slash command's reply as one text chunk, store it, and stop
+     */
+    private function answerCommand(string $content, int $conversationId): never
+    {
         $this->sendSse('text', ['text' => $content]);
         $messageId = $this->conversationRepository->addMessage($conversationId, 'assistant', $content);
         $this->sendSse('done', [

@@ -9,7 +9,10 @@ namespace MagoAssistant\Mago\Test\Unit\Service\Command;
 use Magento\Framework\AuthorizationInterface;
 use MagoAssistant\Mago\Service\Command\CommandRegistry;
 use MagoAssistant\Mago\Service\Command\CommandRunner;
+use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeCommand;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeTool;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeValidatingTool;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -110,7 +113,7 @@ final class CommandRunnerTest extends TestCase
     {
         $readOnlyCache = new FakeCommand('cache', true, false);
 
-        $withAcl = new CommandRunner(new CommandRegistry([$readOnlyCache]), $this->authorization(true));
+        $withAcl = new CommandRunner(new CommandRegistry([$readOnlyCache]), $this->authorization(true), new ToolRegistry());
         self::assertSame(['show'], array_keys($withAcl->getAvailableSubcommands($readOnlyCache, self::ADMIN_ID)));
 
         self::assertSame(
@@ -127,7 +130,7 @@ final class CommandRunnerTest extends TestCase
     public function skillPermissionDenialOnTheSubcommandIsReported(): void
     {
         $readOnlyCache = new FakeCommand('cache', true, false);
-        $runner = new CommandRunner(new CommandRegistry([$readOnlyCache]), $this->authorization(true));
+        $runner = new CommandRunner(new CommandRegistry([$readOnlyCache]), $this->authorization(true), new ToolRegistry());
 
         $reply = $runner->run('/cache apply config', self::ADMIN_ID, $this->noopChunk());
 
@@ -178,7 +181,7 @@ final class CommandRunnerTest extends TestCase
     public function confirmableToolCallsIsEmptyWhenTheSkillGrantForbidsTheWrite(): void
     {
         $readOnlyCache = new FakeCommand('cache', true, false);
-        $runner = new CommandRunner(new CommandRegistry([$readOnlyCache]), $this->authorization(true));
+        $runner = new CommandRunner(new CommandRegistry([$readOnlyCache]), $this->authorization(true), new ToolRegistry());
 
         $calls = $runner->confirmableToolCalls('/cache apply config', self::ADMIN_ID);
 
@@ -193,11 +196,74 @@ final class CommandRunnerTest extends TestCase
         self::assertSame([], $calls, 'a write without a target stays on run(), which renders the usage prompt');
     }
 
+    #[Test]
+    public function findRefusalIsNullWhenTheToolAcceptsEveryCall(): void
+    {
+        $runner = $this->runnerWithTools([new FakeValidatingTool('fake_tool', ['config', 'layout'])]);
+        $calls = $runner->confirmableToolCalls('/cache apply config layout', self::ADMIN_ID);
+
+        $refusal = $runner->findRefusal($calls, self::ADMIN_ID);
+
+        self::assertNull($refusal);
+    }
+
+    #[Test]
+    public function findRefusalExplainsTheRefusedIdAndListsTheValidOnes(): void
+    {
+        $runner = $this->runnerWithTools([new FakeValidatingTool('fake_tool', ['config', 'layout'])]);
+        $calls = $runner->confirmableToolCalls('/cache apply config bogus', self::ADMIN_ID);
+
+        $refusal = $runner->findRefusal($calls, self::ADMIN_ID);
+
+        self::assertSame("**Error:** Unknown id \"bogus\".\n\nValid IDs: `config`, `layout`", $refusal);
+    }
+
+    #[Test]
+    public function findRefusalReportsEveryRefusedCall(): void
+    {
+        $runner = $this->runnerWithTools([new FakeValidatingTool('fake_tool', ['config'])]);
+        $calls = [
+            ['id' => 'slash_apply_0', 'name' => 'fake_tool', 'input' => ['args' => ['first']]],
+            ['id' => 'slash_apply_1', 'name' => 'fake_tool', 'input' => ['args' => ['config']]],
+            ['id' => 'slash_apply_2', 'name' => 'fake_tool', 'input' => ['args' => ['second']]],
+        ];
+
+        $refusal = (string)$runner->findRefusal($calls, self::ADMIN_ID);
+
+        self::assertSame(2, substr_count($refusal, '**Error:**'));
+        self::assertStringContainsString('Unknown id "first".', $refusal);
+        self::assertStringContainsString('Unknown id "second".', $refusal);
+    }
+
+    #[Test]
+    public function findRefusalIsNullForAToolThatDoesNotValidateItsCalls(): void
+    {
+        $runner = $this->runnerWithTools([new FakeTool('fake_tool', ['apply'], [])]);
+        $calls = $runner->confirmableToolCalls('/cache apply bogus', self::ADMIN_ID);
+
+        $refusal = $runner->findRefusal($calls, self::ADMIN_ID);
+
+        self::assertNull($refusal);
+    }
+
     private function runner(bool $canWrite = true): CommandRunner
     {
         return new CommandRunner(
             new CommandRegistry([$this->cache, $this->hidden]),
-            $this->authorization($canWrite)
+            $this->authorization($canWrite),
+            new ToolRegistry()
+        );
+    }
+
+    /**
+     * @param \MagoAssistant\Mago\Api\Tool\ToolInterface[] $tools
+     */
+    private function runnerWithTools(array $tools): CommandRunner
+    {
+        return new CommandRunner(
+            new CommandRegistry([$this->cache, $this->hidden]),
+            $this->authorization(true),
+            new ToolRegistry(null, $tools)
         );
     }
 
