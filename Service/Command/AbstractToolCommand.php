@@ -76,7 +76,9 @@ abstract class AbstractToolCommand implements CommandInterface
     }
 
     /**
-     * One tool call against this command's tool, with an id unique to its position in the message
+     * One tool call against this command's tool. The id is stored with the conversation and paired
+     * with its tool result by id alone, so it has to be unique across the whole conversation: a
+     * second "/cache clean config" must not reuse the first one's id.
      *
      * @param array<string, mixed> $input
      * @return array{id: string, name: string, input: array<string, mixed>}
@@ -84,7 +86,7 @@ abstract class AbstractToolCommand implements CommandInterface
     protected function toolCall(string $subcommand, int $index, array $input): array
     {
         return [
-            'id' => sprintf('slash_%s_%d', $subcommand, $index),
+            'id' => sprintf('slash_%s_%d_%s', $subcommand, $index, bin2hex(random_bytes(6))),
             'name' => $this->getToolName(),
             'input' => $input,
         ];

@@ -63,16 +63,30 @@ final class IndexCommandTest extends TestCase
         // A bare reindex ("everything") asks first, so it maps to no card; only scoped IDs do.
         self::assertSame([], $command->getConfirmableToolCalls('reindex', []));
 
+        $calls = $command->getConfirmableToolCalls('reindex', ['catalog_product_price', 'catalogsearch_fulltext', 'catalog_product_price']);
         self::assertSame(
             [
-                ['id' => 'slash_reindex_0', 'name' => 'indexer_manager', 'input' => ['action' => 'reindex', 'indexer_id' => 'catalog_product_price']],
-                ['id' => 'slash_reindex_1', 'name' => 'indexer_manager', 'input' => ['action' => 'reindex', 'indexer_id' => 'catalogsearch_fulltext']],
+                ['name' => 'indexer_manager', 'input' => ['action' => 'reindex', 'indexer_id' => 'catalog_product_price']],
+                ['name' => 'indexer_manager', 'input' => ['action' => 'reindex', 'indexer_id' => 'catalogsearch_fulltext']],
             ],
-            $command->getConfirmableToolCalls('reindex', ['catalog_product_price', 'catalogsearch_fulltext', 'catalog_product_price'])
+            array_map(static fn (array $call): array => array_diff_key($call, ['id' => true]), $calls)
         );
+        self::assertMatchesRegularExpression('/^slash_reindex_0_[0-9a-f]{12}$/', $calls[0]['id']);
+        self::assertMatchesRegularExpression('/^slash_reindex_1_[0-9a-f]{12}$/', $calls[1]['id']);
 
         self::assertSame([], $command->getConfirmableToolCalls('status', []));
         self::assertSame([], $command->getConfirmableToolCalls('list', []));
+    }
+
+    #[Test]
+    public function confirmableToolCallsGetANewIdEveryTimeTheSameReindexIsTyped(): void
+    {
+        $command = $this->command(new FakeChatService(static fn (array $call): array => []));
+
+        $first = $command->getConfirmableToolCalls('reindex', ['catalog_product_price']);
+        $second = $command->getConfirmableToolCalls('reindex', ['catalog_product_price']);
+
+        self::assertNotSame($first[0]['id'], $second[0]['id']);
     }
 
     #[Test]

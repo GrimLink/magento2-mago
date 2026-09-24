@@ -128,16 +128,30 @@ final class CacheCommandTest extends TestCase
         // flush ("everything") asks first, so it maps to no card; only the scoped clean does.
         self::assertSame([], $command->getConfirmableToolCalls('flush', []));
 
+        $calls = $command->getConfirmableToolCalls('clean', ['config', 'full_page', 'config']);
         self::assertSame(
             [
-                ['id' => 'slash_clean_0', 'name' => 'cache_manager', 'input' => ['action' => 'flush_type', 'cache_type' => 'config']],
-                ['id' => 'slash_clean_1', 'name' => 'cache_manager', 'input' => ['action' => 'flush_type', 'cache_type' => 'full_page']],
+                ['name' => 'cache_manager', 'input' => ['action' => 'flush_type', 'cache_type' => 'config']],
+                ['name' => 'cache_manager', 'input' => ['action' => 'flush_type', 'cache_type' => 'full_page']],
             ],
-            $command->getConfirmableToolCalls('clean', ['config', 'full_page', 'config'])
+            array_map(static fn (array $call): array => array_diff_key($call, ['id' => true]), $calls)
         );
+        self::assertMatchesRegularExpression('/^slash_clean_0_[0-9a-f]{12}$/', $calls[0]['id']);
+        self::assertMatchesRegularExpression('/^slash_clean_1_[0-9a-f]{12}$/', $calls[1]['id']);
 
         self::assertSame([], $command->getConfirmableToolCalls('status', []));
         self::assertSame([], $command->getConfirmableToolCalls('clean', []));
+    }
+
+    #[Test]
+    public function confirmableToolCallsGetANewIdEveryTimeTheSameCleanIsTyped(): void
+    {
+        $command = $this->command($this->chat(static fn (array $call): array => []));
+
+        $first = $command->getConfirmableToolCalls('clean', ['config']);
+        $second = $command->getConfirmableToolCalls('clean', ['config']);
+
+        self::assertNotSame($first[0]['id'], $second[0]['id']);
     }
 
     /**
