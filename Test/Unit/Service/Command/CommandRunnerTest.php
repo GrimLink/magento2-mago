@@ -144,6 +144,36 @@ final class CommandRunnerTest extends TestCase
         self::assertSame([], $this->hidden->executions);
     }
 
+    #[Test]
+    public function confirmableToolCallsReturnsThePermittedWritesCalls(): void
+    {
+        self::assertSame(
+            [['id' => 'slash_apply_0', 'name' => 'fake_tool', 'input' => ['args' => ['config']]]],
+            $this->runner()->confirmableToolCalls('/cache apply config', self::ADMIN_ID)
+        );
+    }
+
+    #[Test]
+    public function confirmableToolCallsIsEmptyForReadsHelpAndUnknownCommands(): void
+    {
+        $runner = $this->runner();
+
+        self::assertSame([], $runner->confirmableToolCalls('/cache show', self::ADMIN_ID), 'read subcommand');
+        self::assertSame([], $runner->confirmableToolCalls('/help', self::ADMIN_ID), 'help');
+        self::assertSame([], $runner->confirmableToolCalls('/revenue today', self::ADMIN_ID), 'not a command');
+        self::assertSame([], $runner->confirmableToolCalls('/secret show', self::ADMIN_ID), 'unavailable command');
+    }
+
+    #[Test]
+    public function confirmableToolCallsIsEmptyWhenTheWriteAclIsMissing(): void
+    {
+        self::assertSame(
+            [],
+            $this->runner(false)->confirmableToolCalls('/cache apply config', self::ADMIN_ID),
+            'a write the session cannot run stays on run(), which renders the denial'
+        );
+    }
+
     private function runner(bool $canWrite = true): CommandRunner
     {
         return new CommandRunner(

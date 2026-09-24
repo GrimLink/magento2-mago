@@ -91,6 +91,41 @@ class CommandRunner
     }
 
     /**
+     * The write tool calls a slash message would run, for the confirmation card — but only when the
+     * admin is actually allowed to run them. A read subcommand, /help, an unknown command, a write
+     * the session's ACL or skill grant forbids, or a write mapping to no call (a usage prompt) all
+     * return []: the caller then runs the message through run(), which renders the reply or the
+     * denial. So a permitted write is confirmed first and everything else keeps its current path.
+     *
+     * @param string $message
+     * @param int $adminUserId
+     * @return array<int, array{id: string, name: string, input: array<string, mixed>}>
+     */
+    public function confirmableToolCalls(string $message, int $adminUserId): array
+    {
+        $parsed = $this->parse($message);
+        if ($parsed === null || $parsed['name'] === self::HELP) {
+            return [];
+        }
+
+        $command = $this->registry->get($parsed['name']);
+        if ($command === null || !$command->isAvailable($adminUserId)) {
+            return [];
+        }
+
+        $subcommand = $parsed['subcommand'];
+        $definition = $command->getSubcommands()[$subcommand] ?? null;
+        if ($definition === null || $definition['readOnly']) {
+            return [];
+        }
+        if (!$this->authorization->isAllowed(self::WRITE_ACL) || !$command->isAvailable($adminUserId, $subcommand)) {
+            return [];
+        }
+
+        return $command->getConfirmableToolCalls($subcommand, $parsed['args']);
+    }
+
+    /**
      * Split "/Name Sub arg1 arg2" into its parts; null when the message is not slash-prefixed
      *
      * @param string $message

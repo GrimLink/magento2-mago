@@ -282,6 +282,15 @@ class Stream extends Action implements HttpPostActionInterface
             'admin_user' => $adminName,
         ]);
 
+        // A permitted write subcommand (/cache flush, /index reindex, /cache clean) is put to the
+        // administrator on the same confirmation card as a write the model proposes, instead of
+        // running at once. The Confirm controller runs the calls once approved. Everything else —
+        // reads, /help, usage prompts and denials — keeps running directly through run() below.
+        $confirmableToolCalls = $this->commandRunner->confirmableToolCalls($message, $adminUserId);
+        if ($confirmableToolCalls !== []) {
+            $this->confirmCommand($confirmableToolCalls, $conversationId);
+        }
+
         $content = $this->commandRunner->run(
             $message,
             $adminUserId,
@@ -302,6 +311,41 @@ class Stream extends Action implements HttpPostActionInterface
             'message_id' => $messageId,
             'conversation_id' => $conversationId,
             'pending_confirmation' => false,
+        ], true);
+        $this->terminateResponse();
+    }
+
+    /**
+     * Stage a permitted write slash command as a pending confirmation and stop. This persists the
+     * assistant message with its tool_calls and pending_confirmation flag, then emits the confirm
+     * and done events, exactly as the model-write path does; the Confirm controller runs the calls
+     * when the administrator approves the card.
+     *
+     * @param array<int, array{id: string, name: string, input: array<string, mixed>}> $toolCalls
+     */
+    private function confirmCommand(array $toolCalls, int $conversationId): never
+    {
+        $adminUserId = (int)($this->_auth->getUser()?->getId() ?? 0);
+        $result = $this->chatService->prepareToolConfirmation(
+            $toolCalls,
+            function (string $type, array $data) {
+                $this->sendSse($type, $data);
+            },
+            $adminUserId
+        );
+
+        $messageId = $this->conversationRepository->addMessage(
+            $conversationId,
+            'assistant',
+            (string)($result['content'] ?? ''),
+            $result['tool_calls'] ?? $toolCalls,
+            true
+        );
+
+        $this->sendSse('done', [
+            'message_id' => $messageId,
+            'conversation_id' => $conversationId,
+            'pending_confirmation' => true,
         ], true);
         $this->terminateResponse();
     }
