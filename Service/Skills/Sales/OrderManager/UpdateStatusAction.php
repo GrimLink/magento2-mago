@@ -53,7 +53,8 @@ class UpdateStatusAction implements ConditionallyIrreversibleActionInterface
             ],
             'notify_customer' => [
                 'type' => 'boolean',
-                'description' => 'Whether to notify the customer (default: false)',
+                'description' => 'Whether to e-mail the status change to the customer (default: false). '
+                    . CustomerNotificationGuard::PARAMETER_RULES,
             ],
         ];
     }

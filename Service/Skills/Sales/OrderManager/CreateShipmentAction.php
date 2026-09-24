@@ -52,7 +52,8 @@ class CreateShipmentAction implements ConditionallyIrreversibleActionInterface
             ],
             'notify_customer' => [
                 'type' => 'boolean',
-                'description' => 'Whether to e-mail the shipment to the customer (default: false)',
+                'description' => 'Whether to e-mail the shipment to the customer (default: false). '
+                    . CustomerNotificationGuard::PARAMETER_RULES,
             ],
             'comment' => [
                 'type' => 'string',

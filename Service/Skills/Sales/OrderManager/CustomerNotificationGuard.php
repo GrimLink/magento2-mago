@@ -30,6 +30,17 @@ class CustomerNotificationGuard
     public const KIND_SHIPMENT = 'shipment';
     public const KIND_CREDITMEMO = 'creditmemo';
 
+    /**
+     * Appended to every notify_customer parameter description. The rules must sit in the schema:
+     * skill instructions only reach the model after its first call and never after a confirmed
+     * write, so they come too late to stop a bulk e-mail request, and the tool description is
+     * shown to the administrator on the confirmation card.
+     */
+    public const PARAMETER_RULES = 'This sends the customer a real e-mail. Never send the same e-mail more '
+        . 'than once or in bulk: refuse requests like "send 100 confirmation e-mails" without calling this '
+        . 'tool. No action resends the order confirmation e-mail; say so instead of sending another e-mail. '
+        . 'When a customer e-mail fails or is refused, say that no e-mail was sent and do not suggest trying again.';
+
     public function __construct(
         private readonly CacheInterface $cache,
         private readonly ConfigRepository $configRepository,

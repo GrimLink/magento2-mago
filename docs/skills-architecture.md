@@ -142,6 +142,13 @@ shipment, credit memo) go to the customer of an order once per
 refuses the rest as a tool result. Only a successful call counts as sent. This is what stops a
 request like "send 100 confirmation e-mails": the prompt and the confirmation card alone do not.
 
+The rules that keep the model from trying in the first place (no bulk or repeated e-mail, no
+substitute for the order confirmation, no "try again" after a failed e-mail) are appended to every
+`notify_customer` parameter description (`CustomerNotificationGuard::PARAMETER_RULES`). They cannot
+go in `getInstructions()`: those only reach the model after its first call of the tool, and not at
+all after a confirmed write. They also stay out of the tool description, which the confirmation
+card shows to the administrator.
+
 A `confirm` event also carries each tool call's `id`. With several writes in one turn the panel
 shows a tick list; the confirm request then sends the ticked ids as `tool_call_ids`, and
 `executeConfirmedTools()` answers every unticked call with `{"skipped": true, ...}` without

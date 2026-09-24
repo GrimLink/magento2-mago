@@ -44,7 +44,8 @@ class AddCommentAction implements ConditionallyIrreversibleActionInterface
             ],
             'notify_customer' => [
                 'type' => 'boolean',
-                'description' => 'Whether to e-mail the comment to the customer (default: false)',
+                'description' => 'Whether to e-mail the comment to the customer (default: false). '
+                    . CustomerNotificationGuard::PARAMETER_RULES,
             ],
             'visible_on_front' => [
                 'type' => 'boolean',

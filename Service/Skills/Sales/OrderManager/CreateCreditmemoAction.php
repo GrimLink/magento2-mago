@@ -40,7 +40,8 @@ class CreateCreditmemoAction implements IrreversibleActionInterface
             ],
             'notify_customer' => [
                 'type' => 'boolean',
-                'description' => 'Whether to notify the customer (default: false)',
+                'description' => 'Whether to e-mail the credit memo to the customer (default: false). '
+                    . CustomerNotificationGuard::PARAMETER_RULES,
             ],
             'adjustment_positive' => [
                 'type' => 'number',
