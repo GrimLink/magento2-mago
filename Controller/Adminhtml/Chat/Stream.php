@@ -81,7 +81,7 @@ class Stream extends Action implements HttpPostActionInterface
             // irreversibly by class. The page context is still summarised so the entry stays readable.
             if ($this->configRepository->isDebugEnabled()) {
                 $this->debugLogger->addLog('Stream Request', [
-                    'raw_body' => $this->maskedPostData($this->redactedPostData($postData)),
+                    'masked_request' => $this->maskedPostData($this->redactedPostData($postData)),
                 ]);
             }
 

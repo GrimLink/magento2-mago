@@ -93,7 +93,7 @@ class DescribeFormAction extends AbstractPageFormReadAction
     }
     public function getFieldClassification(): array
     {
-        return self::NO_FORM_CLASSIFICATION + [
+        return [
             'namespace' => [PiiClass::PUBLIC],
             'entity_type' => [PiiClass::PUBLIC],
             // Public: the system prompt already names the open record ("product #12"), and the
@@ -107,7 +107,7 @@ class DescribeFormAction extends AbstractPageFormReadAction
             'path' => [PiiClass::PUBLIC],
             'label' => [PiiClass::PUBLIC],
             'type' => [PiiClass::PUBLIC],
-        ];
+        ] + self::NO_FORM_CLASSIFICATION;
     }
 
 }

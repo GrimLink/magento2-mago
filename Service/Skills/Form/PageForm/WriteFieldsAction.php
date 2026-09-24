@@ -497,7 +497,7 @@ class WriteFieldsAction extends AbstractPageFormAction implements ValidatingActi
         // client_directive has to survive the filter: ChatService emits it to the browser before
         // withoutClientDirective() takes it back out of what the model sees. Strip it here and the
         // form simply stops applying, with nothing to show for it.
-        return self::NO_FORM_CLASSIFICATION + [
+        return [
             'client_directive' => [PiiClass::PUBLIC],
             'staged' => [PiiClass::PUBLIC],
             'creating' => [PiiClass::PUBLIC],
@@ -520,7 +520,7 @@ class WriteFieldsAction extends AbstractPageFormAction implements ValidatingActi
             'previous_value' => [PiiClass::STRIP],
             'entity_id' => [PiiClass::TOKENISE, 'entity'],
             'url' => [PiiClass::TOKENISE, 'url'],
-        ];
+        ] + self::NO_FORM_CLASSIFICATION;
     }
 
 }

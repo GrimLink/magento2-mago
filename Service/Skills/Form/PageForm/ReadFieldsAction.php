@@ -102,7 +102,7 @@ class ReadFieldsAction extends AbstractPageFormReadAction
         // Structure only. A form field's value is whatever the admin has open, and on a customer or
         // order form that is a name, an address or a phone number, so the value itself never
         // crosses; the model still learns which fields exist and which were found.
-        return self::NO_FORM_CLASSIFICATION + [
+        return [
             'namespace' => [PiiClass::PUBLIC],
             'found' => [PiiClass::PUBLIC],
             'fields' => [PiiClass::PUBLIC],
@@ -110,7 +110,7 @@ class ReadFieldsAction extends AbstractPageFormReadAction
             'label' => [PiiClass::PUBLIC],
             'message' => [PiiClass::PUBLIC],
             'value' => [PiiClass::STRIP],
-        ];
+        ] + self::NO_FORM_CLASSIFICATION;
     }
 
 }

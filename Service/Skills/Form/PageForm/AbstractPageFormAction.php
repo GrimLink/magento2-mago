@@ -19,9 +19,9 @@ abstract class AbstractPageFormAction implements ActionInterface
 {
     /**
      * The fields of noFormOpenResult() and deniedFormResult(), which every action can return. Each
-     * action merges these into its own classification; left out, the privacy filter drops them and
-     * the model sees an empty result instead of "no form open" or "this form is denied". The
-     * message is a fixed sentence written here, never data from the form.
+     * action adds these after its own classification, so its own rule for a key wins; left out,
+     * the privacy filter drops them and the model sees an empty result instead of "no form open" or
+     * "this form is denied". The message is a fixed sentence written here, never data from the form.
      */
     protected const NO_FORM_CLASSIFICATION = [
         'form_open' => [PiiClass::PUBLIC],
