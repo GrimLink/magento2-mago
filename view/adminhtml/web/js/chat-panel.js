@@ -1150,15 +1150,13 @@ define([
         setSubtitle('');
     }
 
-    // Welcome starters drop the skill into the input so the slash menu takes over.
     var starters = chat.querySelectorAll('.mago-starter');
     for (var si = 0; si < starters.length; si++) {
         starters[si].onclick = function() {
-            var name = this.getAttribute('data-skill');
-            if (!name) return;
-            input.value = '/' + name + ' ';
-            input.dispatchEvent(new Event('input'));
-            input.focus();
+            var question = this.getAttribute('data-question');
+            if (!question || busy) return;
+            input.value = question;
+            send();
         };
     }
 
