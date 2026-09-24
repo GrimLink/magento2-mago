@@ -6,6 +6,8 @@ declare(strict_types=1);
 
 namespace MagoAssistant\Mago\Service\Ai;
 
+use MagoAssistant\Mago\Logger\ErrorLogger;
+
 /**
  * Teaches the model the answer widgets the chat panel can render.
  *
@@ -13,6 +15,10 @@ namespace MagoAssistant\Mago\Service\Ai;
  * one of the widgets from the Mago Widget Kit. This section of the system prompt tells the model the
  * format, the types it may use and when a widget beats prose. Interactive cards (permission, progress,
  * bulk selection) are not listed: the panel builds those itself from the tool events.
+ *
+ * Another module adds a widget through the "widgets" argument in its di.xml, next to a builder it
+ * registers with MagoUI.register() in the browser (see docs/widgets.md). Each entry reads like the
+ * built-in ones: the JSON shape, " — ", then when the model should use it.
  */
 class AnswerWidgets
 {
@@ -77,6 +83,61 @@ class AnswerWidgets
             . 'empty result, instead of a bare sentence.',
     ];
 
+    /** Separates the example shape from the guidance in every catalog entry */
+    private const SHAPE_SEPARATOR = ' — ';
+
+    /** @var array<string, string> Built-in widgets plus the valid ones other modules added */
+    private readonly array $catalog;
+
+    /**
+     * Built-in widgets plus the ones other modules add in di.xml
+     *
+     * @param array $widgets Widget type => the JSON shape, " — ", then when to use it
+     * @param ErrorLogger|null $errorLogger
+     */
+    public function __construct(
+        array $widgets = [],
+        private readonly ?ErrorLogger $errorLogger = null
+    ) {
+        $catalog = self::CATALOG;
+        foreach ($widgets as $type => $entry) {
+            $problem = $this->findProblem((string)$type, $entry);
+            if ($problem !== null) {
+                // A broken entry from another module must not take the whole chat down with it
+                $this->errorLogger?->addLog('AnswerWidgets', ['type' => $type, 'error' => $problem]);
+                continue;
+            }
+            $catalog[(string)$type] = $entry;
+        }
+        $this->catalog = $catalog;
+    }
+
+    /**
+     * Why an added widget cannot be taught, or null when it can
+     *
+     * @param string $type
+     * @param mixed $entry
+     */
+    private function findProblem(string $type, mixed $entry): ?string
+    {
+        if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $type)) {
+            return 'The widget type must be a camelCase name of letters and digits.';
+        }
+        if (isset(self::CATALOG[$type])) {
+            return 'A built-in widget already uses this type.';
+        }
+        if (!is_string($entry) || !str_contains($entry, self::SHAPE_SEPARATOR)) {
+            return 'The entry must be a string: the JSON shape, " — ", then when to use it.';
+        }
+        $shape = substr($entry, 0, (int)strpos($entry, self::SHAPE_SEPARATOR));
+        $decoded = json_decode($shape, true);
+        if (!is_array($decoded) || ($decoded['type'] ?? null) !== $type) {
+            return 'The shape must be valid JSON whose "type" is "' . $type . '".';
+        }
+
+        return null;
+    }
+
     /**
      * The system prompt section that explains the widgets.
      */
@@ -95,7 +156,7 @@ class AnswerWidgets
             . '(paths starting with /admin/) and never put HTML in any field. Emit the JSON on its own lines, complete '
             . 'and valid, and never emit more than three widgets in one answer.';
         $lines[] = 'Available types and their shapes:';
-        foreach (self::CATALOG as $shape) {
+        foreach ($this->catalog as $shape) {
             $lines[] = '- ' . $shape;
         }
 
@@ -109,6 +170,6 @@ class AnswerWidgets
      */
     public function getTypes(): array
     {
-        return array_keys(self::CATALOG);
+        return array_keys($this->catalog);
     }
 }

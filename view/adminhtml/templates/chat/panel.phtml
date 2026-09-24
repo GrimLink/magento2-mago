@@ -229,9 +229,18 @@ window.MAGO_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
 window.MAGO_CONFIG.commands = <?= /* @noEscape */ $block->getCommandsJson() ?>;
 </script>
 <script>
-require(['marked', 'MagoAssistant_Mago/js/mago-ui'], function(marked, MagoUI) {
-    window.marked = marked;
-    window.MagoUI = MagoUI;
-    require(['MagoAssistant_Mago/js/chat-panel']);
-});
+// Magento applies requirejs mixins only to modules required after its "mixins" module has
+// wrapped require(), and this inline script can run before that. Loading it first is what lets
+// another module extend mago-ui (MagoUI.register() from a mixin, see docs/widgets.md). Without a
+// "mixins" module the panel still loads, just without mixins.
+(function () {
+    function loadPanel() {
+        require(['marked', 'MagoAssistant_Mago/js/mago-ui'], function(marked, MagoUI) {
+            window.marked = marked;
+            window.MagoUI = MagoUI;
+            require(['MagoAssistant_Mago/js/chat-panel']);
+        });
+    }
+    require(['mixins'], loadPanel, loadPanel);
+})();
 </script>

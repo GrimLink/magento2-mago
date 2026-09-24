@@ -60,6 +60,12 @@ define([], function () {
         sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/>'
     };
 
+    // Inside an answer, a click on an element with SEND_ATTR sends its value as
+    // the admin's next message and one with FOCUS_ATTR moves the focus to the
+    // input. The chat panel handles both, so a widget needs no script of its own.
+    var SEND_ATTR = 'data-mago-send';
+    var FOCUS_ATTR = 'data-mago-focus';
+
     // Default English copy. Override per call through opts.labels, or globally
     // through MagoUI.labels before rendering.
     var LABELS = {
@@ -856,6 +862,9 @@ define([], function () {
             icon('chevronRight', 16, 2.2)
         ]);
         setHref(node, opts.href);
+        if (!node.href && !opts.onClick) {
+            node.setAttribute(SEND_ATTR, opts.label);
+        }
         return clickable(node, opts.onClick);
     }
 
@@ -865,6 +874,8 @@ define([], function () {
             chip.type = 'button';
             if (c.onClick) {
                 chip.addEventListener('click', function (e) { c.onClick(e, c); });
+            } else {
+                chip.setAttribute(SEND_ATTR, c.label);
             }
             return chip;
         }));
@@ -1454,12 +1465,73 @@ define([], function () {
     };
 
     // Build a widget from a plain spec: {type: 'stat', label: ..., ...}.
-    // Unknown types return null so a caller can fall back to plain text.
+    // Unknown types return null so a caller can fall back to plain text, and so
+    // does a builder that throws: one broken widget must not break the answer.
     function render(spec) {
-        if (!spec || typeof spec !== 'object' || !BUILDERS[spec.type]) {
+        if (!spec || typeof spec !== 'object' || !Object.prototype.hasOwnProperty.call(BUILDERS, spec.type)) {
             return null;
         }
-        return BUILDERS[spec.type](spec);
+        try {
+            return BUILDERS[spec.type](spec) || null;
+        } catch (e) {
+            if (typeof console !== 'undefined') {
+                console.warn('[Mago] widget "' + spec.type + '" failed to render', e);
+            }
+            return null;
+        }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Extension                                                            */
+    /* ------------------------------------------------------------------ */
+
+    // Another module adds a widget type from a requirejs mixin on this module
+    // (see docs/widgets.md). Built-in types cannot be replaced.
+    var TYPE_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*$/;
+
+    function register(type, builder) {
+        if (typeof type !== 'string' || !TYPE_PATTERN.test(type) || typeof builder !== 'function') {
+            warn('MagoUI.register() needs a camelCase type and a builder function');
+            return false;
+        }
+        if (Object.prototype.hasOwnProperty.call(BUILDERS, type)) {
+            warn('widget type "' + type + '" already exists');
+            return false;
+        }
+        BUILDERS[type] = builder;
+        MagoUI[type] = builder;
+        MagoUI.types.push(type);
+        return true;
+    }
+
+    function warn(message) {
+        if (typeof console !== 'undefined') {
+            console.warn('[Mago] ' + message);
+        }
+    }
+
+    // What a widget built from an answer may not contain, whoever wrote the
+    // builder: the spec came from the model, and the HTML lands in innerHTML.
+    var FORBIDDEN_TAGS = /^(script|style|iframe|frame|object|embed|link|meta|base|form|template)$/i;
+    var URL_ATTRS = /^(href|src|action|formaction|xlink:href|poster|background)$/i;
+
+    function scrub(root) {
+        var nodes = [root].concat(Array.prototype.slice.call(root.querySelectorAll('*')));
+        nodes.forEach(function (node) {
+            if (node !== root && FORBIDDEN_TAGS.test(node.tagName)) {
+                node.parentNode.removeChild(node);
+                return;
+            }
+            Array.prototype.slice.call(node.attributes).forEach(function (attr) {
+                var name = attr.name.toLowerCase();
+                if (name.indexOf('on') === 0 || name === 'srcdoc'
+                    || (URL_ATTRS.test(name) && safeHref(attr.value) === null)
+                    || (name === 'style' && /url\s*\(|expression\s*\(|javascript:/i.test(attr.value))) {
+                    node.removeAttribute(attr.name);
+                }
+            });
+        });
+        return root;
     }
 
     // Render a JSON string (a ```mago fenced block) to HTML, or null when it
@@ -1479,7 +1551,7 @@ define([], function () {
         try {
             specs.forEach(function (s) {
                 var node = render(s);
-                if (node) {
+                if (node instanceof Node) {
                     wrap.appendChild(node);
                     built++;
                 }
@@ -1487,7 +1559,7 @@ define([], function () {
         } finally {
             allowHtml = true;
         }
-        return built ? wrap.outerHTML : null;
+        return built ? scrub(wrap).outerHTML : null;
     }
 
     var MagoUI = {
@@ -1508,6 +1580,12 @@ define([], function () {
         chips: chips,
         render: render,
         renderJson: renderJson,
+        register: register,
+        el: el,
+        content: content,
+        safeHref: safeHref,
+        sendAttr: SEND_ATTR,
+        focusAttr: FOCUS_ATTR,
         types: Object.keys(BUILDERS)
     };
     Object.keys(BUILDERS).forEach(function (k) { MagoUI[k] = BUILDERS[k]; });

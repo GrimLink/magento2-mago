@@ -135,6 +135,22 @@ shows a tick list; the confirm request then sends the ticked ids as `tool_call_i
 running it. A tool that returns an `error` key is reported to the panel with a `tool_status` of
 `failed` and the error as `message`.
 
+#### `PresentableToolInterface`
+
+A tool decides how the chat panel shows it by implementing
+`MagoAssistant\Mago\Api\Tool\PresentableToolInterface`:
+
+- `getDisplayName(): string` is the title on its cards and in the session log. Without it the
+  panel derives one from the tool name (`stock_alerts` reads "Stock alerts").
+- `getStatusMessage(string $action, array $input): ?string` is the line shown while the call runs
+  ("Checking stock levels..."). Return `null` to keep the default ("Running stock_alerts...").
+  The input is the call as the model proposed it, so personal values in it are still masked.
+
+Built-in tools take their status lines from a list in `ChatService::getToolStatusMessage()`; a
+tool from another module implements this interface instead. The display name reaches the panel
+through the skills list (`MAGO_CONFIG.skills[].title`). To add an answer widget alongside a tool,
+see [widgets.md](widgets.md).
+
 #### `ActionScopedToolInterface`
 
 ```

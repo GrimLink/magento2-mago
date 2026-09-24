@@ -11,6 +11,7 @@ use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Model\Auth\Session as AdminSession;
 use Magento\Framework\Serialize\Serializer\Json;
 use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
+use MagoAssistant\Mago\Api\Tool\PresentableToolInterface;
 use MagoAssistant\Mago\Service\Command\CommandRegistry;
 use MagoAssistant\Mago\Service\Command\CommandRunner;
 use MagoAssistant\Mago\Service\Form\FormPolicy;
@@ -171,6 +172,8 @@ class ChatPanel extends Template
             $definition = $this->toolRegistry->getToolDefinition($tool, $adminUserId);
             $skills[] = [
                 'name' => $definition['name'],
+                // The panel's card title; without one it derives a title from the name
+                'title' => $tool instanceof PresentableToolInterface ? $tool->getDisplayName() : null,
                 'description' => $definition['description'],
                 'readOnly' => $tool->isReadOnly() || !$this->toolRegistry->hasWriteAccess($tool, $adminUserId),
             ];

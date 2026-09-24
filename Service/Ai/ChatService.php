@@ -10,6 +10,7 @@ use MageOS\AiBase\Api\AiClientInterface;
 use MagoAssistant\Mago\Api\Tool\ValidatingToolInterface;
 use MagoAssistant\Mago\Api\ChatServiceInterface;
 use MagoAssistant\Mago\Api\Tool\IrreversibleToolInterface;
+use MagoAssistant\Mago\Api\Tool\PresentableToolInterface;
 use MagoAssistant\Mago\Api\Tool\ToolInterface;
 use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
 use MagoAssistant\Mago\Logger\DebugLogger;
@@ -782,6 +783,14 @@ class ChatService implements ChatServiceInterface
 
     private function getToolStatusMessage(string $toolName, string $action, array $input): string
     {
+        $tool = $this->toolRegistry->getToolByName($toolName);
+        if ($tool instanceof PresentableToolInterface) {
+            $own = $tool->getStatusMessage($action, $input);
+            if ($own !== null && $own !== '') {
+                return $own;
+            }
+        }
+
         $messages = [
             'sales_data.revenue_summary' => 'Calculating revenue...',
             'sales_data.recent_orders' => 'Fetching recent orders...',

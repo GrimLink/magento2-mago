@@ -32,6 +32,8 @@ use MagoAssistant\Mago\Test\Unit\Fakes\FakeConfigRepository;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeIrreversibleAction;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeLogger;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeSkill;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakePresentableTool;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeTool;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -638,7 +640,50 @@ final class ChatServiceTest extends TestCase
             ]);
     }
 
+    #[Test]
+    public function aToolFromAnotherModuleWritesItsOwnStatusLine(): void
+    {
+        $service = $this->serviceWithAnyTool(new FakePresentableTool('stock_alerts', 'Stock alerts', 'Checking %s...'));
+        $messages = [];
+
+        $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'stock_alerts', 'input' => ['action' => 'low_stock']]],
+            null,
+            function (string $event, array $data) use (&$messages): void {
+                if ($event === 'tool_status' && $data['status'] === 'running') {
+                    $messages[] = $data['message'];
+                }
+            }
+        );
+
+        self::assertSame(['Checking low_stock...'], $messages);
+    }
+
+    #[Test]
+    public function aToolWithoutItsOwnStatusLineKeepsTheDefault(): void
+    {
+        $service = $this->serviceWithAnyTool(new FakePresentableTool('stock_alerts', 'Stock alerts', null));
+        $messages = [];
+
+        $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'stock_alerts', 'input' => ['action' => 'low_stock']]],
+            null,
+            function (string $event, array $data) use (&$messages): void {
+                if ($event === 'tool_status' && $data['status'] === 'running') {
+                    $messages[] = $data['message'];
+                }
+            }
+        );
+
+        self::assertSame(['Running stock_alerts...'], $messages);
+    }
+
     private function serviceWithTool(FakeTool $tool): ChatService
+    {
+        return $this->serviceWithAnyTool($tool);
+    }
+
+    private function serviceWithAnyTool(ToolInterface $tool): ChatService
     {
         return new ChatService(
             (new FakeConfigRepository())->withMaxResponseTokens(self::MAX_RESPONSE_TOKENS),
