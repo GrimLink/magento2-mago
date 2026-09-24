@@ -1110,6 +1110,11 @@ define([
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
+                    // The server caught a raw JSON/XML dump in the finished reply and is re-presenting it:
+                    // drop what streamed so the corrected answer streams into a clean message.
+                    else if (evt==='replace') {
+                        if (content) { full=''; content.innerHTML=''; }
+                    }
                     else if (evt==='conversation') { conversationId=d.conversation_id; saveState(); }
                     else if (evt==='tool_call') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
