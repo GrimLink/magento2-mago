@@ -9,15 +9,45 @@ namespace MagoAssistant\Mago\Service\Skills\Configuration;
 use Magento\Framework\App\Cache\Frontend\Pool as CacheFrontendPool;
 use Magento\Framework\App\Cache\TypeListInterface;
 use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
+use MagoAssistant\Mago\Api\Tool\UpfrontGuidanceToolInterface;
 use MagoAssistant\Mago\Service\Privacy\PiiClass;
 
-class CacheManager implements ActionScopedToolInterface
+class CacheManager implements ActionScopedToolInterface, UpfrontGuidanceToolInterface
 {
     private const ACTION_DESCRIPTIONS = [
         'status' => 'list all cache types and their status',
         'flush' => 'flush all caches',
         'flush_type' => 'flush a specific cache type by id, e.g. "config", "full_page", "layout", "block_html"',
     ];
+
+    /**
+     * Steer the model away from a blanket flush and towards the narrowest cache that answers the
+     * request. It is in the description, not getInstructions(), because the description is always in
+     * the tool schema, while getInstructions() is injected only after a call has run — too late to
+     * stop the flush it should have questioned.
+     */
+    private const PUSHBACK = 'Prefer flush_type for the specific cache the change affects over flush '
+        . '(everything). full_page holds rendered pages — a simple product page, a category/PLP page, '
+        . 'a CMS page or a search-results page; block_html and layout hold block and layout output; '
+        . 'config holds configuration. When the user names or links a specific product, category, CMS '
+        . 'page or search result, deduce the entity and clear only the cache it affects (usually '
+        . 'full_page) rather than flushing all caches. If it is unclear which cache or which page the '
+        . 'user means, ask which one before acting. '
+        . 'flush_type clears the ENTIRE named cache type; there is no per-page, per-URL or per-entity '
+        . 'cache flush in Magento. So once you know the cache TYPE — a product page, a category/PLP, a '
+        . 'CMS page and a search-results page all map to full_page — you have everything you need: do '
+        . 'NOT keep asking for a specific page URL or id, that granularity does not exist. Do not read '
+        . 'the on-screen form to decide this; the current admin page is unrelated to which storefront '
+        . 'cache to clear. '
+        . 'Once you know which cache type is needed, DO IT: call cache_manager with action "flush_type" '
+        . 'and that cache id yourself. The write is not executed until the admin approves it on a '
+        . 'confirmation card, so proposing the call IS the safe, correct step. Do not answer with '
+        . 'instructions telling the admin to type a "/cache" slash command or to click through the '
+        . 'admin — you perform the flush_type call, they confirm it. '
+        . 'And do NOT ask "would you like me to proceed?", "shall I clear it?" or any yes/no in text '
+        . 'before the write: that question is exactly what the confirmation card asks. Make the '
+        . 'flush_type call immediately; the card is the admin\'s yes/no. Asking first in prose and '
+        . 'waiting for a reply is wrong — it just adds a step before the same card.';
 
     public function __construct(
         private readonly TypeListInterface $cacheTypeList,
@@ -101,6 +131,11 @@ class CacheManager implements ActionScopedToolInterface
     public function getInstructions(): string
     {
         return '';
+    }
+
+    public function getUpfrontGuidance(): string
+    {
+        return self::PUSHBACK;
     }
 
     public function getFieldClassification(string $action = ''): array

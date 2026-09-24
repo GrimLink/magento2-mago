@@ -63,6 +63,33 @@ abstract class AbstractToolCommand implements CommandInterface
         return $results[self::TOOL_CALL_ID] ?? ['error' => 'The tool returned no result'];
     }
 
+    /**
+     * No write subcommands by default; a command with any overrides this to map them to tool calls.
+     *
+     * @param string $subcommand
+     * @param string[] $args
+     * @return array<int, array{id: string, name: string, input: array<string, mixed>}>
+     */
+    public function getConfirmableToolCalls(string $subcommand, array $args): array
+    {
+        return [];
+    }
+
+    /**
+     * One tool call against this command's tool, with an id unique to its position in the message
+     *
+     * @param array<string, mixed> $input
+     * @return array{id: string, name: string, input: array<string, mixed>}
+     */
+    protected function toolCall(string $subcommand, int $index, array $input): array
+    {
+        return [
+            'id' => sprintf('slash_%s_%d', $subcommand, $index),
+            'name' => $this->getToolName(),
+            'input' => $input,
+        ];
+    }
+
     protected function renderError(string $error): string
     {
         return '**Error:** ' . $error;

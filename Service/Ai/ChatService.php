@@ -11,6 +11,7 @@ use MagoAssistant\Mago\Api\Tool\ValidatingToolInterface;
 use MagoAssistant\Mago\Api\ChatServiceInterface;
 use MagoAssistant\Mago\Api\Tool\IrreversibleToolInterface;
 use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Api\Tool\UpfrontGuidanceToolInterface;
 use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
 use MagoAssistant\Mago\Logger\DebugLogger;
 use MagoAssistant\Mago\Logger\ErrorLogger;
@@ -27,6 +28,9 @@ class ChatService implements ChatServiceInterface
 
     /** Marker that opens the store scope section so it is never injected twice */
     private const STORE_SCOPE_MARKER = '[Store scope]';
+
+    /** Marker that opens the tool guidance section so it is never injected twice */
+    private const TOOL_GUIDANCE_MARKER = '[Tool usage guidance]';
 
     /**
      * A tool result carrying this key gets its value forwarded to the panel as a form_apply SSE
@@ -77,7 +81,7 @@ class ChatService implements ChatServiceInterface
         if ($conversationId !== null) {
             $this->privacyService->beginConversation($conversationId);
         }
-        $messages = $this->privacyService->scrubMessages($this->prependSystemMessage($messages));
+        $messages = $this->privacyService->scrubMessages($this->prependSystemMessage($messages, $adminUserId));
         $instructedTools = [];
         $nudged = false;
 
@@ -147,7 +151,7 @@ class ChatService implements ChatServiceInterface
         if ($conversationId !== null) {
             $this->privacyService->beginConversation($conversationId);
         }
-        $messages = $this->privacyService->scrubMessages($this->prependSystemMessage($messages));
+        $messages = $this->privacyService->scrubMessages($this->prependSystemMessage($messages, $adminUserId));
         $instructedTools = [];
         $nudged = false;
         $allToolCalls = [];
@@ -214,37 +218,10 @@ class ChatService implements ChatServiceInterface
                     // The same details go back on the calls themselves: the stored row is what a
                     // reloaded conversation rebuilds its card from, and the raw call carries
                     // neither the description nor the impact list the card is made of.
-                    $confirmTools = [];
-                    $describedCalls = [];
-                    foreach ($response['tool_calls'] as $tc) {
-                        $t = $this->requiresConfirmation($tc, $adminUserId)
-                            ? $this->toolRegistry->getTool($tc['name'], $adminUserId)
-                            : null;
-                        if ($t === null) {
-                            $describedCalls[] = $tc;
-                            continue;
-                        }
-                        // Display copy only (#97 decision 5): the admin must see the real values
-                        // they are approving, not opaque tokens; the persisted tool_calls stay
-                        // tokenised and are re-checked on the confirm round-trip. describeRisk()
-                        // reads the same copy, because looking an impact up by mago://order_1 finds
-                        // nothing and the card then loses its list for precisely the irreversible
-                        // actions it exists to spell out.
-                        $shownInput = $this->privacyService->rehydrateArguments(
-                            $this->inputForAction($t, $tc['input'] ?? [])
-                        );
-                        $details = [
-                            'id' => (string)($tc['id'] ?? ''),
-                            'name' => $tc['name'],
-                            'description' => $t->getDescription(),
-                            'input' => $shownInput,
-                        ] + $this->describeRisk($t, $shownInput, $adminUserId);
-                        if ($this->privacyService->containsPersonalToken($tc['input'] ?? [])) {
-                            $details['sensitive'] = true;
-                        }
-                        $confirmTools[] = $details;
-                        $describedCalls[] = $tc + $details;
-                    }
+                    [$confirmTools, $describedCalls] = $this->describedConfirmationCalls(
+                        $response['tool_calls'],
+                        $adminUserId
+                    );
                     $onChunk('confirm', ['tools' => $confirmTools]);
                     return [
                         'content' => $response['content'],
@@ -305,6 +282,80 @@ class ChatService implements ChatServiceInterface
         }
 
         return ['content' => 'Maximum tool iterations reached.', 'tool_calls' => []];
+    }
+
+    /**
+     * Put a set of write tool calls to the administrator on the confirmation card without a model
+     * turn, and return the same pending result the streaming path returns for a write the model
+     * proposed. The slash-command write path (/cache flush, /index reindex) uses this so a typed
+     * write is confirmed on the same card as one the assistant asked for, instead of running at once.
+     *
+     * @param array<int, array<string, mixed>> $toolCalls
+     * @param callable|null $onChunk fn(string $type, array $data)
+     * @param int|null $adminUserId
+     * @return array{content: string, tool_calls: array<int, array<string, mixed>>, pending_confirmation: bool}
+     */
+    public function prepareToolConfirmation(
+        array $toolCalls,
+        ?callable $onChunk = null,
+        ?int $adminUserId = null
+    ): array {
+        [$confirmTools, $describedCalls] = $this->describedConfirmationCalls($toolCalls, $adminUserId);
+        if ($onChunk !== null) {
+            $onChunk('confirm', ['tools' => $confirmTools]);
+        }
+
+        return [
+            'content' => '',
+            'tool_calls' => $describedCalls,
+            'pending_confirmation' => true,
+        ];
+    }
+
+    /**
+     * The confirmation card's tools[] payload for a set of tool calls, and the same details folded
+     * back onto each call so a reloaded conversation rebuilds the card from the stored row. A call
+     * that does not require confirmation is carried through undescribed.
+     *
+     * The described input is a display copy only (#97 decision 5): the admin must see the real
+     * values they are approving, not opaque tokens; the persisted tool_calls stay tokenised and are
+     * re-checked on the confirm round-trip. describeRisk() reads the same copy, because looking an
+     * impact up by mago://order_1 finds nothing and the card then loses its list for precisely the
+     * irreversible actions it exists to spell out.
+     *
+     * @param array<int, array<string, mixed>> $toolCalls
+     * @param int|null $adminUserId
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>} [$confirmTools, $describedCalls]
+     */
+    private function describedConfirmationCalls(array $toolCalls, ?int $adminUserId): array
+    {
+        $confirmTools = [];
+        $describedCalls = [];
+        foreach ($toolCalls as $tc) {
+            $t = $this->requiresConfirmation($tc, $adminUserId)
+                ? $this->toolRegistry->getTool($tc['name'], $adminUserId)
+                : null;
+            if ($t === null) {
+                $describedCalls[] = $tc;
+                continue;
+            }
+            $shownInput = $this->privacyService->rehydrateArguments(
+                $this->inputForAction($t, $tc['input'] ?? [])
+            );
+            $details = [
+                'id' => (string)($tc['id'] ?? ''),
+                'name' => $tc['name'],
+                'description' => $t->getDescription(),
+                'input' => $shownInput,
+            ] + $this->describeRisk($t, $shownInput, $adminUserId);
+            if ($this->privacyService->containsPersonalToken($tc['input'] ?? [])) {
+                $details['sensitive'] = true;
+            }
+            $confirmTools[] = $details;
+            $describedCalls[] = $tc + $details;
+        }
+
+        return [$confirmTools, $describedCalls];
     }
 
     /**
@@ -855,13 +906,14 @@ class ChatService implements ChatServiceInterface
      * on the default scope or on a specific website or store view. The widget guide tells it which
      * ```mago blocks the panel can render; it is skipped when answer widgets are switched off.
      */
-    private function prependSystemMessage(array $messages): array
+    private function prependSystemMessage(array $messages, ?int $adminUserId = null): array
     {
         $systemPrompt = $this->configRepository->getSystemPrompt();
         $pageContextLine = $this->pageContextHolder->get()?->toPromptLine();
         $firstSystemIndex = null;
         $hasStoreScope = false;
         $hasWidgetGuide = false;
+        $hasToolGuidance = false;
         foreach ($messages as $index => $msg) {
             if (($msg['role'] ?? '') !== 'system') {
                 continue;
@@ -874,6 +926,9 @@ class ChatService implements ChatServiceInterface
             if (str_contains($content, AnswerWidgets::MARKER)) {
                 $hasWidgetGuide = true;
             }
+            if (str_contains($content, self::TOOL_GUIDANCE_MARKER)) {
+                $hasToolGuidance = true;
+            }
         }
 
         $sections = [];
@@ -882,6 +937,9 @@ class ChatService implements ChatServiceInterface
         }
         if (!$hasWidgetGuide && $this->configRepository->isAnswerWidgetsEnabled()) {
             $sections[] = $this->answerWidgets->toPromptSection();
+        }
+        if (!$hasToolGuidance) {
+            $sections[] = $this->getToolGuidanceSection($adminUserId);
         }
         $extra = implode("\n\n", array_filter($sections, static fn (string $section): bool => $section !== ''));
 
@@ -908,6 +966,32 @@ class ChatService implements ChatServiceInterface
         }
 
         return $messages;
+    }
+
+    /**
+     * One system section gathering the upfront guidance of the tools this admin may use, so the
+     * model reads it before its first call — where it can still narrow a "flush everything" or ask
+     * which index is meant. It stays off the confirmation card, which is built from getDescription().
+     * Empty when no available tool carries guidance.
+     */
+    private function getToolGuidanceSection(?int $adminUserId): string
+    {
+        $lines = [];
+        foreach ($this->toolRegistry->getEnabledTools($adminUserId) as $tool) {
+            if (!$tool instanceof UpfrontGuidanceToolInterface) {
+                continue;
+            }
+            $guidance = trim($tool->getUpfrontGuidance());
+            if ($guidance !== '') {
+                $lines[] = '- ' . $tool->getName() . ': ' . $guidance;
+            }
+        }
+
+        if ($lines === []) {
+            return '';
+        }
+
+        return self::TOOL_GUIDANCE_MARKER . "\n" . implode("\n", $lines);
     }
 
     /**

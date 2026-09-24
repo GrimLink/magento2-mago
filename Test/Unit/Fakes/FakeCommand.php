@@ -59,4 +59,13 @@ final class FakeCommand implements CommandInterface
 
         return 'ran ' . $subcommand . ' ' . implode(',', $args);
     }
+
+    public function getConfirmableToolCalls(string $subcommand, array $args): array
+    {
+        if ($subcommand !== 'apply') {
+            return [];
+        }
+
+        return [['id' => 'slash_apply_0', 'name' => 'fake_tool', 'input' => ['args' => $args]]];
+    }
 }
