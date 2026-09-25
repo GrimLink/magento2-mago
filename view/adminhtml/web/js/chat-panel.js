@@ -750,6 +750,15 @@ define([
         .then(function(r) { return r.json(); })
         .then(function(data) {
             loading.style.display = 'none';
+            // The saved conversation is gone or owned by another admin (e.g. after logging in as a
+            // different user in the same tab); drop the dead id and start fresh, or it fails here on
+            // every page load.
+            if (data && data.error) {
+                conversationId = null;
+                saveState();
+                showGreeting();
+                return;
+            }
             var loaded = data.messages || [];
             if (!loaded.length) {
                 showGreeting();
@@ -1190,6 +1199,11 @@ define([
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
+                    }
+                    // The server caught a raw JSON/XML dump in the finished reply and is re-presenting it:
+                    // drop what streamed so the corrected answer streams into a clean message.
+                    else if (evt==='replace') {
+                        if (content) { full=''; content.innerHTML=''; }
                     }
                     else if (evt==='conversation') { conversationId=d.conversation_id; saveState(); }
                     else if (evt==='tool_call') {
