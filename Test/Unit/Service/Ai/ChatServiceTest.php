@@ -73,7 +73,11 @@ final class ChatServiceTest extends TestCase
      *
      * @param FakeSkill[] $extraSkills
      */
-    private function buildChatService(array $extraSkills = [], ?PrivacyService $privacy = null): ChatService
+    private function buildChatService(
+        array $extraSkills = [],
+        ?PrivacyService $privacy = null,
+        bool $answerWidgets = false
+    ): ChatService
     {
         $authorization = $this->createMock(AuthorizationInterface::class);
         $authorization->method('isAllowed')->willReturn(true);
@@ -114,7 +118,8 @@ final class ChatServiceTest extends TestCase
 
         $json = new Json();
         return new ChatService(
-            (new FakeConfigRepository())->withMaxToolIterations(5)->withMaxResponseTokens(4000),
+            (new FakeConfigRepository())->withMaxToolIterations(5)->withMaxResponseTokens(4000)
+                ->withAnswerWidgets($answerWidgets),
             $client,
             new ToolRegistry($checker, array_merge([$cmsData], $extraSkills)),
             new DebugLogger(new FakeLogger(), $json),
@@ -335,6 +340,21 @@ final class ChatServiceTest extends TestCase
         $instruction = $this->instructionMessage($this->requests[1]);
         self::assertNotNull($instruction);
         self::assertStringContainsString('Always mention the page count.', $instruction['content']);
+        self::assertStringNotContainsString(AnswerWidgets::MARKER, $instruction['content']);
+    }
+
+    #[Test]
+    public function instructionsRemindTheModelOfTheWidgetsWhenAnswerWidgetsAreOn(): void
+    {
+        $chatService = $this->buildChatService(answerWidgets: true);
+        $this->responses = [$this->toolCallResponse('list_pages')];
+
+        $chatService->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        $instruction = $this->instructionMessage($this->requests[1]);
+        self::assertNotNull($instruction);
+        self::assertStringContainsString('Always mention the page count.', $instruction['content']);
+        self::assertStringContainsString((new AnswerWidgets())->toToolReminder(), $instruction['content']);
     }
 
     #[Test]
