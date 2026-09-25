@@ -767,16 +767,29 @@ define([
         };
         // A ```mago fenced block holds a widget spec ({"type": "stat", ...} or a
         // list of them) and renders as the matching widget. While the block is
-        // still streaming in, the JSON is incomplete and a skeleton holds its place.
+        // still streaming in, the JSON is incomplete and a skeleton holds its place;
+        // a block that is still invalid once the answer is complete renders nothing.
         markedRenderer.code = function(token) {
             var lang = typeof token === 'object' ? token.lang : arguments[1];
             if (lang === 'mago' && UI) {
                 var code = typeof token === 'object' ? token.text : token;
-                return UI.renderJson(code) || UI.skeleton().outerHTML;
+                return UI.renderJson(code) || (widgetsStreaming ? UI.skeleton().outerHTML : '');
             }
             return marked.Renderer.prototype.code.apply(this, arguments);
         };
         marked.use({ renderer: markedRenderer, gfm: true, breaks: true });
+    }
+
+    var widgetsStreaming = false;
+
+    // Renders an answer that is still coming in: an incomplete widget block shows a skeleton.
+    function renderStreamingMd(t) {
+        widgetsStreaming = true;
+        try {
+            return renderMd(t);
+        } finally {
+            widgetsStreaming = false;
+        }
     }
 
     function renderMd(t) {
@@ -1108,7 +1121,7 @@ define([
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
-                        full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
+                        full+=d.text; content.innerHTML=renderStreamingMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     // The server caught a raw JSON/XML dump in the finished reply and is re-presenting it:
                     // drop what streamed so the corrected answer streams into a clean message.
@@ -1133,6 +1146,7 @@ define([
                     }
                     else if (evt==='done') {
                         gotDone = true;
+                        if (content && full) { content.innerHTML = renderMd(full); }
                         if(d.conversation_id) conversationId=d.conversation_id;
                         saveState(); releaseInput();
                         if (d.pending_confirmation && msg && !writeToolDetected) {
@@ -1405,7 +1419,7 @@ define([
                     try { var d=JSON.parse(ln.substring(6)); } catch(e){return;}
                     if (evt==='text'&&d.text) {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
-                        full+=d.text; content.innerHTML=renderMd(full); msgs.scrollTop=msgs.scrollHeight;
+                        full+=d.text; content.innerHTML=renderStreamingMd(full); msgs.scrollTop=msgs.scrollHeight;
                     }
                     else if (evt==='tool_call') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
@@ -1436,6 +1450,7 @@ define([
                     }
                     else if (evt==='form_apply') { applyPending = true; applyFormDirective(d, handleApplyOutcome); }
                     else if (evt==='done') {
+                        if (content && full) { content.innerHTML = renderMd(full); }
                         if (d.conversation_id) conversationId=d.conversation_id;
                         saveState(); releaseInput();
                         finishRun(failed ? 'failed' : 'done');
