@@ -6,8 +6,10 @@ declare(strict_types=1);
 
 namespace MagoAssistant\Mago\Test\Unit\Service\Ai;
 
+use Magento\Framework\Serialize\Serializer\Json;
 use MagoAssistant\Mago\Logger\ErrorLogger;
 use MagoAssistant\Mago\Service\Ai\AnswerWidgets;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeLogger;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -29,7 +31,7 @@ final class AnswerWidgetsTest extends TestCase
     #[Test]
     public function itOpensWithTheMarkerAndNamesTheFence(): void
     {
-        $section = (new AnswerWidgets())->toPromptSection();
+        $section = $this->answerWidgets()->toPromptSection();
 
         self::assertStringStartsWith(AnswerWidgets::MARKER . ' ', $section);
         self::assertStringContainsString('language "mago"', $section);
@@ -39,7 +41,7 @@ final class AnswerWidgetsTest extends TestCase
     #[Test]
     public function itOnlyTeachesTypesThePanelCanRender(): void
     {
-        $guide = new AnswerWidgets();
+        $guide = $this->answerWidgets();
 
         self::assertNotEmpty($guide->getTypes());
         foreach ($guide->getTypes() as $type) {
@@ -51,7 +53,7 @@ final class AnswerWidgetsTest extends TestCase
     #[Test]
     public function itLeavesInteractiveCardsToThePanel(): void
     {
-        $types = (new AnswerWidgets())->getTypes();
+        $types = $this->answerWidgets()->getTypes();
 
         $cards = ['skillAsk', 'skillRunning', 'skillBulk', 'skillIrreversible', 'skillPlan', 'confirmWrite'];
         foreach ($cards as $card) {
@@ -62,7 +64,7 @@ final class AnswerWidgetsTest extends TestCase
     #[Test]
     public function everyExampleShapeIsValidJson(): void
     {
-        $section = (new AnswerWidgets())->toPromptSection();
+        $section = $this->answerWidgets()->toPromptSection();
 
         preg_match_all('/^- (\{.*?\})(?= — )/m', $section, $matches);
 
@@ -77,7 +79,7 @@ final class AnswerWidgetsTest extends TestCase
     #[Test]
     public function aModuleCanTeachItsOwnWidget(): void
     {
-        $guide = new AnswerWidgets([
+        $guide = $this->answerWidgets([
             'stockAlert' => '{"type":"stockAlert","sku":"MH01","qty":2} — a product that is about to sell out.',
         ]);
 
@@ -107,21 +109,40 @@ final class AnswerWidgetsTest extends TestCase
     #[DataProvider('brokenWidgets')]
     public function aBrokenWidgetIsLeftOutAndLogged(string $type, mixed $entry): void
     {
-        $logger = $this->createMock(ErrorLogger::class);
-        $logger->expects(self::once())->method('addLog')->with('AnswerWidgets', self::anything());
+        $logger = new FakeLogger();
 
-        $guide = new AnswerWidgets([$type => $entry], $logger);
+        $guide = $this->answerWidgets([$type => $entry], $logger);
 
-        self::assertSame((new AnswerWidgets())->getTypes(), $guide->getTypes());
-        self::assertSame((new AnswerWidgets())->toPromptSection(), $guide->toPromptSection());
+        self::assertSame($this->answerWidgets()->getTypes(), $guide->getTypes());
+        self::assertSame($this->answerWidgets()->toPromptSection(), $guide->toPromptSection());
+        self::assertCount(1, $logger->getMessages());
+        self::assertStringStartsWith('AnswerWidgets: ', $logger->getMessages()[0]);
+    }
+
+    #[Test]
+    public function aValidWidgetLogsNothing(): void
+    {
+        $logger = new FakeLogger();
+
+        $this->answerWidgets(['stockAlert' => '{"type":"stockAlert"} — a product about to sell out.'], $logger);
+
+        self::assertSame([], $logger->getMessages());
     }
 
     #[Test]
     public function itTellsTheModelToUseToolDataOnly(): void
     {
-        $section = (new AnswerWidgets())->toPromptSection();
+        $section = $this->answerWidgets()->toPromptSection();
 
         self::assertStringContainsString('never invent', $section);
         self::assertStringContainsString('never put HTML', $section);
+    }
+
+    /**
+     * @param array<string, mixed> $widgets
+     */
+    private function answerWidgets(array $widgets = [], ?FakeLogger $logger = null): AnswerWidgets
+    {
+        return new AnswerWidgets(new ErrorLogger($logger ?? new FakeLogger(), new Json()), $widgets);
     }
 }

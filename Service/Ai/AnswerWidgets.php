@@ -92,19 +92,19 @@ class AnswerWidgets
     /**
      * Built-in widgets plus the ones other modules add in di.xml
      *
+     * @param ErrorLogger $errorLogger
      * @param array $widgets Widget type => the JSON shape, " — ", then when to use it
-     * @param ErrorLogger|null $errorLogger
      */
     public function __construct(
-        array $widgets = [],
-        private readonly ?ErrorLogger $errorLogger = null
+        private readonly ErrorLogger $errorLogger,
+        array $widgets = []
     ) {
         $catalog = self::CATALOG;
         foreach ($widgets as $type => $entry) {
             $problem = $this->findProblem((string)$type, $entry);
             if ($problem !== null) {
                 // A broken entry from another module must not take the whole chat down with it
-                $this->errorLogger?->addLog('AnswerWidgets', ['type' => $type, 'error' => $problem]);
+                $this->errorLogger->addLog('AnswerWidgets', ['type' => $type, 'error' => $problem]);
                 continue;
             }
             $catalog[(string)$type] = $entry;

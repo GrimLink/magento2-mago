@@ -1512,7 +1512,11 @@ define([], function () {
 
     // What a widget built from an answer may not contain, whoever wrote the
     // builder: the spec came from the model, and the HTML lands in innerHTML.
-    var FORBIDDEN_TAGS = /^(script|style|iframe|frame|object|embed|link|meta|base|form|template)$/i;
+    // Raw-text elements are out because their content serializes unescaped and
+    // parses differently the second time; SVG animation can rewrite an href.
+    var FORBIDDEN_TAGS = new RegExp('^(script|style|iframe|frame|object|embed|link|meta|base|form|template'
+        + '|xmp|noembed|noframes|noscript|plaintext|math|foreignobject'
+        + '|animate|animatemotion|animatetransform|set|handler|listener)$', 'i');
     var URL_ATTRS = /^(href|src|action|formaction|xlink:href|poster|background)$/i;
 
     function scrub(root) {
@@ -1532,6 +1536,15 @@ define([], function () {
             });
         });
         return root;
+    }
+
+    // The HTML goes back through innerHTML, which may not parse it the way the
+    // builder built it. Parse it once in an inert document, where nothing loads
+    // or runs, and scrub what that parse produced: that is what the page gets.
+    function scrubbedHtml(root) {
+        var html = scrub(root).outerHTML;
+        var parsed = new DOMParser().parseFromString(html, 'text/html').body.firstElementChild;
+        return parsed ? scrub(parsed).outerHTML : null;
     }
 
     // Render a JSON string (a ```mago fenced block) to HTML, or null when it
@@ -1559,7 +1572,7 @@ define([], function () {
         } finally {
             allowHtml = true;
         }
-        return built ? scrub(wrap).outerHTML : null;
+        return built ? scrubbedHtml(wrap) : null;
     }
 
     var MagoUI = {

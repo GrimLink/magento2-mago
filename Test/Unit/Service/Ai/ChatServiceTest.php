@@ -35,6 +35,7 @@ use MagoAssistant\Mago\Test\Unit\Fakes\FakeSkill;
 use MagoAssistant\Mago\Api\Tool\ToolInterface;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakePresentableTool;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeTool;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -116,7 +117,7 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $authorization,
             new StoreScopeContext($this->singleStoreManager()),
-            new AnswerWidgets(),
+            new AnswerWidgets(new ErrorLogger(new FakeLogger(), new Json())),
             new PageContextHolder(),
             $privacy ?? $this->privacyService()
         );
@@ -497,7 +498,7 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $this->createMock(AuthorizationInterface::class),
             new StoreScopeContext($storeManager),
-            new AnswerWidgets(),
+            new AnswerWidgets(new ErrorLogger(new FakeLogger(), new Json())),
             new PageContextHolder(),
             $this->privacyService()
         );
@@ -659,10 +660,22 @@ final class ChatServiceTest extends TestCase
         self::assertSame(['Checking low_stock...'], $messages);
     }
 
-    #[Test]
-    public function aToolWithoutItsOwnStatusLineKeepsTheDefault(): void
+    /**
+     * @return array<string, array{0: ?string}>
+     */
+    public static function missingStatusLines(): array
     {
-        $service = $this->serviceWithAnyTool(new FakePresentableTool('stock_alerts', 'Stock alerts', null));
+        return [
+            'no status line' => [null],
+            'an empty status line' => [''],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('missingStatusLines')]
+    public function aToolWithoutItsOwnStatusLineKeepsTheDefault(?string $statusMessage): void
+    {
+        $service = $this->serviceWithAnyTool(new FakePresentableTool('stock_alerts', 'Stock alerts', $statusMessage));
         $messages = [];
 
         $service->executeConfirmedTools(
@@ -694,7 +707,7 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $this->createMock(AuthorizationInterface::class),
             new StoreScopeContext($this->createMock(StoreManagerInterface::class)),
-            new AnswerWidgets(),
+            new AnswerWidgets(new ErrorLogger(new FakeLogger(), new Json())),
             new PageContextHolder(),
             $this->privacyService()
         );

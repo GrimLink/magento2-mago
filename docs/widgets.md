@@ -184,17 +184,21 @@ can compose them.
 The spec is written by the model, and the model reads data a customer may have typed (a product
 name, an order comment). Treat every spec value as untrusted:
 
-- **Put text in as text.** `el()` and `content()` do this for you. Avoid `innerHTML` with spec
-  values.
+- **Put text in as text.** `el()` and `content()` do this for you. Never use `innerHTML` with spec
+  values: the scrub below cleans the HTML your builder returns, but an element you fill through
+  `innerHTML` already lives in the admin page while your builder runs.
 - **Check links with `MagoUI.safeHref()`.**
 - **Never evaluate anything from the spec.**
 
 As a second line of defence, `renderJson()` scrubs whatever a builder returns before it reaches
 the page:
-- It removes `script`, `style`, `iframe`, `object`, `embed`, `form` and similar elements.
+- It removes `script`, `style`, `iframe`, `object`, `embed`, `form`, raw-text elements such as
+  `noscript` and `xmp`, SVG animation elements and similar.
 - It removes every `on…` event attribute and `srcdoc`.
 - It removes links and sources that are not web or in-admin URLs.
 - It removes inline styles containing `url(`.
+- It parses the result once more in an inert document and scrubs that, so what reaches the page
+  is what was checked.
 
 A builder that throws is skipped with a console warning; the rest of the answer still renders.
 
