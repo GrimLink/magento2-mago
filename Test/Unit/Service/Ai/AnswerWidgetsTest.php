@@ -139,6 +139,46 @@ final class AnswerWidgetsTest extends TestCase
     }
 
     /**
+     * Admin urls reach the model as tokens (mago://url_1) and only work with their secret key, so
+     * the guide must never show or ask for a hand-written admin path.
+     */
+    #[Test]
+    public function itOnlyLinksToUrlsAToolReturned(): void
+    {
+        $section = $this->answerWidgets()->toPromptSection();
+
+        self::assertStringContainsString('"href":"mago://url_1"', $section);
+        self::assertStringContainsString('never write or assemble an admin path yourself', $section);
+        self::assertStringNotContainsString('"/admin/', $section);
+    }
+
+    #[Test]
+    public function itMapsQuestionsToWidgetsItTeaches(): void
+    {
+        $guide = $this->answerWidgets();
+        $section = $guide->toPromptSection();
+
+        self::assertStringContainsString('Pick the widget by the question:', $section);
+        preg_match_all('/→ (.*)$/m', $section, $matches);
+        self::assertNotEmpty($matches[1]);
+        foreach ($matches[1] as $choice) {
+            preg_match_all('/"([a-zA-Z]+)"/', $choice, $types);
+            foreach ($types[1] as $type) {
+                self::assertContains($type, $guide->getTypes(), "Choice names unknown type {$type}");
+            }
+        }
+    }
+
+    #[Test]
+    public function theToolReminderPointsAtTheGuide(): void
+    {
+        $reminder = $this->answerWidgets()->toToolReminder();
+
+        self::assertStringContainsString('```mago', $reminder);
+        self::assertStringContainsString(AnswerWidgets::MARKER, $reminder);
+    }
+
+    /**
      * @param array<string, mixed> $widgets
      */
     private function answerWidgets(array $widgets = [], ?FakeLogger $logger = null): AnswerWidgets

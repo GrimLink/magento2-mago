@@ -145,6 +145,13 @@ class ChatPanel extends Template
             'Action rejected. No changes were made.',
             'CMS page',
             'CMS block',
+            'Delete conversation: %1',
+            '%1 suggestions. Use up and down to choose, Enter to insert.',
+            '1 suggestion. Press Enter to insert.',
+            'Table',
+            '%1 replied: %2',
+            'Waiting for your confirmation.',
+            '%1 is working…',
         ];
 
         return array_combine($sentences, array_map(static fn (string $sentence): string => (string)__($sentence), $sentences));
