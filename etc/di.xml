@@ -80,6 +80,42 @@
         </arguments>
     </type>
 
+    <!-- Welcome screen example questions: each must be answerable by the tool/action it names -->
+    <type name="MagoAssistant\Mago\Service\Welcome\ExampleQuestions">
+        <arguments>
+            <argument name="questions" xsi:type="array">
+                <item name="low_stock" xsi:type="array">
+                    <item name="question" xsi:type="string" translate="true">Which products are running low on stock?</item>
+                    <item name="tool" xsi:type="string">product_data</item>
+                    <item name="action" xsi:type="string">low_stock</item>
+                    <item name="icon" xsi:type="string">stock</item>
+                    <item name="sortOrder" xsi:type="number">10</item>
+                </item>
+                <item name="revenue_vs_last_week" xsi:type="array">
+                    <item name="question" xsi:type="string" translate="true">Compare revenue this week with last week</item>
+                    <item name="tool" xsi:type="string">sales_data</item>
+                    <item name="action" xsi:type="string">revenue_summary</item>
+                    <item name="icon" xsi:type="string">chart</item>
+                    <item name="sortOrder" xsi:type="number">20</item>
+                </item>
+                <item name="orders_on_hold" xsi:type="array">
+                    <item name="question" xsi:type="string" translate="true">How many orders are on hold?</item>
+                    <item name="tool" xsi:type="string">sales_data</item>
+                    <item name="action" xsi:type="string">order_count</item>
+                    <item name="icon" xsi:type="string">orders</item>
+                    <item name="sortOrder" xsi:type="number">30</item>
+                </item>
+                <item name="best_sellers" xsi:type="array">
+                    <item name="question" xsi:type="string" translate="true">What are my best-selling products this month?</item>
+                    <item name="tool" xsi:type="string">sales_data</item>
+                    <item name="action" xsi:type="string">top_products</item>
+                    <item name="icon" xsi:type="string">bestseller</item>
+                    <item name="sortOrder" xsi:type="number">40</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
     <!-- Slash commands: "/name subcommand" messages that run without the AI provider -->
     <type name="MagoAssistant\Mago\Service\Command\CommandRegistry">
         <arguments>

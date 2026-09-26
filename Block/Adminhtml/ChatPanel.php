@@ -16,6 +16,7 @@ use MagoAssistant\Mago\Service\Command\CommandRegistry;
 use MagoAssistant\Mago\Service\Command\CommandRunner;
 use MagoAssistant\Mago\Service\Form\FormPolicy;
 use MagoAssistant\Mago\Service\Tool\ToolRegistry;
+use MagoAssistant\Mago\Service\Welcome\ExampleQuestions;
 
 class ChatPanel extends Template
 {
@@ -57,6 +58,7 @@ class ChatPanel extends Template
         private readonly CommandRegistry $commandRegistry,
         private readonly CommandRunner $commandRunner,
         private readonly FormPolicy $formPolicy,
+        private readonly ExampleQuestions $exampleQuestions,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -215,6 +217,14 @@ class ChatPanel extends Template
             ];
         }
         return (string)$this->json->serialize($commands);
+    }
+
+    /**
+     * @return list<array{question: string, icon: string}>
+     */
+    public function getExampleQuestions(): array
+    {
+        return $this->exampleQuestions->getForAdmin($this->getAdminUserId());
     }
 
     private function getAdminUserId(): ?int
