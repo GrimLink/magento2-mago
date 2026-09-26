@@ -43,6 +43,18 @@ define([
     var formatApplyOutcomeMessage = confirmText.formatApplyOutcomeMessage;
     var formKey = config.formKey;
     var skills = config.skills;
+
+    // A tool can name itself (PresentableToolInterface); the rest keep the title derived from the name
+    var toolTitles = {};
+    (skills || []).forEach(function(s) {
+        if (s && s.name && s.title) toolTitles[s.name] = s.title;
+    });
+    skillTitle = function(toolName) {
+        return toolTitles[toolName] || text.skillTitle(toolName);
+    };
+    toolLabel = function(tool) {
+        return skillTitle(tool.name) + (tool.input && tool.input.action ? ' · ' + tool.input.action : '');
+    };
     var commands = config.commands || [];
     // Widget and skill-card builders (js/mago-ui.js); loaded before this file by panel.phtml.
     var UI = window.MagoUI;
@@ -989,8 +1001,9 @@ define([
     }
 
     // Answer widgets arrive as static HTML from the markdown renderer, so their
-    // interactions are wired here once: a chip or suggestion card asks its label,
-    // a value prompt (S10) sends the value the admin typed or picked.
+    // interactions are wired here once, for built-in and registered widgets alike:
+    // data-mago-send sends its value as the next message, data-mago-focus moves the
+    // focus to the input, and a value prompt (S10) sends the value the admin typed.
     function askFromWidget(text) {
         if (!text || busy) return;
         input.value = text;
@@ -1001,6 +1014,19 @@ define([
     msgs.addEventListener('click', function(e) {
         var scope = e.target.closest('.mago-message-content');
         if (!scope) return;
+        var focusEl = e.target.closest('[' + UI.focusAttr + ']');
+        if (focusEl && scope.contains(focusEl)) {
+            e.preventDefault();
+            input.focus();
+            return;
+        }
+        var sendEl = e.target.closest('[' + UI.sendAttr + ']');
+        if (sendEl && scope.contains(sendEl)) {
+            e.preventDefault();
+            askFromWidget(sendEl.getAttribute(UI.sendAttr).trim());
+            return;
+        }
+        // Chips a value prompt draws carry no send value; they still ask their label
         var chip = e.target.closest('.mago-chip, .mago-suggestion:not([href])');
         if (chip) {
             e.preventDefault();

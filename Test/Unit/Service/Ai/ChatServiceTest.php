@@ -32,7 +32,10 @@ use MagoAssistant\Mago\Test\Unit\Fakes\FakeConfigRepository;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeIrreversibleAction;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeLogger;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeSkill;
+use MagoAssistant\Mago\Api\Tool\ToolInterface;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakePresentableTool;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeTool;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -127,7 +130,7 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $authorization,
             new StoreScopeContext($this->singleStoreManager()),
-            new AnswerWidgets(),
+            new AnswerWidgets(new ErrorLogger(new FakeLogger(), new Json())),
             new PageContextHolder(),
             $privacy ?? $this->privacyService()
         );
@@ -354,7 +357,7 @@ final class ChatServiceTest extends TestCase
         $instruction = $this->instructionMessage($this->requests[1]);
         self::assertNotNull($instruction);
         self::assertStringContainsString('Always mention the page count.', $instruction['content']);
-        self::assertStringContainsString((new AnswerWidgets())->toToolReminder(), $instruction['content']);
+        self::assertStringContainsString((new AnswerWidgets(new ErrorLogger(new FakeLogger(), new Json())))->toToolReminder(), $instruction['content']);
     }
 
     #[Test]
@@ -523,7 +526,7 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $this->createMock(AuthorizationInterface::class),
             new StoreScopeContext($storeManager),
-            new AnswerWidgets(),
+            new AnswerWidgets(new ErrorLogger(new FakeLogger(), new Json())),
             new PageContextHolder(),
             $this->privacyService()
         );
@@ -666,7 +669,62 @@ final class ChatServiceTest extends TestCase
             ]);
     }
 
+    #[Test]
+    public function aToolFromAnotherModuleWritesItsOwnStatusLine(): void
+    {
+        $service = $this->serviceWithAnyTool(new FakePresentableTool('stock_alerts', 'Stock alerts', 'Checking %s...'));
+        $messages = [];
+
+        $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'stock_alerts', 'input' => ['action' => 'low_stock']]],
+            null,
+            function (string $event, array $data) use (&$messages): void {
+                if ($event === 'tool_status' && $data['status'] === 'running') {
+                    $messages[] = $data['message'];
+                }
+            }
+        );
+
+        self::assertSame(['Checking low_stock...'], $messages);
+    }
+
+    /**
+     * @return array<string, array{0: ?string}>
+     */
+    public static function missingStatusLines(): array
+    {
+        return [
+            'no status line' => [null],
+            'an empty status line' => [''],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('missingStatusLines')]
+    public function aToolWithoutItsOwnStatusLineKeepsTheDefault(?string $statusMessage): void
+    {
+        $service = $this->serviceWithAnyTool(new FakePresentableTool('stock_alerts', 'Stock alerts', $statusMessage));
+        $messages = [];
+
+        $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'stock_alerts', 'input' => ['action' => 'low_stock']]],
+            null,
+            function (string $event, array $data) use (&$messages): void {
+                if ($event === 'tool_status' && $data['status'] === 'running') {
+                    $messages[] = $data['message'];
+                }
+            }
+        );
+
+        self::assertSame(['Running stock_alerts...'], $messages);
+    }
+
     private function serviceWithTool(FakeTool $tool): ChatService
+    {
+        return $this->serviceWithAnyTool($tool);
+    }
+
+    private function serviceWithAnyTool(ToolInterface $tool): ChatService
     {
         return new ChatService(
             (new FakeConfigRepository())->withMaxResponseTokens(self::MAX_RESPONSE_TOKENS),
@@ -677,7 +735,7 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $this->createMock(AuthorizationInterface::class),
             new StoreScopeContext($this->createMock(StoreManagerInterface::class)),
-            new AnswerWidgets(),
+            new AnswerWidgets(new ErrorLogger(new FakeLogger(), new Json())),
             new PageContextHolder(),
             $this->privacyService()
         );
