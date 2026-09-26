@@ -160,6 +160,7 @@
                 <item name="create_invoice" xsi:type="object">MagoAssistant\Mago\Service\Skills\Sales\OrderManager\CreateInvoiceAction</item>
                 <item name="create_creditmemo" xsi:type="object">MagoAssistant\Mago\Service\Skills\Sales\OrderManager\CreateCreditmemoAction</item>
                 <item name="cancel" xsi:type="object">MagoAssistant\Mago\Service\Skills\Sales\OrderManager\CancelAction</item>
+                <item name="resend_confirmation" xsi:type="object">MagoAssistant\Mago\Service\Skills\Sales\OrderManager\ResendConfirmationAction</item>
             </argument>
         </arguments>
     </type>

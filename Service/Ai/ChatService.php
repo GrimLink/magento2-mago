@@ -901,6 +901,7 @@ class ChatService implements ChatServiceInterface
             'order_manager.create_creditmemo' => 'Creating credit memo...',
             'order_manager.add_comment' => 'Adding order comment...',
             'order_manager.cancel' => 'Cancelling order...',
+            'order_manager.resend_confirmation' => 'Sending order confirmation...',
             'order_manager.hold' => 'Holding order...',
             'order_manager.unhold' => 'Removing hold from order...',
             'page_form.describe_form' => 'Reading the form on screen...',
