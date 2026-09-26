@@ -200,7 +200,7 @@ final class ChatServiceToolConfirmationTest extends TestCase
             new FakeUsageLogger(),
             $authorization,
             new StoreScopeContext($this->singleStoreManager()),
-            new AnswerWidgets(),
+            new AnswerWidgets(new ErrorLogger(new FakeLogger(), new Json())),
             new PageContextHolder(),
             new PrivacyService(new PrivacyFilter($vault, new PiiHeuristic()), $vault, new PiiHeuristic())
         );

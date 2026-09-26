@@ -67,6 +67,20 @@ controlled by *Stores > Configuration > Mago Assistant > Chat Settings > Answer
 Widgets* (`mago/chat/answer_widgets`, default Yes); switching it off keeps the
 renderer but stops the model from being told about it.
 
+Inside an answer, clicks work through two attributes the panel handles for every
+widget: `data-mago-send="text"` (`MagoUI.sendAttr`) sends the text as the admin's
+next message and `data-mago-focus` (`MagoUI.focusAttr`) focuses the input. Chips
+and suggestion cards without their own `onClick` or `href` carry
+`data-mago-send` with their label. Whatever a builder returns is scrubbed before
+it reaches the page (no scripts, event attributes or unsafe links), and a
+builder that throws is skipped.
+
+Another module can add its own widget type with `MagoUI.register(type, builder)`
+and the `widgets` argument of `AnswerWidgets` in its `di.xml`; see
+[widgets.md](widgets.md) for the full walkthrough and
+[examples/Vendor_MagoStockAlert](examples/Vendor_MagoStockAlert) for a working
+module.
+
 ## Widgets (W01–W21)
 
 | # | Builder | Options |

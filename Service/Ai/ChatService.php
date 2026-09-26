@@ -10,6 +10,7 @@ use MageOS\AiBase\Api\AiClientInterface;
 use MagoAssistant\Mago\Api\Tool\ValidatingToolInterface;
 use MagoAssistant\Mago\Api\ChatServiceInterface;
 use MagoAssistant\Mago\Api\Tool\IrreversibleToolInterface;
+use MagoAssistant\Mago\Api\Tool\PresentableToolInterface;
 use MagoAssistant\Mago\Api\Tool\ToolInterface;
 use MagoAssistant\Mago\Api\Tool\UpfrontGuidanceToolInterface;
 use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
@@ -851,6 +852,11 @@ class ChatService implements ChatServiceInterface
         }
 
         $instructions = $tool->getInstructions();
+        if ($instructions && $this->configRepository->isAnswerWidgetsEnabled()) {
+            // A tool's instructions describe its results in words; without this line the model
+            // tends to follow that wording and answer with a markdown list instead of a widget.
+            $instructions .= "\n" . $this->answerWidgets->toToolReminder();
+        }
         if ($instructions) {
             $messages[] = [
                 'role' => 'system',
@@ -865,6 +871,14 @@ class ChatService implements ChatServiceInterface
 
     private function getToolStatusMessage(string $toolName, string $action, array $input): string
     {
+        $tool = $this->toolRegistry->getToolByName($toolName);
+        if ($tool instanceof PresentableToolInterface) {
+            $own = $tool->getStatusMessage($action, $input);
+            if ($own !== null && $own !== '') {
+                return $own;
+            }
+        }
+
         $messages = [
             'sales_data.revenue_summary' => 'Calculating revenue...',
             'sales_data.recent_orders' => 'Fetching recent orders...',
@@ -873,6 +887,8 @@ class ChatService implements ChatServiceInterface
             'product_data.search' => 'Searching products...',
             'product_data.low_stock' => 'Checking low stock...',
             'product_data.get_by_sku' => 'Fetching product...',
+            'stock_level' => 'Checking stock...',
+            'stock_level_msi' => 'Checking stock per source...',
             'customer_data.lookup_customer' => 'Searching for customer...',
             'customer_data.recent_customers' => 'Fetching recent customers...',
             'cms_data.create_page' => 'Creating CMS page...',
@@ -894,6 +910,7 @@ class ChatService implements ChatServiceInterface
             'order_manager.create_creditmemo' => 'Creating credit memo...',
             'order_manager.add_comment' => 'Adding order comment...',
             'order_manager.cancel' => 'Cancelling order...',
+            'order_manager.resend_confirmation' => 'Sending order confirmation...',
             'order_manager.hold' => 'Holding order...',
             'order_manager.unhold' => 'Removing hold from order...',
             'page_form.describe_form' => 'Reading the form on screen...',

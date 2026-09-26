@@ -7,5 +7,10 @@
             <validate>validate-digits</validate>
             <comment><![CDATA[Tool output larger than this estimated token count is truncated before it is sent to the AI, so one large result cannot crowd out the conversation (default: 4000).]]></comment>
         </field>
+        <field id="customer_notification_interval" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Customer E-mail Interval (minutes)</label>
+            <validate>validate-digits</validate>
+            <comment><![CDATA[Mago e-mails the customer of an order at most once in this many minutes, so a repeated or bulk request cannot flood the customer's inbox. 0 removes the limit (default: 60).]]></comment>
+        </field>
     </group>
 </include>

@@ -28,9 +28,14 @@ if ($luminance < 0.3) {
 $assistantName = $block->getAssistantName();
 $adminName = $block->getAdminFirstName();
 $hasAccess = $block->canUseAssistant();
-// The welcome screen offers the first few skills as one-click starters.
-$skills = json_decode($block->getSkillsJson(), true) ?: [];
-$starterSkills = array_slice(array_values($skills), 0, 3);
+$exampleQuestions = $block->getExampleQuestions();
+$starterIcons = [
+    'stock' => '<path d="M3 7l6 6 4-4 8 8"/><path d="M21 11v6h-6"/>',
+    'chart' => '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+    'orders' => '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+    'bestseller' => '<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>',
+    'sparkle' => '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/>',
+];
 ?>
 
 <style>
@@ -184,15 +189,15 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
             <p class="mago-welcome-text">
                 <?= $escaper->escapeHtml(__('Ask about your catalog, orders or settings. I read anything, and I ask before I change something.')) ?>
             </p>
-            <?php if ($starterSkills): ?>
-                <div class="mago-welcome-label"><?= $escaper->escapeHtml(__('Try one')) ?></div>
-                <div class="mago-starters">
-                    <?php foreach ($starterSkills as $skill): ?>
-                        <button type="button" class="mago-starter" data-skill="<?= $escaper->escapeHtmlAttr($skill['name'] ?? '') ?>">
+            <?php if ($exampleQuestions): ?>
+                <div class="mago-welcome-label" id="mago-starters-label"><?= $escaper->escapeHtml(__('Try one')) ?></div>
+                <div class="mago-starters" role="group" aria-labelledby="mago-starters-label">
+                    <?php foreach ($exampleQuestions as $example): ?>
+                        <button type="button" class="mago-starter" data-question="<?= $escaper->escapeHtmlAttr($example['question']) ?>">
                             <span class="mago-starter-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><?= /* @noEscape */ $starterIcons[$example['icon']] ?? $starterIcons['sparkle'] ?></svg>
                             </span>
-                            <span class="mago-starter-text"><?= $escaper->escapeHtml($skill['description'] ?? $skill['name'] ?? '') ?></span>
+                            <span class="mago-starter-text"><?= $escaper->escapeHtml($example['question']) ?></span>
                             <svg class="mago-starter-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
                         </button>
                     <?php endforeach; ?>
@@ -232,9 +237,18 @@ window.MAGO_CONFIG.skills = <?= /* @noEscape */ $block->getSkillsJson() ?>;
 window.MAGO_CONFIG.commands = <?= /* @noEscape */ $block->getCommandsJson() ?>;
 </script>
 <script>
-require(['marked', 'MagoAssistant_Mago/js/mago-ui'], function(marked, MagoUI) {
-    window.marked = marked;
-    window.MagoUI = MagoUI;
-    require(['MagoAssistant_Mago/js/chat-panel']);
-});
+// Magento applies requirejs mixins only to modules required after its "mixins" module has
+// wrapped require(), and this inline script can run before that. Loading it first is what lets
+// another module extend mago-ui (MagoUI.register() from a mixin, see docs/widgets.md). Without a
+// "mixins" module the panel still loads, just without mixins.
+(function () {
+    function loadPanel() {
+        require(['marked', 'MagoAssistant_Mago/js/mago-ui'], function(marked, MagoUI) {
+            window.marked = marked;
+            window.MagoUI = MagoUI;
+            require(['MagoAssistant_Mago/js/chat-panel']);
+        });
+    }
+    require(['mixins'], loadPanel, loadPanel);
+})();
 </script>

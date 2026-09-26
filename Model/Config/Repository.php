@@ -123,6 +123,13 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
         return (int)($this->getStoreValue(self::XML_PATH_MAX_RESPONSE_TOKENS) ?: 4000);
     }
 
+    public function getCustomerNotificationInterval(): int
+    {
+        // Non-numeric config falls back to 60 rather than failing open to unlimited e-mail
+        $value = $this->getStoreValue(self::XML_PATH_CUSTOMER_NOTIFICATION_INTERVAL);
+        return ctype_digit($value) ? (int)$value : 60;
+    }
+
     public function getAccentColor(): string
     {
         return $this->getStoreValue(self::XML_PATH_ACCENT_COLOR) ?: '#F26322';
